@@ -15,6 +15,7 @@ public partial class SupervisorDashboardPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        ScopeLabel.Text = Session.ScopeLabel;
 
         SupervisorHubClient.JobUpdated += OnHubJobChanged;
         SupervisorHubClient.JobAssignedToYou += OnHubJobChanged;
@@ -112,7 +113,8 @@ public partial class SupervisorDashboardPage : ContentPage
 
         if (assignedNotStarted > 0)
         {
-            AttentionContainer.Children.Add(UiHelpers.BuildAttentionCard(IconGlyphs.ClipboardCheck, "StatusAssigned", assignedNotStarted,
+            AttentionContainer.Children.Add(UiHelpers.BuildDashboardAttentionRow(
+                IconGlyphs.ClipboardCheck, "StatusAssigned", assignedNotStarted,
                 assignedNotStarted == 1 ? "job assigned, not yet started" : "jobs assigned, not yet started",
                 "//SupervisorTabs/SupervisorHomePage"));
         }
@@ -130,4 +132,7 @@ public partial class SupervisorDashboardPage : ContentPage
 
     private async void OnHistoryQuickActionClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("//SupervisorTabs/SupervisorHistoryPage");
+
+    private async void OnViewAllAttentionTapped(object? sender, EventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(NotificationsPage));
 }

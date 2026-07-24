@@ -22,114 +22,139 @@
                 </controls:BackHeaderView.TrailingContent>
             </controls:BackHeaderView>
 
-            <!-- Header -->
-            <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" BackgroundColor="{StaticResource CardTint}"
-                    StrokeShape="RoundRectangle 30" Padding="0">
+            <!-- Compact inbound manifest -->
+            <Border Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
+                    StrokeShape="RoundRectangle 22" Padding="0">
                 <Border.Shadow>
-                    <Shadow Brush="#A9C4C0" Offset="0,10" Radius="24" Opacity="0.18" />
+                    <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
                 </Border.Shadow>
-                <Grid x:Name="HeroGrid" RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18" RowSpacing="20"
-                      Padding="24" BackgroundColor="{StaticResource CardTint}">
-                    <Border Grid.Row="0" Grid.Column="0" WidthRequest="82" HeightRequest="82" StrokeThickness="0"
-                            BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 25"
-                            VerticalOptions="Center">
+                <Grid x:Name="HeroGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20"
+                      Padding="24" BackgroundColor="White">
+                    <Border Grid.Column="0" WidthRequest="52" HeightRequest="52" StrokeThickness="0"
+                            BackgroundColor="#E9FBF8" StrokeShape="RoundRectangle 14" VerticalOptions="Center">
                         <Label Text="{x:Static services:IconGlyphs.Truck}" Style="{StaticResource IconLabel}"
-                               FontSize="26" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                               FontSize="20" TextColor="{StaticResource Primary}"
+                               HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
 
-                    <VerticalStackLayout x:Name="HeroTextStack" Grid.Row="0" Grid.Column="1" Spacing="8" VerticalOptions="Center">
-                        <Label Text="Inbound receiving command" TextTransform="Uppercase"
-                               FontSize="11" FontFamily="PoppinsBold" TextColor="{StaticResource Primary}" />
-                        <Label x:Name="HeaderLabel" Style="{StaticResource PageTitleLabel}" FontSize="26"
-                               LineBreakMode="WordWrap" />
+                    <VerticalStackLayout x:Name="HeroTextStack" Grid.Column="1" Spacing="7" VerticalOptions="Center">
+                        <Label x:Name="HeaderLabel" TextColor="#172033" FontFamily="PoppinsSemiBold"
+                               FontSize="23" LineBreakMode="WordWrap" />
                         <HorizontalStackLayout Spacing="8">
                             <Label Text="{x:Static services:IconGlyphs.ClipboardCheck}" Style="{StaticResource IconLabel}"
-                                   FontSize="11" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
-                            <Label x:Name="SubHeaderLabel" Style="{StaticResource MetaLabel}" FontSize="13" />
+                                   FontSize="11" TextColor="#687387" VerticalOptions="Center" />
+                            <Label x:Name="SubHeaderLabel" TextColor="#687387" FontSize="13" />
                         </HorizontalStackLayout>
                         <HorizontalStackLayout Spacing="8" IsVisible="{Binding Source={x:Reference TimeTrackingLabel}, Path=IsVisible}">
                             <Label Text="{x:Static services:IconGlyphs.Clock}" Style="{StaticResource IconLabel}"
-                                   FontSize="11" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
-                            <Label x:Name="TimeTrackingLabel" Style="{StaticResource MetaLabel}" FontSize="12" IsVisible="False" />
+                                   FontSize="11" TextColor="#687387" VerticalOptions="Center" />
+                            <Label x:Name="TimeTrackingLabel" TextColor="#687387" FontSize="12" IsVisible="False" />
                         </HorizontalStackLayout>
                     </VerticalStackLayout>
 
-                    <HorizontalStackLayout x:Name="HeroMetaChips" Grid.Row="0" Grid.Column="2" Spacing="10" HorizontalOptions="End" VerticalOptions="Center">
-                        <Border Padding="12,8" StrokeThickness="0" BackgroundColor="{StaticResource CardLight}"
-                                StrokeShape="RoundRectangle 15">
+                    <HorizontalStackLayout x:Name="HeroMetaChips" Grid.Column="2" Spacing="8"
+                                           HorizontalOptions="End" VerticalOptions="Center">
+                        <Border Padding="12,8" Stroke="#DDE8E6" StrokeThickness="1" BackgroundColor="#F4FAF9"
+                                StrokeShape="RoundRectangle 12">
                             <HorizontalStackLayout Spacing="8">
                                 <Label Text="{x:Static services:IconGlyphs.LocationDot}" Style="{StaticResource IconLabel}"
                                        FontSize="11" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <Label x:Name="BaySummaryLabel" Text="Bay pending" Style="{StaticResource MetaLabel}"
+                                <Label x:Name="BaySummaryLabel" Text="Bay pending" FontSize="11"
                                        FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
                             </HorizontalStackLayout>
                         </Border>
-                        <Border Padding="12,8" StrokeThickness="0" BackgroundColor="{StaticResource CardLight}"
-                                StrokeShape="RoundRectangle 15">
+                        <Border Padding="12,8" Stroke="#DDE8E6" StrokeThickness="1" BackgroundColor="#F4FAF9"
+                                StrokeShape="RoundRectangle 12">
                             <HorizontalStackLayout Spacing="8">
                                 <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
                                        FontSize="11" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <Label x:Name="LineSummaryLabel" Text="0 lines" Style="{StaticResource MetaLabel}"
+                                <Label x:Name="LineSummaryLabel" Text="0 lines" FontSize="11"
                                        FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
                             </HorizontalStackLayout>
                         </Border>
                     </HorizontalStackLayout>
-
-                    <Grid x:Name="HeroSummaryGrid" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" ColumnDefinitions="*,*,*" ColumnSpacing="14" RowSpacing="12">
-                        <Border StrokeThickness="0" BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 20" Padding="16,13">
-                            <HorizontalStackLayout Spacing="10">
-                                <Label Text="{x:Static services:IconGlyphs.Clock}" Style="{StaticResource IconLabel}"
-                                       FontSize="13" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <VerticalStackLayout Spacing="1">
-                                    <Label Text="Current work" FontSize="11" TextTransform="Uppercase" FontFamily="PoppinsBold"
-                                           TextColor="{StaticResource TextSecondaryLight}" />
-                                    <Label Text="Unload and inspect" FontSize="13" FontFamily="PoppinsSemiBold"
-                                           TextColor="{StaticResource TextPrimaryLight}" />
-                                </VerticalStackLayout>
-                            </HorizontalStackLayout>
-                        </Border>
-                        <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 20" Padding="16,13">
-                            <HorizontalStackLayout Spacing="10">
-                                <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
-                                       FontSize="13" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <VerticalStackLayout Spacing="1">
-                                    <Label Text="Evidence" FontSize="11" TextTransform="Uppercase" FontFamily="PoppinsBold"
-                                           TextColor="{StaticResource TextSecondaryLight}" />
-                                    <Label x:Name="PhotoCountLabel" Text="0 photos" FontSize="13" FontFamily="PoppinsSemiBold"
-                                           TextColor="{StaticResource TextPrimaryLight}" />
-                                </VerticalStackLayout>
-                            </HorizontalStackLayout>
-                        </Border>
-                        <Border Grid.Column="2" StrokeThickness="0" BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 20" Padding="16,13">
-                            <HorizontalStackLayout Spacing="10">
-                                <Label Text="{x:Static services:IconGlyphs.CircleCheck}" Style="{StaticResource IconLabel}"
-                                       FontSize="13" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <VerticalStackLayout Spacing="1">
-                                    <Label Text="Closure" FontSize="11" TextTransform="Uppercase" FontFamily="PoppinsBold"
-                                           TextColor="{StaticResource TextSecondaryLight}" />
-                                    <Label Text="Completion readiness" FontSize="13" FontFamily="PoppinsSemiBold"
-                                           TextColor="{StaticResource TextPrimaryLight}" />
-                                </VerticalStackLayout>
-                            </HorizontalStackLayout>
-                        </Border>
-                    </Grid>
                 </Grid>
             </Border>
 
+            <!-- Workflow and evidence: balanced tablet split -->
+            <Grid x:Name="WorkflowEvidenceGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
+                  ColumnSpacing="14" RowSpacing="14">
+
+            <!-- Inbound workflow -->
+            <Grid x:Name="HeroSummaryGrid" Grid.Column="0" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                <Border Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
+                        StrokeShape="RoundRectangle 16" Padding="14" MinimumHeightRequest="88">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
+                        <Border WidthRequest="38" HeightRequest="38" StrokeThickness="0"
+                                BackgroundColor="#123F3D" StrokeShape="RoundRectangle 10" VerticalOptions="Center">
+                            <Label Text="01" FontFamily="PoppinsSemiBold" FontSize="12" TextColor="White"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="Unload &amp; inspect" FontSize="13" FontFamily="PoppinsSemiBold"
+                                   TextColor="#172033" />
+                            <Border Padding="10,3" StrokeThickness="0" BackgroundColor="{StaticResource StatusSuccessTint}"
+                                    StrokeShape="RoundRectangle 8" HorizontalOptions="Start">
+                                <Label Text="Current work" FontSize="10" FontFamily="PoppinsSemiBold"
+                                       TextColor="{StaticResource StatusSuccess}" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+                <Border Grid.Row="1" Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
+                        StrokeShape="RoundRectangle 16" Padding="14" MinimumHeightRequest="88">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
+                        <Border WidthRequest="38" HeightRequest="38" StrokeThickness="0"
+                                BackgroundColor="#123F3D" StrokeShape="RoundRectangle 10" VerticalOptions="Center">
+                            <Label Text="02" FontFamily="PoppinsSemiBold" FontSize="12" TextColor="White"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label x:Name="PhotoCountLabel" Text="0 photos" FontSize="13"
+                                   FontFamily="PoppinsSemiBold" TextColor="#172033" />
+                            <Border Padding="10,3" StrokeThickness="0" BackgroundColor="{StaticResource StatusAvailableTint}"
+                                    StrokeShape="RoundRectangle 8" HorizontalOptions="Start">
+                                <Label Text="Evidence" FontSize="10" FontFamily="PoppinsSemiBold"
+                                       TextColor="{StaticResource StatusDocked}" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+                <Border Grid.Row="2" Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
+                        StrokeShape="RoundRectangle 16" Padding="14" MinimumHeightRequest="88">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
+                        <Border WidthRequest="38" HeightRequest="38" StrokeThickness="0"
+                                BackgroundColor="#123F3D" StrokeShape="RoundRectangle 10" VerticalOptions="Center">
+                            <Label Text="03" FontFamily="PoppinsSemiBold" FontSize="12" TextColor="White"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="Completion readiness" FontSize="13" FontFamily="PoppinsSemiBold"
+                                   TextColor="#172033" />
+                            <Border Padding="10,3" StrokeThickness="0" BackgroundColor="#FFF1D6"
+                                    StrokeShape="RoundRectangle 8" HorizontalOptions="Start">
+                                <Label Text="Closure" FontSize="10" FontFamily="PoppinsSemiBold" TextColor="#B87500" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+            </Grid>
+
             <!-- Dock-in -->
-            <Border x:Name="DockInSection" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                    BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 28" IsVisible="False" Padding="0">
+            <Border x:Name="DockInSection" Grid.Row="1" Grid.ColumnSpan="2" Stroke="#E4E9F1" StrokeThickness="1"
+                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0">
                 <Border.Shadow>
-                    <Shadow Brush="#DCEAE8" Offset="0,8" Radius="20" Opacity="0.24" />
+                    <Shadow Brush="#23344F" Offset="0,5" Radius="16" Opacity="0.05" />
                 </Border.Shadow>
-                <Grid x:Name="DockInCardGrid" RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16" RowSpacing="18" Padding="22">
-                    <Border Grid.Row="0" Grid.Column="0" WidthRequest="58" HeightRequest="58" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource CardTint}">
+                <Grid x:Name="DockInCardGrid" RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto"
+                      ColumnSpacing="14" RowSpacing="14" Padding="18">
+                    <Border Grid.Row="0" Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
                         <Label Text="{x:Static services:IconGlyphs.LocationDot}" Style="{StaticResource IconLabel}"
-                               FontSize="20" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                               FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
                     <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                        <Label Text="Assign unloading bay" Style="{StaticResource SectionTitleLabel}" FontSize="20" />
+                        <Label Text="Assign unloading bay" Style="{StaticResource SectionTitleLabel}" FontSize="17" />
                         <Label Text="Map this vehicle to a physical bay before unloading starts." Style="{StaticResource MetaLabel}" />
                     </VerticalStackLayout>
                     <Border Grid.Row="0" Grid.Column="2" Padding="12,7" StrokeThickness="0"
@@ -163,19 +188,20 @@
             </Border>
 
             <!-- Start unloading -->
-            <Border x:Name="StartUnloadingSection" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                    BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 28" IsVisible="False" Padding="0">
+            <Border x:Name="StartUnloadingSection" Grid.Row="1" Grid.ColumnSpan="2" Stroke="#E4E9F1" StrokeThickness="1"
+                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0">
                 <Border.Shadow>
-                    <Shadow Brush="#DCEAE8" Offset="0,8" Radius="20" Opacity="0.24" />
+                    <Shadow Brush="#23344F" Offset="0,5" Radius="16" Opacity="0.05" />
                 </Border.Shadow>
-                <Grid x:Name="StartUnloadingCardGrid" RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16" RowSpacing="18" Padding="22">
-                    <Border Grid.Row="0" Grid.Column="0" WidthRequest="58" HeightRequest="58" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource StatusAvailableTint}">
+                <Grid x:Name="StartUnloadingCardGrid" RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto"
+                      ColumnSpacing="14" RowSpacing="14" Padding="18">
+                    <Border Grid.Row="0" Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 12" BackgroundColor="{StaticResource StatusAvailableTint}">
                         <Label Text="{x:Static services:IconGlyphs.Clock}" Style="{StaticResource IconLabel}"
-                               FontSize="20" TextColor="{StaticResource StatusAvailable}" HorizontalOptions="Center" VerticalOptions="Center" />
+                               FontSize="16" TextColor="{StaticResource StatusAvailable}" HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
                     <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                        <Label Text="Ready to begin unloading?" Style="{StaticResource SectionTitleLabel}" FontSize="20" />
+                        <Label Text="Ready to begin unloading?" Style="{StaticResource SectionTitleLabel}" FontSize="17" />
                         <Label Text="Start unloading records the begin time and opens inspection tracking for this inbound job."
                                Style="{StaticResource MetaLabel}" />
                     </VerticalStackLayout>
@@ -201,21 +227,23 @@
             </Border>
 
             <!-- Photos -->
-            <Border x:Name="PhotoSection" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                    BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 28" IsVisible="False" Padding="0">
+            <Border x:Name="PhotoSection" Grid.Column="1" Stroke="#E4E9F1" StrokeThickness="1"
+                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0"
+                    VerticalOptions="Fill">
                 <VerticalStackLayout Spacing="0">
-                    <Grid x:Name="PhotoHeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16" RowSpacing="12" Padding="22,20" BackgroundColor="{StaticResource CardTint}">
-                        <Border Grid.Column="0" WidthRequest="56" HeightRequest="56" StrokeThickness="0"
-                                StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource CardLight}">
+                    <Grid x:Name="PhotoHeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" RowSpacing="10"
+                          Padding="18,16" BackgroundColor="#FBFCFE">
+                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
                             <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
-                                   FontSize="19" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                   FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
                         </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                            <Label Text="Proof gallery" Style="{StaticResource SectionTitleLabel}" FontSize="21" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Proof gallery" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
                             <Label Text="Review captured unloading proof before closure." Style="{StaticResource MetaLabel}" />
                         </VerticalStackLayout>
-                        <Border Grid.Column="2" Padding="14,8" StrokeThickness="0" BackgroundColor="{StaticResource CardLight}"
-                                StrokeShape="RoundRectangle 16" VerticalOptions="Center">
+                        <Border Grid.Column="2" Padding="12,7" StrokeThickness="0" BackgroundColor="White"
+                                StrokeShape="RoundRectangle 12" VerticalOptions="Center">
                             <Label x:Name="PhotoCountHeaderLabel" Text="Evidence" FontSize="12" FontFamily="PoppinsBold" TextColor="{StaticResource Primary}" />
                         </Border>
                     </Grid>
@@ -286,19 +314,23 @@
                 </VerticalStackLayout>
             </Border>
 
+            </Grid>
+
             <!-- Original dispatch load plan (read-only reference - only shown when this shipment
                  was actually dispatched through our own Outward flow at the origin warehouse) -->
-            <Border x:Name="OutwardReferenceSection" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                    BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 28" IsVisible="False" Padding="0">
+            <Border x:Name="OutwardReferenceSection" Stroke="#E4E9F1" StrokeThickness="1"
+                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0"
+                    VerticalOptions="Start">
                 <VerticalStackLayout Spacing="16">
-                    <Grid x:Name="OutwardReferenceHeaderGrid" ColumnDefinitions="Auto,*" ColumnSpacing="14" Padding="22,20" BackgroundColor="{StaticResource CardTint}">
-                        <Border Grid.Column="0" WidthRequest="46" HeightRequest="46" StrokeThickness="0"
-                                StrokeShape="RoundRectangle 15" BackgroundColor="{StaticResource CardTint}">
+                    <Grid x:Name="OutwardReferenceHeaderGrid" ColumnDefinitions="Auto,*" ColumnSpacing="14"
+                          Padding="18,16" BackgroundColor="#FBFCFE">
+                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
                             <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
                                    FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
                         </Border>
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                            <Label Text="Original dispatch load plan" Style="{StaticResource SectionTitleLabel}" FontSize="18" />
+                            <Label Text="Original dispatch load plan" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
                             <Label x:Name="OutwardReferenceSubtitleLabel" Style="{StaticResource MetaLabel}" />
                         </VerticalStackLayout>
                     </Grid>
@@ -309,7 +341,8 @@
                                Style="{StaticResource MetaLabel}" />
                     </Border>
 
-                    <Grid x:Name="OutwardReferenceContentGrid" ColumnDefinitions="2*,*" ColumnSpacing="16" RowSpacing="14" Padding="18,0,18,18">
+                    <Grid x:Name="OutwardReferenceContentGrid" ColumnDefinitions="2*,*" ColumnSpacing="16"
+                          RowSpacing="14" Padding="18,0,18,18">
                         <Border Grid.Column="0" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
                                 BackgroundColor="{StaticResource SurfaceLight}" StrokeShape="RoundRectangle 20"
                                 Padding="10" VerticalOptions="Fill">
@@ -337,22 +370,23 @@
             </Border>
 
             <!-- Inspection -->
-            <Border x:Name="InspectionSection" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                    BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 28" IsVisible="False" Padding="0">
+            <Border x:Name="InspectionSection" Stroke="#E4E9F1" StrokeThickness="1"
+                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0">
                 <VerticalStackLayout Spacing="0">
-                    <Grid x:Name="InspectionHeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16" RowSpacing="12" Padding="22,20" BackgroundColor="{StaticResource CardTint}">
-                        <Border Grid.Column="0" WidthRequest="56" HeightRequest="56" StrokeThickness="0"
-                                StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource CardLight}">
+                    <Grid x:Name="InspectionHeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" RowSpacing="10"
+                          Padding="18,16" BackgroundColor="#FBFCFE">
+                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
                             <Label Text="{x:Static services:IconGlyphs.ClipboardCheck}" Style="{StaticResource IconLabel}"
-                                   FontSize="19" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                   FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
                         </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                            <Label Text="Receiving inspection" Style="{StaticResource SectionTitleLabel}" FontSize="21" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Receiving inspection" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
                             <Label Text="Review each product, split received quantities by condition, and capture exceptions."
                                    Style="{StaticResource MetaLabel}" />
                         </VerticalStackLayout>
-                        <Border Grid.Column="2" Padding="14,8" StrokeThickness="0" BackgroundColor="{StaticResource CardLight}"
-                                StrokeShape="RoundRectangle 16" VerticalOptions="Center">
+                        <Border Grid.Column="2" Padding="12,7" StrokeThickness="0" BackgroundColor="White"
+                                StrokeShape="RoundRectangle 12" VerticalOptions="Center">
                             <HorizontalStackLayout Spacing="8">
                                 <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
                                        FontSize="11" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
@@ -388,15 +422,22 @@
             </VerticalStackLayout>
 
             <!-- GRN -->
-            <Border x:Name="GrnBorder" IsVisible="False" Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22">
-                <Grid x:Name="GrnGrid" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
-                    <Grid Grid.Column="0" WidthRequest="44" HeightRequest="44" VerticalOptions="Start">
-                        <Border x:Name="GrnIconBadge" StrokeThickness="0" StrokeShape="RoundRectangle 22" Opacity="0.14" />
-                        <Label x:Name="GrnIconLabel" FontFamily="FaSolid" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+            <Border x:Name="GrnBorder" IsVisible="False" Stroke="#E4E9F1" StrokeThickness="1"
+                    BackgroundColor="White" Padding="16,11" StrokeShape="RoundRectangle 18">
+                <Border.Shadow>
+                    <Shadow Brush="#23344F" Opacity="0.05" Radius="10" Offset="0,3" />
+                </Border.Shadow>
+                <Grid x:Name="GrnGrid" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Grid Grid.Column="0" WidthRequest="38" HeightRequest="38" VerticalOptions="Center">
+                        <Border x:Name="GrnIconBadge" StrokeThickness="0" BackgroundColor="#E8F8EF"
+                                StrokeShape="RoundRectangle 12" />
+                        <Label x:Name="GrnIconLabel" FontFamily="FaSolid" FontSize="15"
+                               HorizontalOptions="Center" VerticalOptions="Center" />
                     </Grid>
-                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                        <Label x:Name="GrnTitleLabel" FontFamily="PoppinsSemiBold" FontSize="14" />
-                        <Label x:Name="GrnLabel" FontSize="12" Style="{StaticResource MetaLabel}" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                        <Label x:Name="GrnTitleLabel" FontFamily="PoppinsSemiBold" FontSize="13"
+                               TextColor="{StaticResource TextPrimaryLight}" />
+                        <Label x:Name="GrnLabel" FontSize="10" Style="{StaticResource MetaLabel}" />
                     </VerticalStackLayout>
                 </Grid>
             </Border>

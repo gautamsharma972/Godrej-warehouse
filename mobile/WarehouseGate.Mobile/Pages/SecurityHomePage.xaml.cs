@@ -26,7 +26,7 @@ public partial class SecurityHomePage : ContentPage
         ("Damage", "VehicleDamage")
     };
 
-    private readonly List<string> _recentCheckIns = new();
+    private readonly List<RecentCheckIn> _recentCheckIns = new();
     private readonly List<(string LocalPath, string Type)> _pendingDocuments = new();
     private readonly Dictionary<string, string> _pendingPhotosBySlot = new();
     private int _sessionCount;
@@ -45,6 +45,8 @@ public partial class SecurityHomePage : ContentPage
         public required Entry PoEntry { get; init; }
         public required Entry TxnEntry { get; init; }
     }
+
+    private sealed record RecentCheckIn(string VehicleNumber, string PoNumber, DateTime CheckedInAt);
 
     public SecurityHomePage()
     {
@@ -732,7 +734,7 @@ public partial class SecurityHomePage : ContentPage
             _sessionCount++;
             foreach (var job in createdJobs)
             {
-                _recentCheckIns.Insert(0, $"{vehicleNumber} · PO {job.PONumber} · {DateTime.Now:h:mm tt}");
+                _recentCheckIns.Insert(0, new RecentCheckIn(vehicleNumber, job.PONumber, DateTime.Now));
             }
             while (_recentCheckIns.Count > 5)
             {
@@ -793,17 +795,97 @@ public partial class SecurityHomePage : ContentPage
     private void RenderRecentCheckIns()
     {
         RecentSection.IsVisible = _recentCheckIns.Count > 0;
-        RecentSectionTitleLabel.Text = _sessionCount == 1 ? "This session (1 check-in)" : $"This session ({_sessionCount} check-ins)";
+        RecentCountLabel.Text = _sessionCount.ToString();
         RecentCheckInsContainer.Children.Clear();
 
         foreach (var entry in _recentCheckIns)
         {
             var border = new Border
             {
-                Style = (Style)Application.Current!.Resources["CardBorder"],
-                Padding = new Thickness(12, 10)
+                BackgroundColor = Color.FromArgb("#F7FBFA"),
+                Stroke = (Color)Application.Current!.Resources["CardBorderLight"],
+                StrokeThickness = 1,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                Padding = new Thickness(14, 12)
             };
-            border.Content = new Label { Text = entry, FontSize = 13 };
+
+            var vehicleIcon = new Label
+            {
+                Text = IconGlyphs.Truck,
+                FontFamily = "FaSolid",
+                FontSize = 15,
+                TextColor = (Color)Application.Current.Resources["Primary"],
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center
+            };
+            var iconTile = new Border
+            {
+                WidthRequest = 36,
+                HeightRequest = 36,
+                BackgroundColor = (Color)Application.Current.Resources["Secondary"],
+                StrokeThickness = 0,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+                Content = vehicleIcon,
+                VerticalOptions = LayoutOptions.Center
+            };
+
+            var vehicleLabel = new Label
+            {
+                Text = entry.VehicleNumber,
+                FontFamily = "PoppinsSemiBold",
+                FontSize = 13,
+                TextColor = (Color)Application.Current.Resources["TextPrimaryLight"],
+                LineBreakMode = LineBreakMode.TailTruncation
+            };
+            var poLabel = new Label
+            {
+                Text = $"PO {entry.PoNumber}",
+                FontFamily = "PoppinsRegular",
+                FontSize = 11,
+                TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
+                LineBreakMode = LineBreakMode.TailTruncation
+            };
+            var details = new VerticalStackLayout
+            {
+                Spacing = 1,
+                VerticalOptions = LayoutOptions.Center,
+                Children = { vehicleLabel, poLabel }
+            };
+
+            var timeLabel = new Label
+            {
+                Text = entry.CheckedInAt.ToString("h:mm tt"),
+                FontFamily = "PoppinsSemiBold",
+                FontSize = 11,
+                TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
+                VerticalOptions = LayoutOptions.Center
+            };
+            var checkIcon = new Label
+            {
+                Text = IconGlyphs.CircleCheck,
+                FontFamily = "FaSolid",
+                FontSize = 15,
+                TextColor = (Color)Application.Current.Resources["StatusSuccess"],
+                VerticalOptions = LayoutOptions.Center
+            };
+
+            var row = new Grid
+            {
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition(GridLength.Auto),
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto),
+                    new ColumnDefinition(GridLength.Auto)
+                },
+                ColumnSpacing = 12
+            };
+            row.Add(iconTile, 0);
+            row.Add(details, 1);
+            row.Add(timeLabel, 2);
+            row.Add(checkIcon, 3);
+
+            border.Content = row;
             RecentCheckInsContainer.Children.Add(border);
         }
     }

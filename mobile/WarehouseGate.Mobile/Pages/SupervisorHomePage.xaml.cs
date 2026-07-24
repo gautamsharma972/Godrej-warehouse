@@ -148,7 +148,8 @@ public partial class SupervisorHomePage : ContentPage
         var selectedText = (Color)Application.Current!.Resources["Primary"];
         var unselectedText = (Color)Application.Current.Resources["TextSecondaryLight"];
 
-        JobsModeThumb.HorizontalOptions = _showingOutward ? LayoutOptions.End : LayoutOptions.Start;
+        InwardTabPill.BackgroundColor = _showingOutward ? Colors.Transparent : Color.FromArgb("#E9FBF8");
+        OutwardTabPill.BackgroundColor = _showingOutward ? Color.FromArgb("#E9FBF8") : Colors.Transparent;
         InwardRadioLabel.TextColor = _showingOutward ? unselectedText : selectedText;
         OutwardRadioLabel.TextColor = _showingOutward ? selectedText : unselectedText;
     }

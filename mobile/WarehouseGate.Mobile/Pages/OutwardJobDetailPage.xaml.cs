@@ -477,6 +477,15 @@ public partial class OutwardJobDetailPage : ContentPage
 
             await LoadConfirmedQuantitiesAsync();
             RenderJob();
+
+            // Load the dispatch review viz up front instead of leaving it on the "Tap Refresh"
+            // placeholder until the user manually clicks it - this only runs once per page open
+            // (OnHubOutwardJobUpdated's live-push path calls RenderJob directly, not LoadAsync,
+            // so it won't re-trigger this on every realtime update).
+            if (_job.Status is "Loading" or "Completed")
+            {
+                await CalculateLoadingPlanAsync();
+            }
         }
         catch (ApiException ex)
         {

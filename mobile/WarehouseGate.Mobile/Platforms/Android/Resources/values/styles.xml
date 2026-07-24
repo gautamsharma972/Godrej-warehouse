@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Shell's TabBar renders as Android's BottomNavigationView (a Material Components widget),
+         which throws "This component requires... Theme.MaterialComponents" at startup if the
+         activity theme doesn't descend from Theme.MaterialComponents - AppCompat isn't enough. -->
+    <style name="Maui.SplashTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@drawable/splash</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:ignore="NewApi">shortEdges</item>
+    </style>
+    <style name="MainTheme" parent="Maui.SplashTheme">
+    </style>
+</resources>

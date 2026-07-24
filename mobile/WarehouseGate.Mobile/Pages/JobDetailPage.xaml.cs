@@ -85,7 +85,14 @@ public partial class JobDetailPage : ContentPage
         PageContent.Padding = wide ? new Thickness(30, 24, 30, 32) : new Thickness(16, 18, 16, 24);
 
         ConfigureHeroLayout(wide);
-        ConfigureSummaryGrid(HeroSummaryGrid, wide);
+        ConfigureWorkflowEvidenceLayout(wide);
+        // The workflow rail occupies the left half of the tablet composition.
+        // Keep its cards stacked at every breakpoint instead of flattening them
+        // into the legacy full-width three-column summary.
+        ConfigureSummaryGrid(HeroSummaryGrid, false);
+        Grid.SetRow(HeroSummaryGrid, 0);
+        Grid.SetColumn(HeroSummaryGrid, 0);
+        Grid.SetColumnSpan(HeroSummaryGrid, 1);
         ConfigureStepCardGrid(DockInCardGrid, wide);
         ConfigureTwoColumnAction(DockInActionGrid, DockInButton, wide, 220);
         ConfigureStepCardGrid(StartUnloadingCardGrid, wide);
@@ -96,6 +103,31 @@ public partial class JobDetailPage : ContentPage
         ConfigureSectionHeader(InspectionHeaderGrid, wide);
         ConfigureTwoColumnAction(InspectionFooterGrid, SubmitInspectionButton, wide, 220);
         ConfigureSimpleIconGrid(GrnGrid, wide);
+    }
+
+    private void ConfigureWorkflowEvidenceLayout(bool wide)
+    {
+        WorkflowEvidenceGrid.ColumnDefinitions = wide
+            ? new ColumnDefinitionCollection { new(GridLength.Star), new(GridLength.Star) }
+            : new ColumnDefinitionCollection { new(GridLength.Star) };
+        WorkflowEvidenceGrid.RowDefinitions = wide
+            ? new RowDefinitionCollection { new(GridLength.Auto), new(GridLength.Auto) }
+            : new RowDefinitionCollection { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto) };
+
+        Grid.SetRow(HeroSummaryGrid, 0);
+        Grid.SetColumn(HeroSummaryGrid, 0);
+        Grid.SetColumnSpan(HeroSummaryGrid, 1);
+
+        Grid.SetRow(PhotoSection, wide ? 0 : 1);
+        Grid.SetColumn(PhotoSection, wide ? 1 : 0);
+        Grid.SetColumnSpan(PhotoSection, 1);
+
+        foreach (var stepSection in new View[] { DockInSection, StartUnloadingSection })
+        {
+            Grid.SetRow(stepSection, wide ? 1 : 2);
+            Grid.SetColumn(stepSection, 0);
+            Grid.SetColumnSpan(stepSection, wide ? 2 : 1);
+        }
     }
 
     private void ConfigureHeroLayout(bool wide)
@@ -121,9 +153,6 @@ public partial class JobDetailPage : ContentPage
             Grid.SetColumn(HeroMetaChips, 2);
             Grid.SetColumnSpan(HeroMetaChips, 1);
             HeroMetaChips.HorizontalOptions = LayoutOptions.End;
-            Grid.SetRow(HeroSummaryGrid, 1);
-            Grid.SetColumn(HeroSummaryGrid, 0);
-            Grid.SetColumnSpan(HeroSummaryGrid, 3);
             return;
         }
 
@@ -146,9 +175,6 @@ public partial class JobDetailPage : ContentPage
         Grid.SetColumn(HeroMetaChips, 0);
         Grid.SetColumnSpan(HeroMetaChips, 2);
         HeroMetaChips.HorizontalOptions = LayoutOptions.Start;
-        Grid.SetRow(HeroSummaryGrid, 2);
-        Grid.SetColumn(HeroSummaryGrid, 0);
-        Grid.SetColumnSpan(HeroSummaryGrid, 2);
     }
 
     private static void ConfigureSummaryGrid(Grid grid, bool wide)
@@ -779,17 +805,17 @@ public partial class JobDetailPage : ContentPage
 
             var productIcon = new Border
             {
-                WidthRequest = 60,
-                HeightRequest = 60,
+                WidthRequest = 44,
+                HeightRequest = 44,
                 StrokeThickness = 0,
                 BackgroundColor = (Color)Application.Current!.Resources["StatusAvailableTint"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 20 },
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
                 VerticalOptions = LayoutOptions.Center,
                 Content = new Label
                 {
                     Text = IconGlyphs.BoxesStacked,
                     FontFamily = "FaSolid",
-                    FontSize = 20,
+                    FontSize = 16,
                     TextColor = (Color)Application.Current.Resources["Primary"],
                     HorizontalOptions = LayoutOptions.Center,
                     VerticalOptions = LayoutOptions.Center
@@ -798,17 +824,18 @@ public partial class JobDetailPage : ContentPage
 
             var indexBadge = new Border
             {
-                Padding = new Thickness(10, 5),
+                WidthRequest = 34,
+                HeightRequest = 34,
                 StrokeThickness = 0,
-                BackgroundColor = (Color)Application.Current.Resources["CardTint"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                BackgroundColor = Color.FromArgb("#123F3D"),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 9 },
                 HorizontalOptions = LayoutOptions.Start,
                 Content = new Label
                 {
-                    Text = $"Line {lineIndex + 1}",
-                    FontFamily = "PoppinsBold",
+                    Text = $"{lineIndex + 1:00}",
+                    FontFamily = "PoppinsSemiBold",
                     FontSize = 11,
-                    TextColor = (Color)Application.Current.Resources["Primary"],
+                    TextColor = Colors.White,
                     HorizontalOptions = LayoutOptions.Center,
                     VerticalOptions = LayoutOptions.Center
                 }
@@ -816,16 +843,15 @@ public partial class JobDetailPage : ContentPage
 
             var titleColumn = new VerticalStackLayout
             {
-                Spacing = 7,
+                Spacing = 2,
                 VerticalOptions = LayoutOptions.Center,
                 Children =
                 {
-                    indexBadge,
                     new Label
                     {
                         Text = line.ProductName,
                         FontFamily = "PoppinsSemiBold",
-                        FontSize = 17,
+                        FontSize = 15,
                         TextColor = (Color)Application.Current.Resources["TextPrimaryLight"]
                     },
                     new Label
@@ -906,15 +932,18 @@ public partial class JobDetailPage : ContentPage
                 ColumnDefinitions = new ColumnDefinitionCollection
                 {
                     new(GridLength.Auto),
+                    new(GridLength.Auto),
                     new(GridLength.Star),
                     new(GridLength.Auto)
                 },
-                ColumnSpacing = 16
+                ColumnSpacing = 12
             };
             Grid.SetColumn(productIcon, 0);
-            Grid.SetColumn(titleColumn, 1);
-            Grid.SetColumn(headerActions, 2);
+            Grid.SetColumn(indexBadge, 1);
+            Grid.SetColumn(titleColumn, 2);
+            Grid.SetColumn(headerActions, 3);
             titleRow.Children.Add(productIcon);
+            titleRow.Children.Add(indexBadge);
             titleRow.Children.Add(titleColumn);
             titleRow.Children.Add(headerActions);
 
@@ -965,15 +994,6 @@ public partial class JobDetailPage : ContentPage
                 }
             }
 
-            var okPanel = new Border
-            {
-                Stroke = (Color)Application.Current.Resources["CardBorderLight"],
-                StrokeThickness = 1,
-                BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 22 },
-                Padding = new Thickness(16)
-            };
-
             var exceptionsGrid = new Grid
             {
                 ColumnDefinitions = new ColumnDefinitionCollection
@@ -981,10 +1001,10 @@ public partial class JobDetailPage : ContentPage
                     new(GridLength.Star),
                     new(GridLength.Star),
                     new(GridLength.Star),
+                    new(GridLength.Star),
                     new(GridLength.Star)
                 },
-                ColumnSpacing = 12,
-                RowSpacing = 12
+                ColumnSpacing = 8
             };
 
             View BuildConditionCard(string condition, int index)
@@ -1013,8 +1033,8 @@ public partial class JobDetailPage : ContentPage
                     IsEnabled = !readOnly,
                     HorizontalTextAlignment = TextAlignment.Center,
                     FontFamily = "PoppinsBold",
-                    FontSize = condition == "Ok" ? 22 : 18,
-                    HeightRequest = 52,
+                    FontSize = 16,
+                    HeightRequest = 38,
                     TextColor = color
                 };
 
@@ -1023,11 +1043,11 @@ public partial class JobDetailPage : ContentPage
                     StrokeThickness = 1,
                     Stroke = (Color)Application.Current.Resources["CardBorderLight"],
                     BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 18 },
-                    Padding = new Thickness(14, 12),
+                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                    Padding = new Thickness(12, 8),
                     Content = new VerticalStackLayout
                     {
-                        Spacing = 10,
+                        Spacing = 2,
                         Children =
                         {
                             new Grid
@@ -1097,15 +1117,11 @@ public partial class JobDetailPage : ContentPage
                 return card;
             }
 
-            var okCard = BuildConditionCard("Ok", 0);
-            okPanel.Content = okCard;
-
-            var exceptionConditions = Conditions.Where(condition => condition != "Ok").ToArray();
-            for (var i = 0; i < exceptionConditions.Length; i++)
+            for (var i = 0; i < Conditions.Length; i++)
             {
-                var exceptionCard = BuildConditionCard(exceptionConditions[i], i + 1);
-                exceptionCard.SetValue(Microsoft.Maui.Controls.Grid.ColumnProperty, i);
-                exceptionsGrid.Children.Add(exceptionCard);
+                var conditionCard = BuildConditionCard(Conditions[i], i);
+                conditionCard.SetValue(Microsoft.Maui.Controls.Grid.ColumnProperty, i);
+                exceptionsGrid.Children.Add(conditionCard);
             }
 
             RestyleConditionBoxes(row);
@@ -1115,15 +1131,15 @@ public partial class JobDetailPage : ContentPage
             {
                 Stroke = (Color)Application.Current.Resources["CardBorderLight"],
                 StrokeThickness = 1,
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 18 },
-                BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-                Padding = new Thickness(14, 0),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                BackgroundColor = Color.FromArgb("#F8FAFC"),
+                Padding = new Thickness(12, 0),
                 Content = notesEntry
             };
 
             var detailsStack = new VerticalStackLayout
             {
-                Spacing = 14,
+                Spacing = 10,
                 Children =
                 {
                     new Grid
@@ -1137,7 +1153,7 @@ public partial class JobDetailPage : ContentPage
                         {
                             new Label
                             {
-                                Text = "Condition split",
+                                Text = "Received quantity breakdown",
                                 FontFamily = "PoppinsSemiBold",
                                 FontSize = 14,
                                 TextColor = (Color)Application.Current.Resources["TextPrimaryLight"]
@@ -1152,16 +1168,7 @@ public partial class JobDetailPage : ContentPage
                             }
                         }
                     },
-                    new Grid
-                    {
-                        ColumnDefinitions = new ColumnDefinitionCollection
-                        {
-                            new(new GridLength(1.05, GridUnitType.Star)),
-                            new(new GridLength(2.95, GridUnitType.Star))
-                        },
-                        ColumnSpacing = 14,
-                        Children = { okPanel, exceptionsGrid }
-                    },
+                    exceptionsGrid,
                     notesBorder
                 }
             };
@@ -1170,11 +1177,6 @@ public partial class JobDetailPage : ContentPage
             {
                 ((BindableObject)detailsHeader.Children[1]).SetValue(Microsoft.Maui.Controls.Grid.ColumnProperty, 1);
             }
-            if (detailsStack.Children[1] is Grid splitGrid)
-            {
-                ((BindableObject)splitGrid.Children[1]).SetValue(Microsoft.Maui.Controls.Grid.ColumnProperty, 1);
-            }
-
             var headerTap = new TapGestureRecognizer();
             headerTap.Tapped += (_, _) =>
             {
@@ -1185,16 +1187,21 @@ public partial class JobDetailPage : ContentPage
 
             var card = new VerticalStackLayout
             {
-                Spacing = 16,
-                Children = { titleRow, detailsStack }
+                Spacing = 12,
+                Children =
+                {
+                    titleRow,
+                    new BoxView { HeightRequest = 1, Color = Color.FromArgb("#E8EDF3") },
+                    detailsStack
+                }
             };
             InspectionLinesContainer.Children.Add(new Border
             {
-                Stroke = (Color)Application.Current.Resources["CardBorderLight"],
+                Stroke = Color.FromArgb("#E4E9F1"),
                 StrokeThickness = 1,
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 24 },
-                BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-                Padding = new Thickness(18),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 18 },
+                BackgroundColor = Colors.White,
+                Padding = new Thickness(16),
                 Content = card
             });
 

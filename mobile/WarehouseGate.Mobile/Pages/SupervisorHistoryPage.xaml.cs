@@ -201,7 +201,8 @@ public partial class SupervisorHistoryPage : ContentPage
 
         InwardSwitchLabel.TextColor = _showingOutward ? unselectedText : selectedText;
         OutwardSwitchLabel.TextColor = _showingOutward ? selectedText : unselectedText;
-        HistoryModeSwitchThumb.HorizontalOptions = _showingOutward ? LayoutOptions.End : LayoutOptions.Start;
+        InwardHistoryTabPill.BackgroundColor = _showingOutward ? Colors.Transparent : Color.FromArgb("#E9FBF8");
+        OutwardHistoryTabPill.BackgroundColor = _showingOutward ? Color.FromArgb("#E9FBF8") : Colors.Transparent;
         UpdateModeSwitchText();
     }
 
