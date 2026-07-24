@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
+             x:Class="WarehouseGate.Mobile.Controls.AppHeaderView"
+             x:Name="Root">
+
+    <Border Stroke="#E4E9F1" StrokeThickness="1"
+            StrokeShape="RoundRectangle 18"
+            BackgroundColor="#FDFEFE"
+            Padding="18,14">
+        <Border.Shadow>
+            <Shadow Brush="#23344F" Offset="0,6" Radius="18" Opacity="0.05" />
+        </Border.Shadow>
+
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="14">
+            <Border Grid.Column="0" WidthRequest="46" HeightRequest="46"
+                    StrokeShape="RoundRectangle 12" StrokeThickness="0"
+                    BackgroundColor="{StaticResource CardTint}">
+                <Label Text="WG" TextColor="{StaticResource Primary}" FontFamily="PoppinsSemiBold"
+                       FontSize="15" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+
+            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                <Label x:Name="GreetingLabel" FontFamily="PoppinsRegular" FontSize="12"
+                       TextColor="#687387" />
+                <Label x:Name="UserNameLabel" FontFamily="PoppinsSemiBold" FontSize="16"
+                       TextColor="#172033" LineBreakMode="TailTruncation" />
+            </VerticalStackLayout>
+
+            <controls:LiveBadge Grid.Column="2" VerticalOptions="Center" />
+
+            <Grid Grid.Column="3" VerticalOptions="Center">
+                <Border WidthRequest="42" HeightRequest="42" StrokeShape="RoundRectangle 12"
+                        Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
+                        SemanticProperties.Description="Notifications">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnNotificationsIconTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="{x:Static services:IconGlyphs.Bell}" Style="{StaticResource IconLabel}"
+                           FontSize="16" TextColor="#344054" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <Border x:Name="NotificationCountBadge" WidthRequest="20" HeightRequest="20" StrokeShape="RoundRectangle 10"
+                        StrokeThickness="0" BackgroundColor="{StaticResource StatusException}"
+                        HorizontalOptions="End" VerticalOptions="Start" Margin="0,-6,-4,0" IsVisible="False" InputTransparent="True">
+                    <Label x:Name="NotificationCountLabel" FontSize="10" FontFamily="PoppinsBold" TextColor="White"
+                           HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+            </Grid>
+
+            <Border Grid.Column="4" WidthRequest="42" HeightRequest="42" StrokeShape="RoundRectangle 12"
+                    Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
+                    SemanticProperties.Description="Account">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnAccountIconTapped" />
+                </Border.GestureRecognizers>
+                <Label Text="{x:Static services:IconGlyphs.User}" Style="{StaticResource IconLabel}"
+                       FontSize="16" TextColor="#344054" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+        </Grid>
+    </Border>
+</ContentView>

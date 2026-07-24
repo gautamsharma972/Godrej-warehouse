@@ -1,0 +1,266 @@
+@page "/office/inward-jobs/{Id:int}"
+@attribute [Authorize(Roles = "Office")]
+@implements IAsyncDisposable
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject OfficeRealtimeClient Realtime
+
+<PageTitle>Inward Job - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    @if (_job is null)
+    {
+        <div class="admin-table-card">
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading inward job</span></div>
+        </div>
+    }
+    else
+    {
+        <div class="admin-page-header">
+            <div>
+                <p class="admin-eyebrow">Inward Job</p>
+                <h1 class="admin-page-title">@_job.VehicleNumber</h1>
+                <p class="admin-page-subtitle">@_job.PONumber · @_job.SupplierName</p>
+            </div>
+            <div class="admin-page-actions">
+                <span class="admin-count-pill"><i class="bx bx-barcode"></i>@_job.InwardTxnNumber</span>
+                <span class="admin-badge info">@_job.Status</span>
+                @if (_job.Status != "Completed")
+                {
+                    <button class="admin-secondary-btn" type="button" @onclick="OpenAssignDialog">
+                        <i class="bx bx-user-check"></i>
+                        @(_job.AssignedSupervisorUserId is null ? "Assign Supervisor" : "Reassign Supervisor")
+                    </button>
+                }
+            </div>
+        </div>
+
+        <section class="office-detail-grid">
+            <article class="office-detail-card">
+                <div class="office-detail-card-head">
+                    <div>
+                        <p class="logistics-panel-kicker">Job Details</p>
+                        <h2>Movement context</h2>
+                    </div>
+                    <div class="logistics-panel-icon accent"><i class="bx bxs-truck"></i></div>
+                </div>
+                <div class="office-field-grid">
+                    <div><span>Gate-In</span><strong>@_job.GateInTime.ToString("yyyy-MM-dd HH:mm")</strong></div>
+                    <div><span>Gate</span><strong>@ValueOrDash(_job.GateName)</strong></div>
+                    <div><span>Driver</span><strong>@FormatDriver(_job)</strong></div>
+                    <div><span>Transporter</span><strong>@ValueOrDash(_job.TransporterName)</strong></div>
+                    <div><span>Assigned At</span><strong>@(_job.AssignedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong></div>
+                    <div><span>Bay</span><strong>@ValueOrDash(_job.BayName)</strong></div>
+                    <div class="full"><span>Remarks</span><strong>@ValueOrDash(_job.Remarks)</strong></div>
+                </div>
+            </article>
+
+            <article class="office-detail-card">
+                <div class="office-detail-card-head">
+                    <div>
+                        <p class="logistics-panel-kicker">PO Lines</p>
+                        <h2>Expected material</h2>
+                    </div>
+                    <div class="logistics-panel-icon green"><i class="bx bx-package"></i></div>
+                </div>
+                <div class="admin-table-scroll">
+                    <table class="admin-table compact">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Expected Qty</th>
+                                @* Pick List Qty / Loaded Qty columns - reverted (this duplicated/regressed the
+                                   ExpectedQty-shows-loaded-qty behavior fixed earlier; ExpectedQty already
+                                   covers what Office needs to see here). Re-enable by uncommenting these two
+                                   <th>s, the two <td>s below, and FormatQty in @code if ever needed again. *@
+                                @* <th>Pick List Qty</th> *@
+                                @* <th>Loaded Qty</th> *@
+                                <th>Physical Qty</th>
+                                <th>UOM</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var line in _job.Lines)
+                            {
+                                <tr>
+                                    <td>@line.ProductName</td>
+                                    <td>@line.ExpectedQty</td>
+                                    @* <td class="admin-muted">@FormatQty(line.PickListQty)</td> *@
+                                    @* <td class="admin-muted">@FormatQty(line.LoadedQty)</td> *@
+                                    <td>@FormatPhysicalQty(line.Id)</td>
+                                    <td>@line.UnitOfMeasure</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="office-detail-card">
+                <div class="office-detail-card-head">
+                    <div>
+                        <p class="logistics-panel-kicker">Photos</p>
+                        <h2>Captured images</h2>
+                    </div>
+                    <div class="logistics-panel-icon blue"><i class="bx bx-image"></i></div>
+                </div>
+                @if (_job.Photos.Count == 0)
+                {
+                    <div class="office-empty-inline">No photos captured.</div>
+                }
+                else
+                {
+                    <div class="office-photo-grid">
+                        @foreach (var photo in _job.Photos)
+                        {
+                            <a href="@($"/file-proxy/{photo.FilePath}")" target="_blank" class="office-photo-card">
+                                <img src="@($"/file-proxy/{photo.FilePath}")" alt="@photo.Type" />
+                                <span>@photo.Type</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </article>
+
+            <article class="office-detail-card">
+                <div class="office-detail-card-head">
+                    <div>
+                        <p class="logistics-panel-kicker">Documents</p>
+                        <h2>Uploaded files</h2>
+                    </div>
+                    <div class="logistics-panel-icon orange"><i class="bx bx-file"></i></div>
+                </div>
+                @if (_job.Documents.Count == 0)
+                {
+                    <div class="office-empty-inline">No documents uploaded.</div>
+                }
+                else
+                {
+                    <div class="office-document-list">
+                        @foreach (var doc in _job.Documents)
+                        {
+                            <a href="@($"/file-proxy/{doc.FilePath}")" target="_blank"><i class="bx bx-file"></i><span>@doc.Type</span><i class="bx bx-link-external"></i></a>
+                        }
+                    </div>
+                }
+            </article>
+        </section>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private InwardJobDto? _job;
+    private List<SupervisorOptionDto> _supervisors = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Realtime.InwardJobChanged += OnInwardJobChanged;
+        await LoadAsync();
+    }
+
+    // See InwardJobs.razor's identical OnAfterRenderAsync for why StartAsync moved here -
+    // OnInitializedAsync also runs during Blazor's prerender pass (throwaway DI scope, no real
+    // circuit yet), and opening a real SignalR connection there was destabilizing the actual
+    // circuit once it connected for real.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Realtime.StartAsync();
+        }
+    }
+
+    private void OnInwardJobChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    public ValueTask DisposeAsync()
+    {
+        Realtime.InwardJobChanged -= OnInwardJobChanged;
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _job = await Api.GetAsync<InwardJobDto>($"api/office/inward-jobs/{Id}");
+            _supervisors = await Api.GetAsync<List<SupervisorOptionDto>>("api/office/supervisors");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OpenAssignDialog()
+    {
+        if (_job is null)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<AssignSupervisorDialog>
+        {
+            { d => d.SupervisorUserId, _job.AssignedSupervisorUserId },
+            { d => d.Supervisors, _supervisors }
+        };
+        var dialog = await DialogService.ShowAsync<AssignSupervisorDialog>($"Assign Supervisor - {_job.VehicleNumber}", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not string supervisorUserId)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.PostAsync<InwardJobDto>($"api/office/inward-jobs/{Id}/assign", new AssignSupervisorRequest(supervisorUserId));
+            Snackbar.Add("Supervisor assigned.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private static string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+
+    // Pairs with the commented-out Pick List Qty / Loaded Qty columns above - kept for a quick
+    // re-enable rather than deleted outright.
+    // private static string FormatQty(decimal? value) => value?.ToString("0.##") ?? "-";
+
+    // Physical Qty is what actually arrived on the truck for this line - one InspectionLine row
+    // per condition bucket (Ok/Damaged/Short/Excess/Mismatch). Ok/Damaged/Mismatch/Excess cartons
+    // were all physically present (just in varying condition or, for Excess, genuinely more than
+    // expected); Short is the opposite - it's the shortfall that never arrived at all, mirroring
+    // how the mobile inspection screen computes it (JobDetailPage.xaml.cs's RecomputeOkFromExceptions:
+    // Ok = Expected - Damaged - Short - Mismatch). Summing Short in here would silently cancel out
+    // the very shortage this column exists to surface. "-" until inspection has been submitted.
+    private string FormatPhysicalQty(int purchaseOrderLineId)
+    {
+        var allLines = _job?.InspectionLines.Where(l => l.PurchaseOrderLineId == purchaseOrderLineId).ToList();
+        if (allLines is null || allLines.Count == 0)
+        {
+            return "-"; // Not inspected yet - distinct from a legitimate 0 (fully short-received).
+        }
+
+        return allLines.Where(l => l.Condition != "Short").Sum(l => l.ReceivedQty).ToString("0.##");
+    }
+
+    private static string FormatDriver(InwardJobDto job)
+    {
+        if (string.IsNullOrWhiteSpace(job.DriverName) && string.IsNullOrWhiteSpace(job.DriverMobile))
+        {
+            return "-";
+        }
+
+        return string.IsNullOrWhiteSpace(job.DriverMobile) ? job.DriverName! : $"{job.DriverName} ({job.DriverMobile})";
+    }
+}

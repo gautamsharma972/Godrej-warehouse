@@ -1,0 +1,84 @@
+using System.ComponentModel.DataAnnotations;
+using WarehouseGate.Domain;
+
+namespace WarehouseGate.Api.Dtos;
+
+public record GateCheckInRequest(
+    [Required, StringLength(20, MinimumLength = 1)] string VehicleNumber,
+    [Required, StringLength(30, MinimumLength = 1)] string InwardTxnNumber,
+    [Required, StringLength(30, MinimumLength = 1)] string PONumber,
+    string? DriverName,
+    string? DriverMobile,
+    string? TransporterName,
+    string? GateName,
+    double? GpsLatitude,
+    double? GpsLongitude,
+    string? Remarks);
+
+public record DockInRequest(string BayName);
+
+public record VehicleMasterDto(string VehicleNumber, string? DriverName, string? DriverMobile, string? TransporterName, string? DispatchOrderNumber);
+
+public record InspectionLineRequest(int PurchaseOrderLineId, decimal ReceivedQty, MaterialCondition Condition, string? Notes);
+
+public record SubmitInspectionRequest(List<InspectionLineRequest> Lines);
+
+// PickListQty/LoadedQty are only populated for a Dispatch-Plan-synthesized line whose Outward
+// side has reached that stage - see InwardService.ResolveDispatchQuantitiesAsync.
+public record PoLineDto(int Id, string ProductName, decimal ExpectedQty, decimal? PickListQty, decimal? LoadedQty, string UnitOfMeasure);
+
+public record PhotoDto(int Id, string Type, string FilePath, DateTime CapturedAt);
+
+public record DocumentDto(int Id, string Type, string FilePath, DateTime UploadedAt);
+
+public record InspectionLineDto(int Id, int PurchaseOrderLineId, string ProductName, decimal ExpectedQty, decimal ReceivedQty, string Condition, string? Notes);
+
+public record GrnDto(string GrnNumber, DateTime GeneratedAt, bool HasExceptions);
+
+public record InwardJobDto(
+    int Id,
+    string VehicleNumber,
+    string InwardTxnNumber,
+    string PONumber,
+    string SupplierName,
+    string Status,
+    DateTime GateInTime,
+    string? DriverName,
+    string? DriverMobile,
+    string? TransporterName,
+    string? GateName,
+    double? GpsLatitude,
+    double? GpsLongitude,
+    bool IsNewVehicle,
+    bool HasDeliveryDateMismatch,
+    string? AssignedSupervisorUserId,
+    DateTime? AssignedTime,
+    string? BayName,
+    DateTime? DockInTime,
+    DateTime? UnloadingStartTime,
+    DateTime? DockOutTime,
+    List<PoLineDto> Lines,
+    List<PhotoDto> Photos,
+    List<DocumentDto> Documents,
+    List<InspectionLineDto> InspectionLines,
+    GrnDto? Grn,
+    string? Remarks,
+    DateTime? GateOutTime,
+    string? GatePassToken);
+
+// Read-only cross-reference: when this shipment was actually dispatched through our own Outward
+// flow (at the origin warehouse), lets the receiving Supervisor see that original 3D loading
+// arrangement here at check-in time as a cross-check against what's physically arriving.
+// Exists is false whenever no such Outward job can be found - most inward jobs (goods arriving
+// from an external supplier, or dispatched before this feature existed) simply won't have one.
+public record InwardOutwardReferenceDto(
+    bool Exists,
+    int? OutwardTransactionId,
+    string? DispatchOrderNumber,
+    string? CustomerName,
+    string? VehicleNumber,
+    double? VehicleWidthCm,
+    double? VehicleLengthCm,
+    double? VehicleHeightCm,
+    double? VehicleMaxWeightKg,
+    List<LoadPlanGroupDto> Groups);

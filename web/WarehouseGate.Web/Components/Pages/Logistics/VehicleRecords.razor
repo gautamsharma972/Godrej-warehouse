@@ -1,0 +1,476 @@
+@page "/logistics/vehicle-records"
+@attribute [Authorize(Roles = "LogisticsManager")]
+@implements IAsyncDisposable
+@using Microsoft.AspNetCore.Components.Forms
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject LogisticsRealtimeClient Realtime
+
+<PageTitle>Dispatch Plan - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Logistics</p>
+            <h1 class="admin-page-title">Dispatch Plan</h1>
+            <p class="admin-page-subtitle">Manage vehicle dispatch records, shipment details, ETA, warehouse assignment, and current movement status.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bx-package"></i>@FilteredRecords.Count Dispatches</span>
+            <a class="admin-secondary-btn" href="/templates/dispatch-plan-sample.xlsx" download>
+                <i class="bx bx-download"></i>
+                Sample Excel
+            </a>
+            <label class="admin-secondary-btn" for="dispatchUpload">
+                <i class="bx bx-upload"></i>
+                @(_uploading ? "Uploading..." : "Upload Excel")
+            </label>
+            <InputFile id="dispatchUpload" class="logistics-file-input" OnChange="OnFileSelectedAsync" accept=".xlsx" disabled="@_uploading" />
+            <button class="admin-primary-btn" type="button" @onclick="() => OpenGroupEditor(null)" disabled="@(_warehouses is null || _warehouses.Count == 0)">
+                <i class="bx bx-plus"></i>
+                Add Record
+            </button>
+        </div>
+    </div>
+
+    @if (_records is null)
+    {
+        <div class="admin-table-card">
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading dispatch plan</span></div>
+        </div>
+    }
+    else
+    {
+        <section class="logistics-filter-card" aria-label="Dispatch filters">
+            <div class="logistics-filter-grid">
+                <div class="admin-form-field">
+                    <label for="vehicleSearch">Vehicle Search</label>
+                    <input id="vehicleSearch" class="admin-form-control" placeholder="Search vehicle number" @bind="_vehicleSearch" @bind:event="oninput" />
+                </div>
+                <div class="admin-form-field">
+                    <label for="fromDate">Created From</label>
+                    <input id="fromDate" type="date" class="admin-form-control" @bind="_fromDate" />
+                </div>
+                <div class="admin-form-field">
+                    <label for="toDate">Created To</label>
+                    <input id="toDate" type="date" class="admin-form-control" @bind="_toDate" />
+                </div>
+                <div class="admin-form-field">
+                    <label for="statusFilter">Status</label>
+                    <select id="statusFilter" class="admin-form-select" @bind="_statusFilter">
+                        <option value="All">All statuses</option>
+                        <option value="InTransit">In-Transit</option>
+                        <option value="InProgress">In Progress</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Deleted">Deleted</option>
+                    </select>
+                </div>
+                <button class="admin-secondary-btn" type="button" @onclick="ClearFilters"><i class="bx bx-filter-x"></i>Clear</button>
+            </div>
+        </section>
+
+        @if (FilteredRecords.Count == 0)
+        {
+            <div class="admin-table-card">
+                <div class="admin-empty"><i class="bx bx-package"></i><span>No dispatch records match the current filters.</span></div>
+            </div>
+        }
+        else
+        {
+            <div class="dispatch-accordion-list">
+                @foreach (var group in VehicleGroups)
+                {
+                    var first = group.First();
+                    var groupedStatus = GroupedStatus(group);
+                    <details class="dispatch-card">
+                        <summary>
+                            <div class="dispatch-card-summary">
+                                <div class="dispatch-card-vehicle">
+                                    <span class="admin-row-icon"><i class="bx bxs-truck"></i></span>
+                                    <div>
+                                        <span>Vehicle</span>
+                                        <strong>@group.Key</strong>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span>Route</span>
+                                    <strong>@GroupedRoute(group)</strong>
+                                </div>
+                                <div>
+                                    <span>SKUs</span>
+                                    <strong>@group.Count() line@(group.Count() == 1 ? "" : "s")</strong>
+                                    <em>@group.Sum(r => r.BoxQuantity) boxes</em>
+                                </div>
+                                <div>
+                                    <span>ETA</span>
+                                    <strong>@GroupedEta(group)</strong>
+                                </div>
+                                <div>
+                                    <span>Status</span>
+                                    <strong><span class="@groupedStatus.BadgeClass">@groupedStatus.Label</span></strong>
+                                </div>
+                                <div class="dispatch-card-actions">
+                                    <button class="admin-icon-btn edit" type="button" title="Edit" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => OpenGroupEditor(group)"><i class="bx bx-edit"></i></button>
+                                    <button class="admin-icon-btn delete" type="button" title="Delete" disabled="@(group.All(r => r.Status == "Deleted"))" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => DeleteGroupAsync(group)"><i class="bx bx-trash"></i></button>
+                                </div>
+                                <div class="dispatch-card-toggle">
+                                    <i class="bx bx-chevron-down"></i>
+                                </div>
+                            </div>
+                        </summary>
+
+                        <div class="dispatch-card-body">
+                            <div><span>Inward Txn</span><strong>@ValueOrDash(first.InwardTransactionId)</strong></div>
+                            <div><span>Transporter</span><strong>@ValueOrDash(first.TransporterName)</strong></div>
+                            <div><span>Driver</span><strong>@ValueOrDash(first.DriverName)</strong></div>
+                            <div><span>Driver Phone</span><strong>@ValueOrDash(first.DriverPhone)</strong></div>
+                            <div><span>Vehicle Type</span><strong>@ValueOrDash(first.VehicleType)</strong></div>
+                            <div><span>From Warehouse</span><strong>@first.FromWarehouseName</strong></div>
+                            <div><span>To Warehouse</span><strong>@first.ToWarehouseName</strong></div>
+                            <div><span>Departure</span><strong>@(first.DepartureDate?.ToString("yyyy-MM-dd") ?? "-")</strong></div>
+                            <div><span>Created On</span><strong>@first.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</strong></div>
+
+                            <div class="dispatch-sku-table-wrap">
+                                <span>SKU Details</span>
+                                <div class="admin-table-scroll">
+                                    <table class="admin-table compact">
+                                        <thead>
+                                            <tr>
+                                                <th>SKU</th>
+                                                <th>SKU Code</th>
+                                                <th>PO</th>
+                                                <th>Boxes</th>
+                                                <th>ETA</th>
+                                                <th>Status</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var record in group)
+                                            {
+                                                <tr>
+                                                    <td>@record.Sku</td>
+                                                    <td class="admin-muted">@ValueOrDash(record.SkuCode)</td>
+                                                    <td>@ValueOrDash(record.PoNumber)</td>
+                                                    <td>@record.BoxQuantity</td>
+                                                    <td>@(record.EtaDateTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                                    <td><span class="@StatusBadgeClass(record.Status)">@StatusLabel(record.Status)</span></td>
+                                                    <td class="admin-actions-cell">
+                                                        <button class="admin-icon-btn delete" type="button" title="Delete" disabled="@(record.Status == "Deleted")" @onclick="() => DeleteAsync(record)"><i class="bx bx-trash"></i></button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                }
+            </div>
+        }
+    }
+</section>
+
+@code {
+    private List<VehicleLogisticsRecordDto>? _records;
+    private List<WarehouseDto>? _warehouses;
+    private bool _uploading;
+
+    private string _vehicleSearch = string.Empty;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+    private string _statusFilter = "All";
+
+    private List<VehicleLogisticsRecordDto> FilteredRecords => _records?.Where(MatchesFilters).ToList() ?? [];
+
+    private List<IGrouping<string, VehicleLogisticsRecordDto>> VehicleGroups =>
+        FilteredRecords
+            .GroupBy(r => r.VehicleNumber)
+            .OrderByDescending(g => g.Max(r => r.CreatedAtUtc))
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Realtime.VehicleLogisticsRecordChanged += OnVehicleLogisticsRecordChanged;
+        await LoadAsync();
+    }
+
+    // OnInitializedAsync also runs during Blazor's prerender pass (before a real interactive
+    // circuit exists, in a throwaway DI scope) - opening a real SignalR connection there was
+    // destabilizing the actual circuit once it connected for real, so it's deferred to here.
+    // See InwardJobs.razor's identical OnAfterRenderAsync for the fuller explanation.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Realtime.StartAsync();
+        }
+    }
+
+    private void OnVehicleLogisticsRecordChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    // Unsubscribe only - Realtime is a scoped (per-circuit) service, its connection must stay
+    // open for the circuit's lifetime; disposing it here would break it the moment this page
+    // unmounts (there's only one Logistics page today, but this keeps the pattern consistent).
+    public ValueTask DisposeAsync()
+    {
+        Realtime.VehicleLogisticsRecordChanged -= OnVehicleLogisticsRecordChanged;
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _warehouses = await Api.GetAsync<List<WarehouseDto>>("api/logistics/warehouses");
+            _records = await Api.GetAsync<List<VehicleLogisticsRecordDto>>("api/logistics/vehicle-records");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private bool MatchesFilters(VehicleLogisticsRecordDto record)
+    {
+        if (!string.IsNullOrWhiteSpace(_vehicleSearch) &&
+            !record.VehicleNumber.Contains(_vehicleSearch, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (_statusFilter != "All" && record.Status != _statusFilter)
+        {
+            return false;
+        }
+
+        var createdLocal = record.CreatedAtUtc.ToLocalTime().Date;
+        if (_fromDate is not null && createdLocal < _fromDate.Value.Date)
+        {
+            return false;
+        }
+
+        if (_toDate is not null && createdLocal > _toDate.Value.Date)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ClearFilters()
+    {
+        _vehicleSearch = string.Empty;
+        _fromDate = null;
+        _toDate = null;
+        _statusFilter = "All";
+    }
+
+    private static string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+
+    private static string GroupedRoute(IGrouping<string, VehicleLogisticsRecordDto> group)
+    {
+        var distinct = group.Select(r => $"{r.FromWarehouseName} → {r.ToWarehouseName}").Distinct().ToList();
+        return distinct.Count == 1 ? distinct[0] : "Multiple";
+    }
+
+    private static string GroupedEta(IGrouping<string, VehicleLogisticsRecordDto> group)
+    {
+        var distinct = group.Select(r => r.EtaDateTime?.ToString("yyyy-MM-dd HH:mm") ?? "-").Distinct().ToList();
+        return distinct.Count == 1 ? distinct[0] : "Multiple";
+    }
+
+    private static (string Label, string BadgeClass) GroupedStatus(IGrouping<string, VehicleLogisticsRecordDto> group)
+    {
+        var distinct = group.Select(r => r.Status).Distinct().ToList();
+        return distinct.Count == 1
+            ? (StatusLabel(distinct[0]), StatusBadgeClass(distinct[0]))
+            : ("Mixed", "admin-badge neutral");
+    }
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "InTransit" => "In-Transit",
+        "InProgress" => "In Progress",
+        _ => status
+    };
+
+    private static string StatusBadgeClass(string status) => status switch
+    {
+        "InTransit" => "admin-badge info",
+        "InProgress" => "admin-badge warning",
+        "Completed" => "admin-badge success",
+        "Inactive" => "admin-badge warning",
+        "Deleted" => "admin-badge danger",
+        _ => "admin-badge neutral"
+    };
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs args)
+    {
+        await OnFileSelectedAsync(args.File);
+    }
+
+    private async Task OnFileSelectedAsync(IBrowserFile? file)
+    {
+        if (file is null)
+        {
+            return;
+        }
+
+        _uploading = true;
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            await using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+            using var streamContent = new StreamContent(stream);
+            content.Add(streamContent, "file", file.Name);
+
+            var result = await Api.PostFormAsync<VehicleLogisticsUploadResultDto>("api/logistics/vehicle-records/upload", content);
+
+            if (result.Errors.Count == 0)
+            {
+                Snackbar.Add($"Imported {result.ImportedCount} record(s).", Severity.Success);
+            }
+            else
+            {
+                var message = $"Imported {result.ImportedCount} record(s). {result.Errors.Count} row(s) skipped: " +
+                    string.Join("; ", result.Errors.Select(e => $"row {e.RowNumber}: {e.Reason}"));
+                Snackbar.Add(message, Severity.Warning, config => config.VisibleStateDuration = 10000);
+            }
+
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    private async Task OpenGroupEditor(IGrouping<string, VehicleLogisticsRecordDto>? group)
+    {
+        var isNew = group is null;
+        var first = group?.FirstOrDefault();
+
+        var parameters = new DialogParameters<VehicleGroupEditorDialog>
+        {
+            { d => d.IsNew, isNew },
+            { d => d.VehicleNumber, group?.Key ?? string.Empty },
+            { d => d.InwardTransactionId, first?.InwardTransactionId },
+            { d => d.TransporterName, first?.TransporterName },
+            { d => d.DriverName, first?.DriverName },
+            { d => d.DriverPhone, first?.DriverPhone },
+            { d => d.VehicleType, first?.VehicleType },
+            { d => d.DepartureDate, first?.DepartureDate },
+            { d => d.FromWarehouseId, first?.FromWarehouseId ?? 0 },
+            { d => d.ToWarehouseId, first?.ToWarehouseId ?? 0 },
+            { d => d.Warehouses, _warehouses! },
+            { d => d.InitialRows, group?.Select(r => new VehicleSkuRowModel
+                {
+                    Id = r.Id,
+                    Sku = r.Sku,
+                    SkuCode = r.SkuCode,
+                    PoNumber = r.PoNumber,
+                    BoxQuantity = r.BoxQuantity,
+                    EtaDateTime = r.EtaDateTime,
+                    Status = r.Status
+                }).ToList() ?? new() }
+        };
+        var dialog = await DialogService.ShowAsync<VehicleGroupEditorDialog>(isNew ? "Add Vehicle Dispatch" : "Edit Vehicle Dispatch", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not VehicleGroupSaveResult save)
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var removedId in save.RemovedRecordIds)
+            {
+                await Api.DeleteAsync($"api/logistics/vehicle-records/{removedId}");
+            }
+
+            foreach (var row in save.Rows)
+            {
+                var request = new UpsertVehicleLogisticsRecordRequest(
+                    save.VehicleNumber, row.PoNumber, save.InwardTransactionId, save.TransporterName,
+                    save.DriverName, save.DriverPhone, save.VehicleType, row.Sku, row.SkuCode, row.BoxQuantity,
+                    save.DepartureDate, row.EtaDateTime, save.FromWarehouseId, save.ToWarehouseId,
+                    row.Id.HasValue ? row.Status : null);
+
+                if (row.Id is int id)
+                {
+                    await Api.PutAsync<VehicleLogisticsRecordDto>($"api/logistics/vehicle-records/{id}", request);
+                }
+                else
+                {
+                    await Api.PostAsync<VehicleLogisticsRecordDto>("api/logistics/vehicle-records", request);
+                }
+            }
+
+            Snackbar.Add("Saved.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task DeleteGroupAsync(IGrouping<string, VehicleLogisticsRecordDto> group)
+    {
+        var activeRecords = group.Where(r => r.Status != "Deleted").ToList();
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete vehicle dispatch",
+            $"Delete all {activeRecords.Count} SKU line(s) for vehicle '{group.Key}'?",
+            yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var record in activeRecords)
+            {
+                await Api.DeleteAsync($"api/logistics/vehicle-records/{record.Id}");
+            }
+            Snackbar.Add("Deleted.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(VehicleLogisticsRecordDto record)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Delete SKU line", $"Delete '{record.Sku}' from vehicle '{record.VehicleNumber}'?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.DeleteAsync($"api/logistics/vehicle-records/{record.Id}");
+            Snackbar.Add("Deleted.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

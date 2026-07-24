@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WarehouseGate.Mobile.Controls.LiveBadge"
+             x:Name="Root">
+
+    <Border x:Name="Badge" Padding="13,8" Stroke="#CFEEDE" StrokeThickness="1"
+            StrokeShape="RoundRectangle 18"
+            VerticalOptions="Center" BackgroundColor="#F4FCF8">
+        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+            <Ellipse x:Name="LiveDot" WidthRequest="7" HeightRequest="7" VerticalOptions="Center"
+                     Fill="{StaticResource StatusSuccess}" />
+            <Label x:Name="LiveStatusLabel" Text="Live" FontSize="12" FontFamily="PoppinsRegular"
+                   TextColor="{StaticResource StatusSuccess}" VerticalOptions="Center" />
+        </HorizontalStackLayout>
+    </Border>
+</ContentView>

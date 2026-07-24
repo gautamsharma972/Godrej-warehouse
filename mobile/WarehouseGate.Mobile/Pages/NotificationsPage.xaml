@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
+             x:Class="WarehouseGate.Mobile.Pages.NotificationsPage"
+             Title="Notifications"
+             Shell.BackButtonBehavior="{x:Null}"
+             Shell.TabBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto">
+        <RefreshView Grid.Row="0" x:Name="RefreshViewControl" Refreshing="OnRefreshing">
+            <ScrollView>
+                <VerticalStackLayout Padding="32,28,32,32" Spacing="18">
+
+                    <controls:AppHeaderView x:Name="HeaderView" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18" Margin="0,10,0,2">
+                        <VerticalStackLayout Grid.Column="0" Spacing="6" VerticalOptions="Center">
+                            <Label Text="OPERATIONS SIGNALS" TextColor="{StaticResource Primary}"
+                                   FontSize="11" CharacterSpacing="1.2" FontFamily="PoppinsRegular" />
+                            <Label Text="Notifications" TextColor="#172033"
+                                   FontSize="30" FontFamily="PoppinsSemiBold" />
+                            <Label Text="Live alerts from gate activity, dock work, and job updates."
+                                   TextColor="#687387" FontSize="13" />
+                        </VerticalStackLayout>
+                        <Button x:Name="ClearButton" Grid.Column="1" Text="Clear" Clicked="OnClearClicked" IsVisible="False"
+                                Style="{StaticResource ChipButton}" BackgroundColor="White"
+                                TextColor="{StaticResource Primary}" FontSize="13"
+                                Padding="14,0" HeightRequest="42" MinimumHeightRequest="42"
+                                WidthRequest="78" MinimumWidthRequest="72"
+                                HorizontalOptions="End" VerticalOptions="Start" />
+                    </Grid>
+
+                    <VerticalStackLayout x:Name="NotificationContainer" Spacing="10" />
+
+                </VerticalStackLayout>
+            </ScrollView>
+        </RefreshView>
+
+        <!-- Transient live-update banner, overlaid on top of the scroll content -->
+        <Border Grid.Row="0" x:Name="LiveBanner" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="16,12"
+                Padding="14,10" StrokeThickness="0" BackgroundColor="{StaticResource Primary}" StrokeShape="RoundRectangle 14">
+            <Label x:Name="LiveBannerLabel" TextColor="{StaticResource PrimaryDarkText}" FontFamily="PoppinsSemiBold"
+                   FontSize="13" HorizontalOptions="Center" />
+        </Border>
+
+        <controls:SecurityBottomNavBar x:Name="SecurityNavBar" Grid.Row="1" ActiveTab="Dashboard" IsVisible="False" />
+        <controls:SupervisorBottomNavBar x:Name="SupervisorNavBar" Grid.Row="1" IsVisible="False" />
+    </Grid>
+</ContentPage>

@@ -1,0 +1,61 @@
+<MudDialog>
+    <DialogContent>
+    <div class="admin-drawer">
+        <div class="admin-drawer-header">
+            <div><h2 class="admin-drawer-title">Vehicle Profile</h2><p class="admin-drawer-subtitle">Set the vehicle type, category, and loading capacity.</p></div>
+            <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+        </div>
+        <div class="admin-drawer-body">
+            <div class="admin-form-grid">
+                <div class="admin-form-field">
+                    <label>Vehicle Type</label>
+                    <select class="admin-form-control" @bind="VehicleTypeId">
+                        <option value="0">Select type</option>
+                        @foreach (var type in VehicleTypes)
+                        {
+                            <option value="@type.Id">@type.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="admin-form-field">
+                    <label>Vehicle Category</label>
+                    <select class="admin-form-control" @bind="VehicleCategoryId">
+                        <option value="0">Select category</option>
+                        @foreach (var category in VehicleCategories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="admin-form-field"><label>Max Weight (kg)</label><input class="admin-form-control" type="number" step="0.01" @bind="MaxWeightKg" /></div>
+                <div class="admin-form-field"><label>Length (cm)</label><input class="admin-form-control" type="number" step="0.01" @bind="LengthCm" /></div>
+                <div class="admin-form-field"><label>Width (cm)</label><input class="admin-form-control" type="number" step="0.01" @bind="WidthCm" /></div>
+                <div class="admin-form-field"><label>Height (cm)</label><input class="admin-form-control" type="number" step="0.01" @bind="HeightCm" /></div>
+            </div>
+        </div>
+        <div class="admin-drawer-actions">
+            <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+            <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(VehicleTypeId == 0 || VehicleCategoryId == 0)">Save</button>
+        </div>
+    </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public int VehicleTypeId { get; set; }
+    [Parameter] public int VehicleCategoryId { get; set; }
+    [Parameter] public List<VehicleTypeDto> VehicleTypes { get; set; } = [];
+    [Parameter] public List<VehicleCategoryDto> VehicleCategories { get; set; } = [];
+    [Parameter] public decimal? MaxWeightKg { get; set; }
+    [Parameter] public decimal? LengthCm { get; set; }
+    [Parameter] public decimal? WidthCm { get; set; }
+    [Parameter] public decimal? HeightCm { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(new UpsertVehicleMasterRequest(
+        VehicleTypeId, VehicleCategoryId, MaxWeightKg, LengthCm, WidthCm, HeightCm)));
+
+    private void Cancel() => MudDialog.Cancel();
+}

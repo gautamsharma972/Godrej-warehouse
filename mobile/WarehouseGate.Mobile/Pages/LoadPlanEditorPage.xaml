@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             x:Class="WarehouseGate.Mobile.Pages.LoadPlanEditorPage"
+             Title="Plan &amp; Load (3D)"
+             Shell.BackButtonBehavior="{x:Null}"
+             Shell.TabBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled">
+
+    <Grid x:Name="PageDrawer" RowDefinitions="Auto,*,Auto" BackgroundColor="{StaticResource SurfaceLight}">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Padding="28,22,28,14" ColumnSpacing="18">
+            <controls:BackHeaderView x:Name="PageHeaderView" Grid.Column="0" Title="Back to jobs" />
+            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                <Border Padding="10,5" StrokeThickness="0" BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 12">
+                    <HorizontalStackLayout Spacing="6">
+                        <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource StatusSuccess}" VerticalOptions="Center" />
+                        <Label Text="Valid" FontSize="11" FontFamily="PoppinsSemiBold" TextColor="{StaticResource StatusSuccess}" />
+                    </HorizontalStackLayout>
+                </Border>
+                <Border Padding="10,5" StrokeThickness="0" BackgroundColor="{StaticResource StatusAssignedTint}" StrokeShape="RoundRectangle 12">
+                    <HorizontalStackLayout Spacing="6">
+                        <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource StatusAssigned}" VerticalOptions="Center" />
+                        <Label Text="Warning" FontSize="11" FontFamily="PoppinsSemiBold" TextColor="{StaticResource StatusAssigned}" />
+                    </HorizontalStackLayout>
+                </Border>
+            </HorizontalStackLayout>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="18" Padding="28,0,28,18">
+            <Border Grid.Column="0" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 24" BackgroundColor="{StaticResource CardLight}" Padding="0">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="14" Padding="18,16">
+                        <VerticalStackLayout Grid.Column="0" Spacing="3">
+                            <Label Text="Load plan workspace" Style="{StaticResource SectionTitleLabel}" FontSize="18" />
+                            <Label x:Name="ViewportHintLabel" Text="Place cartons, compare arrangements, and validate balance before loading."
+                                   FontSize="12" TextColor="{StaticResource TextSecondaryLight}" />
+                        </VerticalStackLayout>
+
+                        <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 18"
+                                Padding="5" VerticalOptions="Center">
+                            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6" WidthRequest="520">
+                                <Button Grid.Column="0" x:Name="ViewMode3DButton" Text="3D" Clicked="OnViewMode3DClicked"
+                                        Style="{StaticResource ChipButton}" FontSize="12" Padding="4,7" MinimumWidthRequest="0" MinimumHeightRequest="34" />
+                                <Button Grid.Column="1" x:Name="ViewModeTopButton" Text="Top" Clicked="OnViewModeTopClicked"
+                                        Style="{StaticResource ChipButton}" FontSize="12" Padding="4,7" MinimumWidthRequest="0" MinimumHeightRequest="34" />
+                                <Button Grid.Column="2" x:Name="ViewModeSideButton" Text="Left" Clicked="OnViewModeSideClicked"
+                                        Style="{StaticResource ChipButton}" FontSize="12" Padding="4,7" MinimumWidthRequest="0" MinimumHeightRequest="34" />
+                                <Button Grid.Column="3" x:Name="ViewModeSideRightButton" Text="Right" Clicked="OnViewModeSideRightClicked"
+                                        Style="{StaticResource ChipButton}" FontSize="12" Padding="4,7" MinimumWidthRequest="0" MinimumHeightRequest="34" />
+                                <Button Grid.Column="4" x:Name="ViewModeLayerButton" Text="Layer" Clicked="OnViewModeLayerClicked"
+                                        Style="{StaticResource ChipButton}" FontSize="12" Padding="4,7" MinimumWidthRequest="0" MinimumHeightRequest="34" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <Border Grid.Row="1" StrokeThickness="0" StrokeShape="RoundRectangle 22"
+                            BackgroundColor="{StaticResource SurfaceLight}" Margin="14,0,14,14" Padding="10">
+                        <HybridWebView x:Name="LoadVizWebView" HybridRoot="loadviz" DefaultFile="index.html" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <ScrollView x:Name="CenterScrollView" Grid.Column="1" VerticalScrollBarVisibility="Never">
+                <VerticalStackLayout x:Name="CenterColumn" Spacing="14">
+                    <Grid x:Name="MainGrid" IsVisible="False" />
+
+                    <VerticalStackLayout x:Name="PlacementPanel" Spacing="12" IsVisible="False">
+                        <Border x:Name="PlacementCardBorder" Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
+                            <VerticalStackLayout Spacing="13">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource CardTint}">
+                                        <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
+                                               FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <Label x:Name="PlacementSkuLabel" Style="{StaticResource CardTitleLabel}" FontSize="15" />
+                                        <Label Text="Tune group placement" Style="{StaticResource MetaLabel}" />
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="2" Text="Cancel" Clicked="OnCancelPlacementClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                </Grid>
+
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                    <Button Grid.Column="0" Text="-" FontFamily="FaSolid" WidthRequest="40" HeightRequest="40"
+                                            Clicked="OnPlacementQtyMinusClicked" Style="{StaticResource ChipButton}" />
+                                    <Entry Grid.Column="1" x:Name="PlacementQtyEntry" Keyboard="Numeric" HorizontalTextAlignment="Center"
+                                           Placeholder="Quantity" TextChanged="OnPlacementFieldChanged" />
+                                    <Button Grid.Column="2" Text="+" FontFamily="FaSolid" WidthRequest="40" HeightRequest="40"
+                                            Clicked="OnPlacementQtyPlusClicked" Style="{StaticResource ChipButton}" />
+                                </Grid>
+
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="Section" FontFamily="PoppinsSemiBold" FontSize="13" />
+                                    <Border Padding="4" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 16">
+                                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="4" ColumnSpacing="4">
+                                            <Button Grid.Row="0" Grid.Column="0" x:Name="ZoneFrontLeftButton" Text="Front-Left"
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                            <Button Grid.Row="0" Grid.Column="1" x:Name="ZoneFrontRightButton" Text="Front-Right"
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                            <Button Grid.Row="1" Grid.Column="0" x:Name="ZoneMiddleLeftButton" Text="Middle-Left"
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                            <Button Grid.Row="1" Grid.Column="1" x:Name="ZoneMiddleRightButton" Text="Middle-Right"
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                            <Button Grid.Row="2" Grid.Column="0" x:Name="ZoneBackLeftButton" Text="Back-Left"
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                            <Button Grid.Row="2" Grid.Column="1" x:Name="ZoneBackRightButton" Text="Back-Right"
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                        </Grid>
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <Label x:Name="PlacementSummaryLabel" Style="{StaticResource MetaLabel}" />
+                                <VerticalStackLayout x:Name="PlacementWarningsContainer" Spacing="6" />
+
+                                <Button x:Name="ConfirmPlacementButton" Text="Confirm placement"
+                                        Clicked="OnConfirmPlacementClicked" Style="{StaticResource PrimaryActionButton}" IsEnabled="False" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnToggleRuleValidationClicked" />
+                                </Grid.GestureRecognizers>
+                                <Border Grid.Column="0" WidthRequest="38" HeightRequest="38" StrokeThickness="0"
+                                        BackgroundColor="{StaticResource StatusAssignedTint}" StrokeShape="RoundRectangle 19">
+                                    <Label Text="{x:Static services:IconGlyphs.TriangleExclamation}" Style="{StaticResource IconLabel}"
+                                           FontSize="14" TextColor="{StaticResource StatusAssigned}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Rule validation" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
+                                    <Label x:Name="RuleValidationSubtitleLabel" Text="Active arrangement notes" Style="{StaticResource MetaLabel}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="2" x:Name="RuleValidationChevron" Text="{x:Static services:IconGlyphs.ChevronDown}"
+                                       FontFamily="FaSolid" FontSize="13" TextColor="{StaticResource TextSecondaryLight}"
+                                       VerticalOptions="Center" WidthRequest="20" HorizontalTextAlignment="Center" />
+                            </Grid>
+                            <VerticalStackLayout x:Name="WarningsCollapsibleContent" Spacing="12">
+                                <VerticalStackLayout x:Name="WarningsContainer" Spacing="8" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
+                        <VerticalStackLayout Spacing="14">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0" Spacing="1">
+                                    <Label Text="Load health" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
+                                    <Label Text="Capacity and balance" Style="{StaticResource MetaLabel}" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1" Padding="9,5" StrokeThickness="0" BackgroundColor="{StaticResource StatusSuccess}" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                                    <Label x:Name="BalanceStatusLabel" TextColor="White" FontFamily="PoppinsSemiBold" FontSize="11" />
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="10">
+                                <Border Grid.Row="0" Grid.Column="0" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 16" Padding="12">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label x:Name="BoxesPlacedLabel" FontFamily="PoppinsBold" FontSize="19" TextColor="{StaticResource Primary}" />
+                                        <Label Text="Placed" Style="{StaticResource MetaLabel}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                                <Border Grid.Row="0" Grid.Column="1" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 16" Padding="12">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label x:Name="RemainingLabel" FontFamily="PoppinsBold" FontSize="19" TextColor="{StaticResource Primary}" />
+                                        <Label Text="Remaining" Style="{StaticResource MetaLabel}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="0" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 16" Padding="12">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label x:Name="FreeVolumeLabel" FontFamily="PoppinsBold" FontSize="19" TextColor="{StaticResource Primary}" />
+                                        <Label Text="Free m3" Style="{StaticResource MetaLabel}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="1" StrokeThickness="0" BackgroundColor="{StaticResource StatusExceptionTint}" StrokeShape="RoundRectangle 16" Padding="12">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label x:Name="WarningCountLabel" FontFamily="PoppinsBold" FontSize="19" TextColor="{StaticResource StatusException}" />
+                                        <Label Text="Warnings" Style="{StaticResource MetaLabel}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                                <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="6">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label Grid.Column="0" Text="Weight" Style="{StaticResource MetaLabel}" />
+                                        <Label Grid.Column="1" x:Name="WeightUtilLabel" FontFamily="PoppinsSemiBold" FontSize="12" TextColor="{StaticResource Primary}" />
+                                    </Grid>
+                                    <ProgressBar x:Name="WeightUtilBar" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="6">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label Grid.Column="0" Text="Space" Style="{StaticResource MetaLabel}" />
+                                        <Label Grid.Column="1" x:Name="SpaceUtilLabel" FontFamily="PoppinsSemiBold" FontSize="12" TextColor="{StaticResource Primary}" />
+                                    </Grid>
+                                    <ProgressBar x:Name="SpaceUtilBar" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                                        BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 20">
+                                    <Label Text="{x:Static services:IconGlyphs.ClipboardCheck}" Style="{StaticResource IconLabel}"
+                                           FontSize="15" TextColor="{StaticResource StatusSuccess}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Floor confirmation" Style="{StaticResource CardTitleLabel}" FontSize="15" />
+                                    <Label Text="Start after review." Style="{StaticResource MetaLabel}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                            <Button x:Name="StartConfirmationButton" Text="Start loading confirmation"
+                                    Clicked="OnStartConfirmationClicked" Style="{StaticResource PrimaryActionButton}" IsEnabled="False" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <ActivityIndicator x:Name="Spinner" IsRunning="False" IsVisible="False" />
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+
+        <Grid x:Name="GroupToolbar" Grid.Row="2" IsVisible="False" RowDefinitions="Auto,Auto" BackgroundColor="{StaticResource CardLight}">
+            <BoxView Grid.Row="0" HeightRequest="1" Color="{StaticResource CardBorderLight}" />
+            <Grid Grid.Row="1" Padding="18,14" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalOptions="Center">
+                    <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 21" BackgroundColor="{StaticResource CardTint}">
+                        <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
+                               FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                        <Label Text="Selected group" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                        <Label x:Name="SelectedGroupLabel" Style="{StaticResource CardTitleLabel}" FontSize="14"
+                               LineBreakMode="TailTruncation" />
+                    </VerticalStackLayout>
+                </Grid>
+                <ScrollView Grid.Column="1" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout Spacing="10">
+                        <Border Padding="2" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 14">
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,Auto,Auto" RowSpacing="2" ColumnSpacing="2">
+                                <Button Grid.Row="0" Grid.Column="1" Text="{x:Static services:IconGlyphs.ChevronUp}" FontFamily="FaSolid"
+                                        WidthRequest="36" HeightRequest="36" Clicked="OnMoveForwardClicked" Style="{StaticResource ChipButton}" />
+                                <Button Grid.Row="1" Grid.Column="0" Text="{x:Static services:IconGlyphs.ChevronLeft}" FontFamily="FaSolid"
+                                        WidthRequest="36" HeightRequest="36" Clicked="OnMoveLeftClicked" Style="{StaticResource ChipButton}" />
+                                <Border Grid.Row="1" Grid.Column="1" WidthRequest="36" HeightRequest="36" StrokeThickness="0"
+                                        BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 18">
+                                    <Label Text="{x:Static services:IconGlyphs.Truck}" Style="{StaticResource IconLabel}" FontSize="12"
+                                           TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <Button Grid.Row="1" Grid.Column="2" Text="{x:Static services:IconGlyphs.ChevronRight}" FontFamily="FaSolid"
+                                        WidthRequest="36" HeightRequest="36" Clicked="OnMoveRightClicked" Style="{StaticResource ChipButton}" />
+                                <Button Grid.Row="2" Grid.Column="1" Text="{x:Static services:IconGlyphs.ChevronDown}" FontFamily="FaSolid"
+                                        WidthRequest="36" HeightRequest="36" Clicked="OnMoveBackClicked" Style="{StaticResource ChipButton}" />
+                            </Grid>
+                        </Border>
+                        <Button Text="Duplicate" Clicked="OnDuplicateGroupClicked" Style="{StaticResource ChipButton}" FontSize="12" Padding="12,10" MinimumHeightRequest="44">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.BoxOpen}" Color="{StaticResource Primary}" Size="13" />
+                            </Button.ImageSource>
+                        </Button>
+                        <Button Text="Split" Clicked="OnSplitGroupClicked" Style="{StaticResource ChipButton}" FontSize="12" Padding="12,10" MinimumHeightRequest="44">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.BoxesStacked}" Color="{StaticResource Primary}" Size="13" />
+                            </Button.ImageSource>
+                        </Button>
+                        <Button x:Name="LockGroupButton" Text="Lock" Clicked="OnToggleLockGroupClicked" Style="{StaticResource ChipButton}" FontSize="12" Padding="12,10" MinimumHeightRequest="44">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Lock}" Color="{StaticResource Primary}" Size="13" />
+                            </Button.ImageSource>
+                        </Button>
+                        <Button Text="Delete" Clicked="OnDeleteGroupClicked"
+                                BackgroundColor="{StaticResource StatusExceptionTint}" TextColor="{StaticResource StatusException}"
+                                BorderColor="{StaticResource StatusExceptionTint}" FontFamily="PoppinsSemiBold"
+                                FontSize="12" Padding="12,10" MinimumHeightRequest="44" CornerRadius="14">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Xmark}" Color="{StaticResource StatusException}" Size="13" />
+                            </Button.ImageSource>
+                        </Button>
+                        <Button Text="Close" Clicked="OnCloseSelectionClicked" Style="{StaticResource ChipButton}" FontSize="12" Padding="12,10" MinimumHeightRequest="44">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.CircleXmark}" Color="{StaticResource TextSecondaryLight}" Size="13" />
+                            </Button.ImageSource>
+                        </Button>
+                    </HorizontalStackLayout>
+                </ScrollView>
+            </Grid>
+        </Grid>
+    </Grid>
+</ContentPage>

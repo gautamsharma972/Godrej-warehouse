@@ -1,0 +1,39 @@
+<article class="dash-card">
+    <div class="dash-card-head">
+        <div>
+            <p class="dash-kicker">@Kicker</p>
+            <h3>@Title</h3>
+        </div>
+    </div>
+
+    @if (HasData)
+    {
+        <MudChart T="double" ChartType="@Type" ChartSeries="@Series" ChartLabels="@Labels" Width="100%" Height="@Height" />
+    }
+    else
+    {
+        <div class="admin-empty"><i class="bx bx-info-circle"></i><span>Not enough data yet for this chart.</span></div>
+    }
+</article>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Kicker { get; set; } = string.Empty;
+
+    [Parameter]
+    public ChartType Type { get; set; } = ChartType.Line;
+
+    [Parameter, EditorRequired]
+    public List<ChartSeries<double>> Series { get; set; } = new();
+
+    [Parameter]
+    public string[] Labels { get; set; } = Array.Empty<string>();
+
+    [Parameter]
+    public string Height { get; set; } = "260px";
+
+    private bool HasData => Series.Count > 0 && Series.Any(s => s.Data is not null && s.Data.Values.Any(d => d != 0));
+}

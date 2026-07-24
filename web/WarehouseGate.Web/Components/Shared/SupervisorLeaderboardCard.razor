@@ -1,0 +1,56 @@
+@if (Entries is { Count: > 0 })
+{
+    <article class="dash-card">
+        <div class="dash-card-head">
+            <div>
+                <p class="dash-kicker">Top Performers</p>
+                <h3>Supervisor Leaderboard</h3>
+            </div>
+            <div class="dash-card-icon"><i class="bx bx-trophy"></i></div>
+        </div>
+        <div class="dash-leaderboard-list">
+            @for (var i = 0; i < Entries.Count; i++)
+            {
+                var entry = Entries[i];
+                var rank = i + 1;
+                <div class="dash-leaderboard-row rank-@rank">
+                    <div class="dash-medal">@Medal(rank)</div>
+                    <div class="dash-leaderboard-name">
+                        <strong>@entry.SupervisorName</strong>
+                        <span>@entry.VehiclesHandled vehicle@(entry.VehiclesHandled == 1 ? "" : "s") handled</span>
+                    </div>
+                    <div class="dash-leaderboard-rate">
+                        <strong>@entry.BoxesPerHour.ToString("0.#")</strong>
+                        <span>boxes/hr</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </article>
+}
+else
+{
+    <article class="dash-card">
+        <div class="dash-card-head">
+            <div>
+                <p class="dash-kicker">Top Performers</p>
+                <h3>Supervisor Leaderboard</h3>
+            </div>
+            <div class="dash-card-icon"><i class="bx bx-trophy"></i></div>
+        </div>
+        <div class="admin-empty"><i class="bx bx-info-circle"></i><span>Not enough completed jobs yet to rank supervisors.</span></div>
+    </article>
+}
+
+@code {
+    [Parameter]
+    public List<SupervisorLeaderboardEntryDto>? Entries { get; set; }
+
+    private static string Medal(int rank) => rank switch
+    {
+        1 => "🏆",
+        2 => "🥈",
+        3 => "🥉",
+        _ => rank.ToString()
+    };
+}

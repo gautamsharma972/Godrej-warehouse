@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
+             x:Class="WarehouseGate.Mobile.Pages.AccountPage"
+             Title="Account"
+             Shell.BackButtonBehavior="{x:Null}"
+             Shell.TabBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto">
+    <ScrollView Grid.Row="0">
+        <VerticalStackLayout Padding="32,28,32,32" Spacing="18">
+
+            <controls:AppHeaderView x:Name="HeaderView" />
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18" Margin="0,10,0,2">
+                <VerticalStackLayout Grid.Column="0" Spacing="6">
+                    <Label Text="ACCOUNT SETTINGS" TextColor="{StaticResource Primary}"
+                           FontSize="11" CharacterSpacing="1.2" FontFamily="PoppinsRegular" />
+                    <Label Text="Settings" TextColor="#172033"
+                           FontSize="30" FontFamily="PoppinsSemiBold" />
+                    <Label Text="Manage your session, role, assigned scope, and app information."
+                           TextColor="#687387" FontSize="13" />
+                </VerticalStackLayout>
+                <Border Grid.Column="1" Stroke="#CFEEDE" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 18" Padding="16,10"
+                        BackgroundColor="#F4FCF8" VerticalOptions="Start">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="{x:Static services:IconGlyphs.Warehouse}" Style="{StaticResource IconLabel}"
+                               FontSize="12" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                        <Label x:Name="ScopeLabel" Text="Assigned scope" TextColor="{StaticResource Primary}"
+                               FontSize="13" FontFamily="PoppinsRegular" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- Profile card -->
+            <Border Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
+                    StrokeShape="RoundRectangle 18" Padding="22">
+                <Border.Shadow>
+                    <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
+                </Border.Shadow>
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                    <Border Grid.Column="0" WidthRequest="72" HeightRequest="72"
+                            StrokeShape="RoundRectangle 20" Stroke="Transparent"
+                            BackgroundColor="#E9FBF8">
+                        <Label Text="{x:Static services:IconGlyphs.User}" Style="{StaticResource IconLabel}"
+                               FontSize="26" TextColor="{StaticResource Primary}"
+                               HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="5" VerticalOptions="Center">
+                        <Label x:Name="NameLabel" Style="{StaticResource CardTitleLabel}" FontSize="20" />
+                        <Label Text="Signed in and ready for warehouse operations" Style="{StaticResource MetaLabel}" />
+                        <Border Padding="12,5" StrokeThickness="0" BackgroundColor="#E9FBF8" StrokeShape="RoundRectangle 12" HorizontalOptions="Start">
+                            <Label x:Name="RoleLabel" FontFamily="PoppinsSemiBold" FontSize="11" TextColor="{StaticResource Primary}" />
+                        </Border>
+                    </VerticalStackLayout>
+                    <Border Grid.Column="2" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 21" BackgroundColor="{StaticResource SurfaceLight}" VerticalOptions="Center">
+                        <Label Text="{x:Static services:IconGlyphs.ShieldHalved}" Style="{StaticResource IconLabel}"
+                               FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Account details -->
+            <Border Style="{StaticResource CardBorder}" Padding="0" StrokeShape="RoundRectangle 20">
+                <VerticalStackLayout Spacing="0">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="18,18,18,6">
+                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                                BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 20">
+                            <Label Text="{x:Static services:IconGlyphs.Gear}" Style="{StaticResource IconLabel}"
+                                   FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="App settings" Style="{StaticResource CardTitleLabel}" FontSize="16" />
+                            <Label Text="Session profile and device build details." Style="{StaticResource MetaLabel}" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*" Padding="18,16" ColumnSpacing="14">
+                        <Border Grid.Column="0" WidthRequest="38" HeightRequest="38" StrokeThickness="0"
+                                BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 19">
+                            <Label Text="{x:Static services:IconGlyphs.IdCard}" Style="{StaticResource IconLabel}"
+                                   FontSize="14" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="ROLE" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                            <Label x:Name="RoleDetailLabel" Style="{StaticResource CardTitleLabel}" FontSize="14" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <BoxView HeightRequest="1" BackgroundColor="{StaticResource CardBorderLight}" Color="{StaticResource CardBorderLight}" Margin="18,0" />
+
+                    <Grid ColumnDefinitions="Auto,*" Padding="18,16" ColumnSpacing="14">
+                        <Border Grid.Column="0" WidthRequest="38" HeightRequest="38" StrokeThickness="0"
+                                BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 19">
+                            <Label Text="{x:Static services:IconGlyphs.Gear}" Style="{StaticResource IconLabel}"
+                                   FontSize="14" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="APP VERSION" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                            <Label x:Name="VersionLabel" Style="{StaticResource CardTitleLabel}" FontSize="14" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}" Padding="0" StrokeShape="RoundRectangle 20">
+                <VerticalStackLayout Spacing="0">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="18,16" ColumnSpacing="14">
+                        <Border Grid.Column="0" WidthRequest="38" HeightRequest="38" StrokeThickness="0"
+                                BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 19">
+                            <Label Text="{x:Static services:IconGlyphs.Bell}" Style="{StaticResource IconLabel}"
+                                   FontSize="14" TextColor="{StaticResource StatusSuccess}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Live updates" Style="{StaticResource CardTitleLabel}" FontSize="14" />
+                            <Label Text="Realtime job and alert sync is enabled." Style="{StaticResource MetaLabel}" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="2" Padding="10,5" StrokeThickness="0" BackgroundColor="{StaticResource StatusSuccessTint}"
+                                StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                            <Label Text="ON" FontSize="11" FontFamily="PoppinsSemiBold" TextColor="{StaticResource StatusSuccess}" />
+                        </Border>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Log out" Clicked="OnLogoutClicked" Margin="0,8,0,0"
+                    BackgroundColor="{StaticResource StatusExceptionTint}" TextColor="{StaticResource StatusException}"
+                    FontFamily="PoppinsSemiBold" FontSize="15" CornerRadius="16" Padding="14,12"
+                    MinimumHeightRequest="50" BorderWidth="0">
+                <Button.ImageSource>
+                    <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.RightFromBracket}"
+                                     Color="{StaticResource StatusException}" Size="14" />
+                </Button.ImageSource>
+            </Button>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+    <controls:SecurityBottomNavBar x:Name="SecurityNavBar" Grid.Row="1" IsVisible="False" />
+    <controls:SupervisorBottomNavBar x:Name="SupervisorNavBar" Grid.Row="1" IsVisible="False" />
+    </Grid>
+</ContentPage>

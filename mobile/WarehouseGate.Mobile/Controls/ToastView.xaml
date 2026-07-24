@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WarehouseGate.Mobile.Controls.ToastView"
+             HorizontalOptions="End" VerticalOptions="Start"
+             InputTransparent="True">
+
+    <Border x:Name="ToastBorder" IsVisible="False" Opacity="0" Margin="0,12,16,0" Padding="14,10"
+            StrokeThickness="0" StrokeShape="RoundRectangle 14" MaximumWidthRequest="320"
+            Shadow="{StaticResource CardShadow}" InputTransparent="False">
+        <HorizontalStackLayout Spacing="8">
+            <Label x:Name="ToastIconLabel" Style="{StaticResource IconLabel}" FontSize="14" VerticalOptions="Center" />
+            <Label x:Name="ToastMessageLabel" FontFamily="PoppinsSemiBold" FontSize="13" TextColor="White"
+                   LineBreakMode="WordWrap" VerticalOptions="Center" MaximumWidthRequest="260" />
+        </HorizontalStackLayout>
+    </Border>
+</ContentView>

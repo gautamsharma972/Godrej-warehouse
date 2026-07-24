@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Modern neutral palette: near-black ink, deep teal accent (logistics/shipping-coded), white
+         with a faint teal-tinted off-white surface. The app is light-only by design (see App.xaml.cs
+         UserAppTheme) so every color below is a single flat value rather than a Light/Dark
+         AppThemeBinding pair. -->
+
+    <!-- Primary carries the brand accent (not the near-black ink - see Gray950 for that) so every
+         button, active nav/tab state, badge, and spinner across the app reads as clearly "colored"
+         rather than monochrome. Text stays on TextPrimaryLight/TextSecondaryLight, which are still ink. -->
+    <Color x:Key="Primary">#008D86</Color>
+    <Color x:Key="PrimaryDark">#008D86</Color>
+    <Color x:Key="PrimaryDarkText">#FFFFFF</Color>
+    <Color x:Key="Secondary">#E6F3F1</Color>
+    <Color x:Key="SecondaryDarkText">#20232B</Color>
+    <Color x:Key="Tertiary">#20232B</Color>
+
+    <Color x:Key="Accent">#008D86</Color>
+    <Color x:Key="AccentText">#FFFFFF</Color>
+
+    <!-- Semantic status colors - used consistently for job status + material condition everywhere.
+         StatusAvailable is deliberately a clear sky-blue (not teal-green) so it stays visually
+         distinct from the new teal Primary/Accent rather than blending into it. -->
+    <Color x:Key="StatusAvailable">#1596D6</Color>
+    <Color x:Key="StatusAssigned">#F2A413</Color>
+    <Color x:Key="StatusDocked">#4F7CFF</Color>
+    <Color x:Key="StatusLoading">#008D86</Color>
+    <Color x:Key="StatusActive">#008D86</Color>
+    <Color x:Key="StatusSuccess">#12A150</Color>
+    <Color x:Key="StatusException">#F23557</Color>
+    <Color x:Key="StatusNeutral">#6B7280</Color>
+
+    <!-- Tinted variants for banner/badge backgrounds - keeps every "light chip" surface off a
+         one-off hardcoded hex. -->
+    <Color x:Key="StatusExceptionTint">#FDEBEE</Color>
+    <Color x:Key="StatusSuccessTint">#E9F9F0</Color>
+    <Color x:Key="StatusAssignedTint">#FEF3DC</Color>
+    <Color x:Key="StatusAvailableTint">#E5F4FC</Color>
+
+    <!-- Surfaces -->
+    <Color x:Key="SurfaceLight">#F3FAF9</Color>
+    <Color x:Key="SurfaceDark">#F3FAF9</Color>
+    <Color x:Key="CardLight">#FFFFFF</Color>
+    <Color x:Key="CardDark">#FFFFFF</Color>
+    <Color x:Key="CardTint">#E6F3F1</Color>
+    <Color x:Key="CardBorderLight">#DCEAE8</Color>
+    <Color x:Key="CardBorderDark">#DCEAE8</Color>
+    <Color x:Key="GoldLine">#008D86</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimaryLight">#20232B</Color>
+    <Color x:Key="TextSecondaryLight">#6B7280</Color>
+    <Color x:Key="TextPrimaryDark">#20232B</Color>
+    <Color x:Key="TextSecondaryDark">#6B7280</Color>
+
+    <Color x:Key="White">White</Color>
+    <Color x:Key="Black">Black</Color>
+    <Color x:Key="Magenta">#F23557</Color>
+    <Color x:Key="MidnightBlue">#008D86</Color>
+    <Color x:Key="OffBlack">#20232B</Color>
+
+    <Color x:Key="Gray100">#F3FAF9</Color>
+    <Color x:Key="Gray200">#E6F3F1</Color>
+    <Color x:Key="Gray300">#DCEAE8</Color>
+    <Color x:Key="Gray400">#A9C4C0</Color>
+    <Color x:Key="Gray500">#6B7280</Color>
+    <Color x:Key="Gray600">#3E5754</Color>
+    <Color x:Key="Gray900">#20232B</Color>
+    <Color x:Key="Gray950">#171A21</Color>
+
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
+    <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource Accent}"/>
+    <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
+    <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}"/>
+
+    <SolidColorBrush x:Key="StatusAvailableBrush" Color="{StaticResource StatusAvailable}"/>
+    <SolidColorBrush x:Key="StatusAssignedBrush" Color="{StaticResource StatusAssigned}"/>
+    <SolidColorBrush x:Key="StatusDockedBrush" Color="{StaticResource StatusDocked}"/>
+    <SolidColorBrush x:Key="StatusLoadingBrush" Color="{StaticResource StatusLoading}"/>
+    <SolidColorBrush x:Key="StatusActiveBrush" Color="{StaticResource StatusActive}"/>
+    <SolidColorBrush x:Key="StatusSuccessBrush" Color="{StaticResource StatusSuccess}"/>
+    <SolidColorBrush x:Key="StatusExceptionBrush" Color="{StaticResource StatusException}"/>
+    <SolidColorBrush x:Key="StatusNeutralBrush" Color="{StaticResource StatusNeutral}"/>
+
+    <SolidColorBrush x:Key="CardLightBrush" Color="{StaticResource CardLight}"/>
+    <SolidColorBrush x:Key="CardDarkBrush" Color="{StaticResource CardDark}"/>
+    <SolidColorBrush x:Key="CardTintBrush" Color="{StaticResource CardTint}"/>
+
+    <SolidColorBrush x:Key="Gray100Brush" Color="{StaticResource Gray100}"/>
+    <SolidColorBrush x:Key="Gray200Brush" Color="{StaticResource Gray200}"/>
+    <SolidColorBrush x:Key="Gray300Brush" Color="{StaticResource Gray300}"/>
+    <SolidColorBrush x:Key="Gray400Brush" Color="{StaticResource Gray400}"/>
+    <SolidColorBrush x:Key="Gray500Brush" Color="{StaticResource Gray500}"/>
+    <SolidColorBrush x:Key="Gray600Brush" Color="{StaticResource Gray600}"/>
+    <SolidColorBrush x:Key="Gray900Brush" Color="{StaticResource Gray900}"/>
+    <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}"/>
+</ResourceDictionary>

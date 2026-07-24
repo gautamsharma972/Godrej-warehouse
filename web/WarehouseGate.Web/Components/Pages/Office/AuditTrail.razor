@@ -1,0 +1,143 @@
+@page "/office/audit-trail"
+@attribute [Authorize(Roles = "Office")]
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>Audit Trail - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Governance</p>
+            <h1 class="admin-page-title">Audit Trail</h1>
+            <p class="admin-page-subtitle">Review changes to inward and outward records in your assigned warehouse.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bx-history"></i>@(_logs?.Count ?? 0) Entries</span>
+        </div>
+    </div>
+
+    <div class="admin-table-card">
+        @if (_logs is null)
+        {
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading audit trail</span></div>
+        }
+        else if (_logs.Count == 0)
+        {
+            <div class="admin-empty"><i class="bx bx-history"></i><span>No audit activity found.</span></div>
+        }
+        else
+        {
+            <div class="admin-table-toolbar">
+                <AdminSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search summary or user..." />
+                <div class="admin-table-toolbar-filters">
+                    <AdminFilterSelect Value="@_actionFilter" ValueChanged="OnActionFilterChanged" Options="_actionNames" AllLabel="All Actions" />
+                </div>
+            </div>
+
+            @if (_view.Count == 0)
+            {
+                <div class="admin-empty"><i class="bx bx-history"></i><span>No audit entries match your search or filters.</span></div>
+            }
+            else
+            {
+                <div class="admin-table-scroll">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <AdminSortHeader Label="When" Column="When" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <AdminSortHeader Label="Action" Column="Action" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <AdminSortHeader Label="By" Column="By" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <th>Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in _view)
+                            {
+                                <tr>
+                                    <td class="admin-muted">@FriendlyDateFormatter.Format(log.ChangedAtUtc)</td>
+                                    <td><span class="admin-badge info">@log.Action</span></td>
+                                    <td>@log.ChangedByName</td>
+                                    <td>@log.Summary</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <AdminPager @bind-Page="_page" @bind-PageSize="_pageSize" TotalItems="_filteredCount" />
+        }
+    </div>
+</section>
+
+@code {
+    private List<OfficeAuditLogDto>? _logs;
+    private string _search = string.Empty;
+    private string? _actionFilter;
+    private string _sortColumn = "When";
+    private bool _sortAscending = false;
+    private int _page = 1;
+    private int _pageSize = 10;
+
+    private List<string> _actionNames => (_logs ?? []).Select(l => l.Action).Distinct().OrderBy(n => n).ToList();
+
+    private IEnumerable<OfficeAuditLogDto> Filtered => (_logs ?? [])
+        .Where(l => string.IsNullOrWhiteSpace(_search) ||
+            l.Summary.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+            l.ChangedByName.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .Where(l => _actionFilter is null || l.Action == _actionFilter);
+
+    private IEnumerable<OfficeAuditLogDto> Sorted => _sortColumn switch
+    {
+        "Action" => _sortAscending
+            ? Filtered.OrderBy(l => l.Action, StringComparer.OrdinalIgnoreCase)
+            : Filtered.OrderByDescending(l => l.Action, StringComparer.OrdinalIgnoreCase),
+        "By" => _sortAscending
+            ? Filtered.OrderBy(l => l.ChangedByName, StringComparer.OrdinalIgnoreCase)
+            : Filtered.OrderByDescending(l => l.ChangedByName, StringComparer.OrdinalIgnoreCase),
+        _ => _sortAscending
+            ? Filtered.OrderBy(l => l.ChangedAtUtc)
+            : Filtered.OrderByDescending(l => l.ChangedAtUtc)
+    };
+
+    private int _filteredCount => Filtered.Count();
+    private List<OfficeAuditLogDto> _view => Sorted.Skip((_page - 1) * _pageSize).Take(_pageSize).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _logs = await Api.GetAsync<List<OfficeAuditLogDto>>("api/office/audit-log");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        _search = value;
+        _page = 1;
+    }
+
+    private void OnActionFilterChanged(string? value)
+    {
+        _actionFilter = value;
+        _page = 1;
+    }
+
+    private void SetSort(string column)
+    {
+        if (_sortColumn == column)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _sortColumn = column;
+            _sortAscending = true;
+        }
+    }
+}

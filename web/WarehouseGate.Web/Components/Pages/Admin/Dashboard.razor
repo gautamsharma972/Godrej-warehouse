@@ -1,0 +1,288 @@
+@page "/admin/dashboard"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@implements IAsyncDisposable
+@inject PortalApiClient Api
+@inject DashboardRealtimeClient Realtime
+
+<PageTitle>Dashboard - WarehouseGate</PageTitle>
+
+<section class="dashboard-content container-fluid">
+    <div class="page-heading">
+        <p class="eyebrow">Overview</p>
+        <h1>Dashboard</h1>
+        <p>Today&apos;s warehouse movement, active work, and completion health.</p>
+    </div>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm" role="alert">@_errorMessage</div>
+    }
+    else if (_summary is null)
+    {
+        <div class="dashboard-loading">
+            <i class="bx bx-loader-alt spin"></i>
+            <span>Loading dashboard</span>
+        </div>
+    }
+    else
+    {
+        <section class="hero-grid">
+            <article class="metric-card violet">
+                <div class="metric-icon"><i class="bx bx-log-in-circle"></i></div>
+                <div>
+                    <div class="metric-label">Total gate-ins today</div>
+                    <div class="metric-value">@TotalGateInsToday</div>
+                </div>
+                <i class="bx bxs-truck metric-illustration gate" aria-hidden="true"></i>
+            </article>
+
+            <article class="metric-card green">
+                <div class="metric-icon"><i class="bx bx-briefcase"></i></div>
+                <div>
+                    <div class="metric-label">Active jobs in motion</div>
+                    <div class="metric-value">@TotalActiveJobs</div>
+                </div>
+                <i class="bx bxs-buildings metric-illustration warehouse" aria-hidden="true"></i>
+            </article>
+
+            <article class="metric-card blue">
+                <div class="metric-icon"><i class="bx bx-check-circle"></i></div>
+                <div>
+                    <div class="metric-label">Completed today</div>
+                    <div class="metric-value">@TotalCompletedToday</div>
+                </div>
+                <i class="bx bxs-badge-check metric-illustration completed" aria-hidden="true"></i>
+            </article>
+        </section>
+
+        <section class="stats-panel">
+            <div class="stat-item">
+                <div class="stat-icon violet-bg"><i class="bx bxs-buildings"></i></div>
+                <div><span>Warehouses</span><strong>@_summary.WarehouseCount</strong></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon green-bg"><i class="bx bx-log-in"></i></div>
+                <div><span>Inward gate-ins</span><strong>@_summary.TodayInwardGateIns</strong></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon blue-bg"><i class="bx bx-log-out"></i></div>
+                <div><span>Outward gate-ins</span><strong>@_summary.TodayOutwardGateIns</strong></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon green-bg"><i class="bx bxs-truck"></i></div>
+                <div><span>Active inward jobs</span><strong>@_summary.ActiveInwardJobs</strong></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon orange-bg"><i class="bx bxs-truck"></i></div>
+                <div><span>Active outward jobs</span><strong>@_summary.ActiveOutwardJobs</strong></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon green-bg"><i class="bx bx-check-circle"></i></div>
+                <div><span>Completed inward</span><strong>@_summary.CompletedTodayInward</strong></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon blue-bg"><i class="bx bx-check-circle"></i></div>
+                <div><span>Completed outward</span><strong>@_summary.CompletedTodayOutward</strong></div>
+            </div>
+        </section>
+
+        <section class="dashboard-grid">
+            <article class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <p class="panel-kicker violet-text">Flow balance</p>
+                        <h2>Today&apos;s movement mix</h2>
+                    </div>
+                    <div class="small-action violet-bg"><i class="bx bx-transfer-alt"></i></div>
+                </div>
+
+                <div class="progress-row">
+                    <div class="progress-label"><span>Inward</span><strong class="green-text">@_summary.TodayInwardGateIns</strong></div>
+                    <div class="progress-track"><span class="green-bar" style="@($"width:{Math.Max(InwardGateInPercent, 2)}%")"></span></div>
+                </div>
+
+                <div class="progress-row">
+                    <div class="progress-label"><span>Outward</span><strong class="blue-text">@_summary.TodayOutwardGateIns</strong></div>
+                    <div class="progress-track"><span class="blue-bar" style="@($"width:{Math.Max(OutwardGateInPercent, 2)}%")"></span></div>
+                </div>
+
+                <div class="panel-footer violet-tint">
+                    <span>Net Movement</span>
+                    <strong>@NetMovement</strong>
+                </div>
+            </article>
+
+            <article class="panel-card">
+                <div class="panel-head">
+                    <div>
+                        <p class="panel-kicker green-text">Workload</p>
+                        <h2>Active queue</h2>
+                    </div>
+                    <div class="small-action green-bg"><i class="bx bx-briefcase"></i></div>
+                </div>
+
+                <div class="progress-row">
+                    <div class="progress-label"><span>Inward jobs</span><strong class="green-text">@_summary.ActiveInwardJobs</strong></div>
+                    <div class="progress-track"><span class="green-bar" style="@($"width:{Math.Max(InwardJobPercent, 2)}%")"></span></div>
+                </div>
+
+                <div class="progress-row">
+                    <div class="progress-label"><span>Outward jobs</span><strong class="blue-text">@_summary.ActiveOutwardJobs</strong></div>
+                    <div class="progress-track"><span class="blue-bar" style="@($"width:{Math.Max(OutwardJobPercent, 2)}%")"></span></div>
+                </div>
+
+                <div class="panel-footer green-tint">
+                    <span>Total active</span>
+                    <strong class="green-text">@TotalActiveJobs</strong>
+                </div>
+            </article>
+
+            <article class="panel-card quick-card">
+                <div class="panel-head">
+                    <div>
+                        <p class="panel-kicker blue-text">Quick access</p>
+                        <h2>Control areas</h2>
+                    </div>
+                    <div class="small-action blue-bg"><i class="bx bx-customize"></i></div>
+                </div>
+
+                <a href="/admin/warehouses" class="quick-link">
+                    <i class="bx bxs-buildings"></i>
+                    <strong>Warehouse master</strong>
+                    <i class="bx bx-chevron-right"></i>
+                </a>
+                <a href="/admin/audit-log" class="quick-link">
+                    <i class="bx bx-pulse"></i>
+                    <strong>Job monitoring</strong>
+                    <i class="bx bx-chevron-right"></i>
+                </a>
+                <a href="/admin/audit-log" class="quick-link">
+                    <i class="bx bx-file"></i>
+                    <strong>Reports &amp; analytics</strong>
+                    <i class="bx bx-chevron-right"></i>
+                </a>
+
+                <a class="view-all" href="/admin/dashboard">View all modules <i class="bx bx-chevron-right"></i></a>
+            </article>
+        </section>
+
+        @if (_analytics is not null)
+        {
+            <section class="dash-analytics-section">
+                <div class="dash-section-heading">
+                    <div>
+                        <p class="admin-eyebrow">Performance</p>
+                        <h2>Supervisor Performance &amp; KPIs</h2>
+                    </div>
+                    <p class="dash-section-subtitle">Based on completed loading/unloading jobs across all warehouses</p>
+                </div>
+
+                <div class="dash-grid-2">
+                    <SupervisorLeaderboardCard Entries="_analytics.Leaderboard" />
+                    <SupervisorPerformanceTable Entries="_analytics.SupervisorPerformance" />
+                </div>
+
+                <div class="dash-charts-grid">
+                    <TrendChart Title="Vehicles Processed" Kicker="Daily &middot; last 14 days" Labels="@DailyLabels" Series="@VehiclesProcessedSeries" />
+                    <TrendChart Title="Material Quantity" Kicker="Daily &middot; last 14 days" Labels="@DailyLabels" Series="@MaterialQtySeries" />
+                    <TrendChart Title="Productivity" Kicker="Daily &middot; last 14 days" Labels="@DailyLabels" Series="@ProductivitySeries" />
+                </div>
+
+                <div class="dash-grid-2">
+                    <TrendChart Title="Team Comparison" Kicker="Weekly &middot; last 7 days" Type="ChartType.Bar" Labels="@WeeklyLabels" Series="@WeeklyVehiclesSeries" Height="280px" />
+                    <TrendChart Title="Performance Trend" Kicker="Monthly &middot; avg load/unload time (min)" Labels="@MonthlyLabels" Series="@MonthlyTrendSeries" Height="280px" />
+                </div>
+
+                <AdvancedKpiTiles Kpis="_analytics.Kpis" />
+            </section>
+        }
+    }
+</section>
+
+@code {
+    private DashboardSummaryDto? _summary;
+    private DashboardAnalyticsDto? _analytics;
+    private string? _errorMessage;
+
+    private int TotalGateInsToday => (_summary?.TodayInwardGateIns ?? 0) + (_summary?.TodayOutwardGateIns ?? 0);
+    private int TotalActiveJobs => (_summary?.ActiveInwardJobs ?? 0) + (_summary?.ActiveOutwardJobs ?? 0);
+    private int TotalCompletedToday => (_summary?.CompletedTodayInward ?? 0) + (_summary?.CompletedTodayOutward ?? 0);
+    private int NetMovement => Math.Abs((_summary?.TodayInwardGateIns ?? 0) - (_summary?.TodayOutwardGateIns ?? 0));
+    private int InwardGateInPercent => GetPercent(_summary?.TodayInwardGateIns ?? 0, TotalGateInsToday);
+    private int OutwardGateInPercent => GetPercent(_summary?.TodayOutwardGateIns ?? 0, TotalGateInsToday);
+    private int InwardJobPercent => GetPercent(_summary?.ActiveInwardJobs ?? 0, TotalActiveJobs);
+    private int OutwardJobPercent => GetPercent(_summary?.ActiveOutwardJobs ?? 0, TotalActiveJobs);
+
+    private string[] DailyLabels => _analytics?.DailyTrends.Select(d => d.Date.ToString("dd MMM")).ToArray() ?? Array.Empty<string>();
+    private List<ChartSeries<double>> VehiclesProcessedSeries => new() { new() { Name = "Vehicles", Data = _analytics?.DailyTrends.Select(d => (double)d.VehiclesProcessed).ToArray() ?? Array.Empty<double>() } };
+    private List<ChartSeries<double>> MaterialQtySeries => new() { new() { Name = "Material Qty", Data = _analytics?.DailyTrends.Select(d => (double)d.MaterialQty).ToArray() ?? Array.Empty<double>() } };
+    private List<ChartSeries<double>> ProductivitySeries => new() { new() { Name = "Boxes/hr", Data = _analytics?.DailyTrends.Select(d => (double)d.ProductivityPerHour).ToArray() ?? Array.Empty<double>() } };
+
+    private string[] WeeklyLabels => _analytics?.WeeklyTeamComparison.Select(w => w.SupervisorName).ToArray() ?? Array.Empty<string>();
+    private List<ChartSeries<double>> WeeklyVehiclesSeries => new() { new() { Name = "Vehicles handled", Data = _analytics?.WeeklyTeamComparison.Select(w => (double)w.VehiclesHandled).ToArray() ?? Array.Empty<double>() } };
+
+    private string[] MonthlyLabels => _analytics?.MonthlyTrends.Select(m => m.MonthLabel).ToArray() ?? Array.Empty<string>();
+    private List<ChartSeries<double>> MonthlyTrendSeries => new() { new() { Name = "Avg minutes", Data = _analytics?.MonthlyTrends.Select(m => (double)m.AvgProcessingMinutes).ToArray() ?? Array.Empty<double>() } };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Realtime.DashboardChanged += OnDashboardChanged;
+        await LoadAsync();
+    }
+
+    // OnInitializedAsync also runs during Blazor's prerender pass (before a real interactive
+    // circuit exists, in a throwaway DI scope) - opening a real SignalR connection there was
+    // destabilizing the actual circuit once it connected for real. OnAfterRenderAsync never runs
+    // during prerendering, so this only starts once we're genuinely interactive.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Realtime.StartAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            var summaryTask = Api.GetAsync<DashboardSummaryDto>("api/dashboard/summary");
+            var analyticsTask = Api.GetAsync<DashboardAnalyticsDto>("api/dashboard/analytics");
+            await Task.WhenAll(summaryTask, analyticsTask);
+            _summary = summaryTask.Result;
+            _analytics = analyticsTask.Result;
+            _errorMessage = null;
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    // Fires on the SignalR connection's own thread - marshal back onto the render's
+    // synchronization context before touching component state.
+    private void OnDashboardChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    // Unsubscribe only - Realtime is a scoped (per-circuit) service; its underlying connection
+    // must stay open for the circuit's lifetime, disposing it here would break it the moment
+    // this page unmounts.
+    public ValueTask DisposeAsync()
+    {
+        Realtime.DashboardChanged -= OnDashboardChanged;
+        return ValueTask.CompletedTask;
+    }
+
+    private static int GetPercent(int value, int total)
+    {
+        if (total <= 0)
+        {
+            return 0;
+        }
+
+        return Math.Clamp((int)Math.Round(value * 100m / total), 0, 100);
+    }
+}

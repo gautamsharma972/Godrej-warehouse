@@ -1,0 +1,57 @@
+<article class="dash-card">
+    <div class="dash-card-head">
+        <div>
+            <p class="dash-kicker">Loading / Unloading</p>
+            <h3>Supervisor Performance</h3>
+        </div>
+        <div class="dash-card-icon"><i class="bx bx-user-check"></i></div>
+    </div>
+
+    @if (Entries is { Count: > 0 })
+    {
+        <div class="admin-table-scroll">
+            <table class="admin-table compact">
+                <thead>
+                    <tr>
+                        <th>Supervisor</th>
+                        <th>Today</th>
+                        <th>This Week</th>
+                        <th>This Month</th>
+                        <th>Avg Time / Vehicle</th>
+                        <th>Utilization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Entries)
+                    {
+                        <tr>
+                            <td>@entry.SupervisorName</td>
+                            <td>@entry.VehiclesToday</td>
+                            <td>@entry.VehiclesThisWeek</td>
+                            <td>@entry.VehiclesThisMonth</td>
+                            <td>@FormatMinutes(entry.AvgProcessingMinutes)</td>
+                            <td>@FormatUtilization(entry.UtilizationPct)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="admin-empty"><i class="bx bx-info-circle"></i><span>No completed loading/unloading jobs yet.</span></div>
+    }
+</article>
+
+@code {
+    [Parameter]
+    public List<SupervisorPerformanceEntryDto>? Entries { get; set; }
+
+    private static string FormatMinutes(decimal minutes) =>
+        minutes <= 0 ? "—" : $"{minutes:0.#} min";
+
+    // Null means the supervisor's warehouse hasn't configured Shift Hours / Day (Admin > Warehouses) -
+    // shown as "—" rather than fabricating a percentage against a guessed shift length.
+    private static string FormatUtilization(decimal? pct) =>
+        pct is { } value ? $"{value:0.#}%" : "—";
+}

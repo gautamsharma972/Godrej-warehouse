@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
+             x:Class="WarehouseGate.Mobile.Pages.SecurityHomePage"
+             Title="Gate Check-In"
+             Shell.BackButtonBehavior="{x:Null}"
+             Shell.TabBarIsVisible="False"
+             Shell.FlyoutBehavior="Locked">
+
+    <Grid RowDefinitions="*,Auto">
+    <ScrollView Grid.Row="0">
+        <VerticalStackLayout Padding="32,28,32,32" Spacing="18">
+
+            <controls:AppHeaderView AccountRoute="//SecurityTabs/SecurityAccountPage" />
+
+            <VerticalStackLayout Spacing="3" Margin="0,10,0,4">
+                <Label Text="Gate Check-In" Style="{StaticResource PageTitleLabel}" FontSize="26" />
+                <Label Text="Record inbound vehicle arrival, documents, photos, and gate details."
+                       Style="{StaticResource MetaLabel}" FontSize="13" />
+            </VerticalStackLayout>
+
+            <!-- ============================ FORM ============================ -->
+            <VerticalStackLayout x:Name="FormSection" Spacing="16">
+
+            <VerticalStackLayout x:Name="InwardCheckInSection" Spacing="16">
+
+            <!-- Step tab bar + content merged into one seamless card: the tab strip sits directly
+                 on top of the content pane with a shared border and no gap, matching Bootstrap's
+                 nav-tabs + tab-content pattern (active tab underline, continuous baseline). -->
+            <Border Style="{StaticResource CardBorder}" Padding="0" StrokeShape="RoundRectangle 18">
+                <VerticalStackLayout Spacing="0">
+
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,2" RowSpacing="0" Margin="18,14,18,0">
+                        <Grid Grid.Row="0" Grid.Column="0" ColumnDefinitions="Auto,Auto" ColumnSpacing="4"
+                              HorizontalOptions="Center" Padding="0,12">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnVehicleTabClicked" />
+                            </Grid.GestureRecognizers>
+                            <Label x:Name="VehicleTabLabel" Grid.Column="0" Text="VEHICLE" FontFamily="PoppinsSemiBold"
+                                   FontSize="11" VerticalOptions="Center" />
+                            <Label x:Name="VehicleTabErrorIcon" Grid.Column="1" Text="{x:Static services:IconGlyphs.TriangleExclamation}"
+                                   Style="{StaticResource IconLabel}" FontSize="10" TextColor="{StaticResource StatusException}"
+                                   VerticalOptions="Center" IsVisible="False" />
+                        </Grid>
+                        <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="4"
+                              HorizontalOptions="Center" Padding="0,12">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnDocumentsTabClicked" />
+                            </Grid.GestureRecognizers>
+                            <Label x:Name="DocumentsTabLabel" Grid.Column="0" Text="DOCUMENTS" FontFamily="PoppinsSemiBold"
+                                   FontSize="11" VerticalOptions="Center" />
+                            <Label x:Name="DocumentsTabErrorIcon" Grid.Column="1" Text="{x:Static services:IconGlyphs.TriangleExclamation}"
+                                   Style="{StaticResource IconLabel}" FontSize="10" TextColor="{StaticResource StatusException}"
+                                   VerticalOptions="Center" IsVisible="False" />
+                        </Grid>
+                        <Grid Grid.Row="0" Grid.Column="2" ColumnDefinitions="Auto,Auto" ColumnSpacing="4"
+                              HorizontalOptions="Center" Padding="0,12">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnPhotosTabClicked" />
+                            </Grid.GestureRecognizers>
+                            <Label x:Name="PhotosTabLabel" Grid.Column="0" Text="PHOTOS" FontFamily="PoppinsSemiBold"
+                                   FontSize="11" VerticalOptions="Center" />
+                        </Grid>
+
+                        <BoxView Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                 BackgroundColor="{StaticResource CardBorderLight}" Color="{StaticResource CardBorderLight}" />
+
+                        <BoxView x:Name="VehicleTabIndicator" Grid.Row="1" Grid.Column="0" BackgroundColor="Transparent" Color="Transparent" />
+                        <BoxView x:Name="DocumentsTabIndicator" Grid.Row="1" Grid.Column="1" BackgroundColor="Transparent" Color="Transparent" />
+                        <BoxView x:Name="PhotosTabIndicator" Grid.Row="1" Grid.Column="2" BackgroundColor="Transparent" Color="Transparent" />
+                    </Grid>
+
+                    <!-- ============================ TAB 1: VEHICLE & DRIVER ============================ -->
+                    <VerticalStackLayout x:Name="VehicleTabSection" Spacing="16" Padding="18,18,18,16">
+                        <Label Text="Vehicle &amp; driver details" Style="{StaticResource CardTitleLabel}" FontSize="16" />
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="VEHICLE NUMBER" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                            <Border x:Name="VehicleNumberBorder" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 10" Padding="12,0" HeightRequest="42">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnVehicleFieldTapped" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label x:Name="VehicleNumberLabel" Grid.Column="0" Text="Select expected vehicle" LineBreakMode="TailTruncation"
+                                           TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                    <Label Grid.Column="1" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                                           FontSize="12" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                            <Label x:Name="VehicleNumberErrorLabel" Text="Select a vehicle from the expected shipments list." FontSize="11"
+                                   TextColor="{StaticResource StatusException}" IsVisible="False" />
+                        </VerticalStackLayout>
+
+                        <Grid x:Name="DriverFieldsGrid" ColumnDefinitions="*" RowDefinitions="Auto,Auto" RowSpacing="14">
+                            <VerticalStackLayout x:Name="DriverNameSection" Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="DRIVER NAME" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <Border x:Name="DriverNameEntryBorder" Grid.Column="0" Stroke="{StaticResource CardBorderLight}"
+                                            StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,0" HeightRequest="42">
+                                        <Entry x:Name="DriverNameEntry" Placeholder="e.g. Ramesh Kumar" VerticalOptions="Center"
+                                               Focused="OnDriverFieldFocused" Unfocused="OnDriverFieldUnfocused" />
+                                    </Border>
+                                    <Button x:Name="DriverNameMicButton" SemanticProperties.Description="Speak driver name" Grid.Column="1" Clicked="OnDriverNameMicClicked"
+                                            Style="{StaticResource ChipButton}" WidthRequest="44" HeightRequest="44" CornerRadius="22" Padding="0">
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Microphone}" Color="{StaticResource Primary}" Size="13" />
+                                        </Button.ImageSource>
+                                    </Button>
+                                </Grid>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout x:Name="DriverMobileSection" Grid.Row="1" Grid.Column="0" Spacing="6">
+                                <Label Text="DRIVER MOBILE" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <Border x:Name="DriverMobileEntryBorder" Grid.Column="0" Stroke="{StaticResource CardBorderLight}"
+                                            StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,0" HeightRequest="42">
+                                        <Entry x:Name="DriverMobileEntry" Placeholder="e.g. 9876543210" Keyboard="Telephone" VerticalOptions="Center"
+                                               Focused="OnDriverFieldFocused" Unfocused="OnDriverFieldUnfocused" />
+                                    </Border>
+                                    <Button x:Name="DriverMobileMicButton" SemanticProperties.Description="Speak driver mobile" Grid.Column="1" Clicked="OnDriverMobileMicClicked"
+                                            Style="{StaticResource ChipButton}" WidthRequest="44" HeightRequest="44" CornerRadius="22" Padding="0">
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Microphone}" Color="{StaticResource Primary}" Size="13" />
+                                        </Button.ImageSource>
+                                    </Button>
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Grid x:Name="TransporterGateFieldsGrid" ColumnDefinitions="*" RowDefinitions="Auto,Auto" RowSpacing="14">
+                            <VerticalStackLayout x:Name="TransporterSection" Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="TRANSPORTER" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                                <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,0" HeightRequest="42">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnTransporterFieldTapped" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label x:Name="TransporterLabel" Grid.Column="0" Text="Select transporter" LineBreakMode="TailTruncation"
+                                               TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                        <Label Grid.Column="1" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                                               FontSize="12" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                    </Grid>
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout x:Name="GateSection" Grid.Row="1" Grid.Column="0" Spacing="6">
+                                <Label Text="GATE" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                                <Picker x:Name="GatePicker" Title="Select gate" HeightRequest="42" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                    </VerticalStackLayout>
+
+                    <!-- ============================ TAB 2: DOCUMENTS ============================ -->
+                    <VerticalStackLayout x:Name="DocumentsTabSection" Spacing="18" Padding="18,18,18,16" IsVisible="False">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Purchase orders &amp; inward transactions" Style="{StaticResource CardTitleLabel}" FontSize="16" />
+                            <Label Text="Auto-filled from the expected shipment — swipe for more, or add another PO." Style="{StaticResource MetaLabel}" />
+
+                            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                                <HorizontalStackLayout x:Name="PoTxnPairsContainer" Spacing="10" />
+                            </ScrollView>
+
+                            <Label x:Name="PoTxnErrorLabel" Text="Fill in every PO and inward transaction number, or remove the row." FontSize="11"
+                                   TextColor="{StaticResource StatusException}" IsVisible="False" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Document scan / upload" Style="{StaticResource CardTitleLabel}" FontSize="16" />
+                            <Label Text="Optional — attach the e-way bill, invoice, or LR copy" Style="{StaticResource MetaLabel}" />
+                            <ScrollView Orientation="Horizontal">
+                                <HorizontalStackLayout x:Name="DocumentStrip" Spacing="8" />
+                            </ScrollView>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <Picker x:Name="DocumentTypePicker" Grid.Column="0" Title="Document type" />
+                                <Button x:Name="CaptureDocumentButton" Grid.Column="1" Text="Capture" Clicked="OnCaptureDocumentClicked"
+                                        Style="{StaticResource IconTextButton}">
+                                    <Button.ImageSource>
+                                        <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Camera}" Color="{StaticResource Primary}" Size="13" />
+                                    </Button.ImageSource>
+                                </Button>
+                            </Grid>
+                        </VerticalStackLayout>
+
+                    </VerticalStackLayout>
+
+                    <!-- ============================ TAB 3: PHOTOS ============================ -->
+                    <VerticalStackLayout x:Name="PhotosTabSection" Spacing="14" Padding="18,18,18,16" IsVisible="False">
+                        <Label Text="Vehicle photos" Style="{StaticResource CardTitleLabel}" FontSize="16" />
+                        <Label Text="Optional — capture each angle, the seal, and any visible damage" Style="{StaticResource MetaLabel}" />
+                        <Grid x:Name="PhotoSlotsGrid" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8" />
+
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="REMARKS (OPTIONAL)" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <Border x:Name="RemarksEditorBorder" Grid.Column="0" Stroke="{StaticResource CardBorderLight}"
+                                        StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,6">
+                                    <Editor x:Name="RemarksEditor" Placeholder="Any notes about the vehicle or delivery"
+                                            AutoSize="TextChanges" HeightRequest="68"
+                                            Focused="OnRemarksFocused" Unfocused="OnRemarksUnfocused" />
+                                </Border>
+                                <Button x:Name="RemarksMicButton" SemanticProperties.Description="Speak remarks" Grid.Column="1" Clicked="OnRemarksMicClicked"
+                                        Style="{StaticResource ChipButton}" WidthRequest="44" VerticalOptions="Start">
+                                    <Button.ImageSource>
+                                        <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Microphone}" Color="{StaticResource Primary}" Size="13" />
+                                    </Button.ImageSource>
+                                </Button>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+            </Border>
+
+            <Button x:Name="SubmitButton" Text="Next" Clicked="OnSubmitClicked"
+                    Style="{StaticResource PrimaryActionButton}" BackgroundColor="{StaticResource StatusSuccess}"
+                    TextColor="White" CornerRadius="14" HeightRequest="50"
+                    WidthRequest="190" HorizontalOptions="End" />
+
+            </VerticalStackLayout>
+
+            <ActivityIndicator x:Name="Spinner" IsRunning="False" IsVisible="False" />
+
+            <VerticalStackLayout x:Name="RecentSection" Spacing="8" IsVisible="False">
+                <Label x:Name="RecentSectionTitleLabel" Text="This session" Style="{StaticResource SectionTitleLabel}" />
+                <VerticalStackLayout x:Name="RecentCheckInsContainer" Spacing="8" />
+            </VerticalStackLayout>
+
+            </VerticalStackLayout>
+
+            <!-- ============================ SUCCESS RESULT ============================ -->
+            <VerticalStackLayout x:Name="SuccessSection" Spacing="14" IsVisible="False">
+                <Border Style="{StaticResource CardBorder}" BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 18">
+                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="{x:Static services:IconGlyphs.CircleCheck}" Style="{StaticResource IconLabel}"
+                               FontSize="28" TextColor="{StaticResource StatusSuccess}" HorizontalOptions="Center" />
+                        <Label Text="Gate-in recorded" Style="{StaticResource SectionTitleLabel}" HorizontalOptions="Center" />
+                        <Label x:Name="SuccessDetailLabel" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center"
+                               TextColor="{StaticResource TextSecondaryLight}" />
+                        <HorizontalStackLayout x:Name="SuccessBadgesContainer" Spacing="8" HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Border>
+                <Button Text="Back to Home" Clicked="OnBackToHomeClicked" Style="{StaticResource PrimaryActionButton}" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+    <controls:ToastView x:Name="Toast" Grid.Row="0" />
+    </Grid>
+</ContentPage>

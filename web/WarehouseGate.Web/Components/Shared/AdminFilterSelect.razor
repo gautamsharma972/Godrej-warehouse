@@ -1,0 +1,32 @@
+<div class="admin-filter">
+    <select value="@(Value ?? string.Empty)" @onchange="OnChange">
+        <option value="">@AllLabel</option>
+        @foreach (var option in Options)
+        {
+            <option value="@option">@option</option>
+        }
+    </select>
+</div>
+
+@code {
+    // Deliberately string-valued (not generic) - every filter this feeds (Role, Status, Country
+    // name, Warehouse name, etc.) is already a display string on the row DTOs, so matching is a
+    // plain string compare with no per-page adapter needed.
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<string> Options { get; set; } = Array.Empty<string>();
+
+    [Parameter]
+    public string AllLabel { get; set; } = "All";
+
+    private Task OnChange(ChangeEventArgs e)
+    {
+        var value = (string?)e.Value;
+        return ValueChanged.InvokeAsync(string.IsNullOrEmpty(value) ? null : value);
+    }
+}

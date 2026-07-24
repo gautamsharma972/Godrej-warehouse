@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.MAUI.Controls"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             x:Class="WarehouseGate.Mobile.Pages.BarcodeScanPage"
+             Title="Scan Barcode / QR">
+
+    <Grid>
+        <zxing:CameraBarcodeReaderView x:Name="BarcodeView" BarcodesDetected="OnBarcodesDetected" />
+
+        <!-- Floating back button, top-left, over the live camera feed -->
+        <Border WidthRequest="40" HeightRequest="40" Margin="16" VerticalOptions="Start" HorizontalOptions="Start"
+                StrokeShape="RoundRectangle 20" Stroke="Transparent" BackgroundColor="#66000000">
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnCancelClicked" />
+            </Border.GestureRecognizers>
+            <Label Text="{x:Static services:IconGlyphs.ArrowLeft}" Style="{StaticResource IconLabel}"
+                   FontSize="16" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+        </Border>
+
+        <Border VerticalOptions="End" Margin="20" Padding="14" StrokeThickness="0"
+                BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 16">
+            <Label Text="Point the camera at the document's QR or barcode" Style="{StaticResource MetaLabel}"
+                   HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+        </Border>
+    </Grid>
+</ContentPage>

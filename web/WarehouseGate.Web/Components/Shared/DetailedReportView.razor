@@ -1,0 +1,376 @@
+@using System.Text
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IJSRuntime Js
+
+<section class="admin-page report-page">
+    <div class="admin-page-header report-page-header">
+        <div>
+            <p class="admin-eyebrow">@Eyebrow</p>
+            <h1 class="admin-page-title">Reports</h1>
+            <p class="admin-page-subtitle">Detailed inward and outward movement with journey timestamps, durations, quantities, and exceptions.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bx-line-chart"></i>@ScopeLabel</span>
+        </div>
+    </div>
+
+    <div class="report-command-panel">
+        <div class="report-command-copy">
+            <span class="report-command-icon"><i class="bx bx-bar-chart-square"></i></span>
+            <div>
+                <h2>Movement intelligence</h2>
+                <p>Choose a reporting window, compare inbound and outbound flow, then export filtered operational records.</p>
+            </div>
+        </div>
+
+        <div class="report-filter-bar">
+            <div class="report-filter-field">
+                <label>From</label>
+                <input type="date" @bind="_fromDate" @bind:format="yyyy-MM-dd" />
+            </div>
+            <div class="report-filter-field">
+                <label>To</label>
+                <input type="date" @bind="_toDate" @bind:format="yyyy-MM-dd" />
+            </div>
+            <div class="report-filter-presets">
+                <button type="button" class="report-chip" @onclick="() => ApplyPresetAsync(0)">Today</button>
+                <button type="button" class="report-chip" @onclick="() => ApplyPresetAsync(6)">Last 7 days</button>
+                <button type="button" class="report-chip" @onclick="() => ApplyPresetAsync(29)">Last 30 days</button>
+            </div>
+            <button type="button" class="admin-primary-btn report-run-btn" @onclick="LoadAsync" disabled="@_loading">
+                <i class="bx bx-search-alt-2"></i>Run Report
+            </button>
+        </div>
+    </div>
+
+    @if (_loading && _report is null)
+    {
+        <div class="admin-table-card">
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Building report</span></div>
+        </div>
+    }
+    else if (_report is not null)
+    {
+        <div class="report-overview-panel">
+            <div class="report-overview-main">
+                <span>Report window</span>
+                <strong>@RangeLabel</strong>
+                <p>@TotalRecords total records across inward and outward movement for @ScopeLabel.ToLowerInvariant().</p>
+            </div>
+            <div class="report-overview-stat">
+                <span>Total records</span>
+                <strong>@TotalRecords</strong>
+            </div>
+            <div class="report-overview-stat">
+                <span>Completed</span>
+                <strong>@_report.Summary.CompletedCount</strong>
+            </div>
+            <div class="report-overview-stat warning">
+                <span>Exceptions</span>
+                <strong>@_report.Summary.TotalExceptionQty.ToString("N0")</strong>
+            </div>
+        </div>
+
+        <div class="dash-kpi-grid report-summary-grid">
+            <KpiCard Title="Inward Transactions" Value="@_report.Summary.InwardCount.ToString()"
+                     Subtitle="@RangeLabel" IconCss="bx bx-log-in-circle" Tone="teal" StatusLabel="Range" />
+            <KpiCard Title="Outward Transactions" Value="@_report.Summary.OutwardCount.ToString()"
+                     Subtitle="@RangeLabel" IconCss="bx bx-log-out-circle" Tone="blue" StatusLabel="Range" />
+            <KpiCard Title="Completed" Value="@_report.Summary.CompletedCount.ToString()"
+                     Subtitle="Across both directions" IconCss="bx bx-check-double" Tone="green" StatusLabel="Range" />
+            <KpiCard Title="Material Moved" Value="@($"{_report.Summary.TotalReceivedQty + _report.Summary.TotalLoadedQty:N0}")"
+                     Subtitle="@($"Received {_report.Summary.TotalReceivedQty:N0} / Loaded {_report.Summary.TotalLoadedQty:N0}")" IconCss="bx bx-package" Tone="teal" StatusLabel="Range" />
+            <KpiCard Title="Exceptions" Value="@($"{_report.Summary.TotalExceptionQty:N0}")"
+                     Subtitle="Damaged/short/mismatch qty (inward)" IconCss="bx bx-error" Tone="orange" StatusLabel="Range" />
+            <KpiCard Title="Avg Turnaround" Value="@($"{_report.Summary.AvgTurnaroundMinutes:0.#} min")"
+                     Subtitle="@($"Avg load/unload {_report.Summary.AvgProcessingMinutes:0.#} min")" IconCss="bx bx-time-five" Tone="blue" StatusLabel="Range" />
+        </div>
+
+        <div class="report-records-card">
+            <div class="report-records-header">
+                <div>
+                    <p class="admin-eyebrow">Transaction details</p>
+                    <h2>@ActiveTabTitle</h2>
+                    <span>@ActiveRecordCount records after current filter</span>
+                </div>
+                <div class="report-tab-tools">
+                    <div class="report-search">
+                        <i class="bx bx-search"></i>
+                        <input type="text" placeholder="Filter by vehicle, number, supervisor, warehouse..." @bind="_search" @bind:event="oninput" />
+                    </div>
+                    <button type="button" class="admin-primary-btn" @onclick="ExportCsvAsync">
+                        <i class="bx bx-download"></i>Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="report-tab-bar">
+                <button type="button" class="@TabClass(inward: true)" @onclick="ShowInwardTab">
+                    <i class="bx bx-log-in"></i>Inward <span class="report-tab-count">@FilteredInward.Count</span>
+                </button>
+                <button type="button" class="@TabClass(inward: false)" @onclick="ShowOutwardTab">
+                    <i class="bx bx-log-out"></i>Outward <span class="report-tab-count">@FilteredOutward.Count</span>
+                </button>
+            </div>
+
+            @if (_activeTab == "inward")
+            {
+                <div class="report-record-list">
+                    @if (FilteredInward.Count == 0)
+                    {
+                        <div class="admin-empty report-empty"><i class="bx bx-info-circle"></i><span>No inward transactions match.</span></div>
+                    }
+                    @foreach (var row in FilteredInward)
+                    {
+                        <article class="report-record-item">
+                            <div class="report-record-primary">
+                                <div class="report-record-icon teal"><i class="bx bx-log-in-circle"></i></div>
+                                <div class="report-record-title">
+                                    <span>Transaction</span>
+                                    <strong>@row.TxnNumber</strong>
+                                    <small>@row.VehicleNumber</small>
+                                </div>
+                                <div class="report-record-status">
+                                    <span class="admin-badge @StatusBadge(row.Status)">@row.Status</span>
+                                </div>
+                            </div>
+
+                            <div class="report-record-grid">
+                                <div class="report-record-field wide">
+                                    <span>PO / Supplier</span>
+                                    <strong>@row.PoNumber</strong>
+                                    <small>@row.SupplierName</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Warehouse</span>
+                                    <strong>@row.WarehouseName</strong>
+                                    <small>@row.SupervisorName</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Gate movement</span>
+                                    <strong>@row.GateInTime.ToString("dd MMM HH:mm")</strong>
+                                    <small>Out: @(row.GateOutTime?.ToString("dd MMM HH:mm") ?? "-")</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Time</span>
+                                    <strong>@FormatMinutes(row.ProcessingMinutes)</strong>
+                                    <small>Turnaround @FormatMinutes(row.TurnaroundMinutes)</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Received</span>
+                                    <strong>@row.ReceivedQty.ToString("N0")</strong>
+                                    <small>Exceptions @(row.ExceptionQty > 0 ? row.ExceptionQty.ToString("N0") : "-")</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>GRN</span>
+                                    <strong>@(row.GrnNumber ?? "-")</strong>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="report-record-list">
+                    @if (FilteredOutward.Count == 0)
+                    {
+                        <div class="admin-empty report-empty"><i class="bx bx-info-circle"></i><span>No outward transactions match.</span></div>
+                    }
+                    @foreach (var row in FilteredOutward)
+                    {
+                        <article class="report-record-item">
+                            <div class="report-record-primary">
+                                <div class="report-record-icon blue"><i class="bx bx-log-out-circle"></i></div>
+                                <div class="report-record-title">
+                                    <span>Transaction</span>
+                                    <strong>@row.TxnNumber</strong>
+                                    <small>@row.VehicleNumber</small>
+                                </div>
+                                <div class="report-record-status">
+                                    <span class="admin-badge @StatusBadge(row.Status)">@row.Status</span>
+                                </div>
+                            </div>
+
+                            <div class="report-record-grid">
+                                <div class="report-record-field wide">
+                                    <span>Dispatch / Destination</span>
+                                    <strong>@row.DispatchOrderNumber</strong>
+                                    <small>@row.CustomerName</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Warehouse</span>
+                                    <strong>@row.WarehouseName</strong>
+                                    <small>@row.SupervisorName</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Movement</span>
+                                    <strong>@row.CreatedTime.ToString("dd MMM HH:mm")</strong>
+                                    <small>Gate out @(row.GateOutTime?.ToString("dd MMM HH:mm") ?? "-")</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Time</span>
+                                    <strong>@FormatMinutes(row.ProcessingMinutes)</strong>
+                                    <small>Turnaround @FormatMinutes(row.TurnaroundMinutes)</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Loaded</span>
+                                    <strong>@row.LoadedQty.ToString("N0")</strong>
+                                    <small>Partial @(row.IsPartial ? "Yes" : "-")</small>
+                                </div>
+                                <div class="report-record-field">
+                                    <span>Dispatch Note</span>
+                                    <strong>@(row.DispatchNoteNumber ?? "-")</strong>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public string Eyebrow { get; set; } = "Reporting";
+
+    [Parameter]
+    public string ScopeLabel { get; set; } = "Scoped view";
+
+    private DetailedReportDto? _report;
+    private bool _loading;
+    private string _activeTab = "inward";
+    private string _search = string.Empty;
+    private DateTime _fromDate = DateTime.UtcNow.Date.AddDays(-29);
+    private DateTime _toDate = DateTime.UtcNow.Date;
+
+    private string RangeLabel => $"{_fromDate:dd MMM yyyy} - {_toDate:dd MMM yyyy}";
+
+    private int TotalRecords => (_report?.Summary.InwardCount ?? 0) + (_report?.Summary.OutwardCount ?? 0);
+
+    private string ActiveTabTitle => _activeTab == "inward" ? "Inward movement records" : "Outward dispatch records";
+
+    private int ActiveRecordCount => _activeTab == "inward" ? FilteredInward.Count : FilteredOutward.Count;
+
+    private List<InwardReportRowDto> FilteredInward =>
+        (_report?.Inward ?? []).Where(MatchesSearch).ToList();
+
+    private List<OutwardReportRowDto> FilteredOutward =>
+        (_report?.Outward ?? []).Where(MatchesSearch).ToList();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task ApplyPresetAsync(int daysBack)
+    {
+        _toDate = DateTime.UtcNow.Date;
+        _fromDate = _toDate.AddDays(-daysBack);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _report = await Api.GetAsync<DetailedReportDto>(
+                $"api/reports/detailed?from={_fromDate:yyyy-MM-dd}&to={_toDate:yyyy-MM-dd}");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private bool MatchesSearch(InwardReportRowDto row) => MatchesSearch(
+        row.TxnNumber, row.VehicleNumber, row.PoNumber, row.SupplierName, row.WarehouseName, row.SupervisorName, row.Status);
+
+    private bool MatchesSearch(OutwardReportRowDto row) => MatchesSearch(
+        row.TxnNumber, row.VehicleNumber, row.DispatchOrderNumber, row.CustomerName, row.WarehouseName, row.SupervisorName, row.Status);
+
+    private bool MatchesSearch(params string[] fields)
+    {
+        var term = _search.Trim();
+        return term.Length == 0 || fields.Any(f => f.Contains(term, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string FormatMinutes(decimal? minutes) => minutes is > 0 ? $"{minutes:0.#} min" : "-";
+
+    private void ShowInwardTab() => _activeTab = "inward";
+    private void ShowOutwardTab() => _activeTab = "outward";
+
+    private string TabClass(bool inward)
+    {
+        var isActive = inward == (_activeTab == "inward");
+        return isActive ? "report-tab active" : "report-tab";
+    }
+
+    private static string StatusBadge(string status) => status switch
+    {
+        "Completed" => "success",
+        "Inspecting" or "Loading" => "info",
+        "Docked" => "warning",
+        _ => "neutral"
+    };
+
+    // Exports whatever the active tab currently shows (search filter included) - the CSV is
+    // built here and pushed through the warehouseGate.downloadFile JS helper because a plain
+    // link can't attach the API's bearer token.
+    private async Task ExportCsvAsync()
+    {
+        var sb = new StringBuilder();
+        string fileName;
+
+        if (_activeTab == "inward")
+        {
+            fileName = $"inward-report-{_fromDate:yyyyMMdd}-{_toDate:yyyyMMdd}.csv";
+            sb.AppendLine("Txn,Vehicle,PO,Supplier,Warehouse,Supervisor,Status,GateIn,DockIn,UnloadingStart,DockOut,GateOut,TurnaroundMin,UnloadMin,ReceivedQty,ExceptionQty,GRN");
+            foreach (var r in FilteredInward)
+            {
+                sb.AppendLine(string.Join(",",
+                    Csv(r.TxnNumber), Csv(r.VehicleNumber), Csv(r.PoNumber), Csv(r.SupplierName), Csv(r.WarehouseName),
+                    Csv(r.SupervisorName), Csv(r.Status),
+                    CsvDate(r.GateInTime), CsvDate(r.DockInTime), CsvDate(r.UnloadingStartTime), CsvDate(r.DockOutTime), CsvDate(r.GateOutTime),
+                    r.TurnaroundMinutes?.ToString("0.#") ?? "", r.ProcessingMinutes?.ToString("0.#") ?? "",
+                    r.ReceivedQty.ToString("0.##"), r.ExceptionQty.ToString("0.##"), Csv(r.GrnNumber ?? "")));
+            }
+        }
+        else
+        {
+            fileName = $"outward-report-{_fromDate:yyyyMMdd}-{_toDate:yyyyMMdd}.csv";
+            sb.AppendLine("Txn,Vehicle,DispatchOrder,Destination,Warehouse,Supervisor,Status,Created,GateIn,DockIn,LoadingStart,DockOut,GateOut,TurnaroundMin,LoadMin,LoadedQty,Partial,ExceptionReason,DispatchNote");
+            foreach (var r in FilteredOutward)
+            {
+                sb.AppendLine(string.Join(",",
+                    Csv(r.TxnNumber), Csv(r.VehicleNumber), Csv(r.DispatchOrderNumber), Csv(r.CustomerName), Csv(r.WarehouseName),
+                    Csv(r.SupervisorName), Csv(r.Status),
+                    CsvDate(r.CreatedTime), CsvDate(r.GateInTime), CsvDate(r.DockInTime), CsvDate(r.LoadingStartTime), CsvDate(r.DockOutTime), CsvDate(r.GateOutTime),
+                    r.TurnaroundMinutes?.ToString("0.#") ?? "", r.ProcessingMinutes?.ToString("0.#") ?? "",
+                    r.LoadedQty.ToString("0.##"), r.IsPartial ? "Yes" : "No", Csv(r.ExceptionReason ?? ""), Csv(r.DispatchNoteNumber ?? "")));
+            }
+        }
+
+        var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(sb.ToString()));
+        await Js.InvokeVoidAsync("warehouseGate.downloadFile", fileName, "text/csv", base64);
+    }
+
+    private static string Csv(string value)
+    {
+        var quote = '"'.ToString();
+        if (!value.Contains(',') && !value.Contains('"') && !value.Contains('\n'))
+        {
+            return value;
+        }
+
+        return quote + value.Replace(quote, quote + quote) + quote;
+    }
+
+    private static string CsvDate(DateTime? value) => value?.ToString("yyyy-MM-dd HH:mm") ?? "";
+}
+
+

@@ -1,0 +1,6 @@
+@page "/admin/reports"
+@attribute [Authorize(Roles = "SuperAdmin")]
+
+<PageTitle>Reports - WarehouseGate</PageTitle>
+
+<DetailedReportView Eyebrow="Analytics &amp; Reporting" ScopeLabel="All warehouses" />

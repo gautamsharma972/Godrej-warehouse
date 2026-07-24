@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="WarehouseGate.Mobile.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:pages="clr-namespace:WarehouseGate.Mobile.Pages"
+    xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+    xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
+    FlyoutBehavior="Disabled"
+    FlyoutWidth="252"
+    FlyoutBackgroundColor="Transparent"
+    Shell.NavBarIsVisible="False"
+    Title="WarehouseGate.Mobile">
+
+    <!-- The security section's persistent sidebar: locked open (FlyoutBehavior=Locked) on
+         every security page, disabled everywhere else - one control shared by all pages. -->
+    <Shell.FlyoutContent>
+        <controls:AppSideNav />
+    </Shell.FlyoutContent>
+
+    <ShellContent
+        Title="Login"
+        ContentTemplate="{DataTemplate pages:LoginPage}"
+        Route="LoginPage" />
+
+    <TabBar Route="SecurityTabs">
+        <ShellContent Title="Dashboard" Route="SecurityDashboardPage" ContentTemplate="{DataTemplate pages:SecurityDashboardPage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.House}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+        <ShellContent Title="Check-In" Route="SecurityHomePage" ContentTemplate="{DataTemplate pages:SecurityHomePage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Warehouse}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+        <ShellContent Title="Status" Route="SecurityStatusPage" ContentTemplate="{DataTemplate pages:SecurityStatusPage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ClipboardList}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+        <ShellContent Title="Exit" Route="VehicleExitPage" ContentTemplate="{DataTemplate pages:VehicleExitPage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.RightFromBracket}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+        <ShellContent Title="Account" Route="SecurityAccountPage" ContentTemplate="{DataTemplate pages:AccountPage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.User}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+    </TabBar>
+
+    <TabBar Route="SupervisorTabs">
+        <ShellContent Title="Dashboard" Route="SupervisorDashboardPage" ContentTemplate="{DataTemplate pages:SupervisorDashboardPage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.House}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+        <ShellContent Title="Jobs" Route="SupervisorHomePage" ContentTemplate="{DataTemplate pages:SupervisorHomePage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ListCheck}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+        <ShellContent Title="History" Route="SupervisorHistoryPage" ContentTemplate="{DataTemplate pages:SupervisorHistoryPage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ClockRotateLeft}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+        <ShellContent Title="Account" Route="SupervisorAccountPage" ContentTemplate="{DataTemplate pages:AccountPage}">
+            <ShellContent.Icon>
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.User}" Color="{StaticResource Primary}" Size="20" />
+            </ShellContent.Icon>
+        </ShellContent>
+    </TabBar>
+
+</Shell>

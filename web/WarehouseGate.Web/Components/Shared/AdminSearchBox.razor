@@ -1,0 +1,17 @@
+<div class="admin-search">
+    <i class="bx bx-search"></i>
+    <input type="text" placeholder="@Placeholder" value="@Value" @oninput="OnInput" />
+</div>
+
+@code {
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Search...";
+
+    private Task OnInput(ChangeEventArgs e) => ValueChanged.InvokeAsync((string?)e.Value ?? string.Empty);
+}

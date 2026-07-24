@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             xmlns:models="clr-namespace:WarehouseGate.Mobile.Models"
+             x:Class="WarehouseGate.Mobile.Pages.ExpectedVehiclePickerPage"
+             Title="Select Vehicle"
+             BackgroundColor="#66000000">
+
+    <Grid ColumnDefinitions="3*,7*">
+        <BoxView Grid.Column="0" BackgroundColor="Transparent">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackdropTapped" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <Border x:Name="DrawerPanel" Grid.Column="1" StrokeThickness="0" BackgroundColor="{StaticResource SurfaceLight}"
+                StrokeShape="RoundRectangle 24,0,24,0" Padding="20">
+            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="14">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                        <Label Text="Select vehicle" Style="{StaticResource PageTitleLabel}" FontSize="22" />
+                        <Label Text="Search and choose from available vehicles." Style="{StaticResource MetaLabel}" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                            BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 20">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCancelClicked" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{x:Static services:IconGlyphs.Xmark}" Style="{StaticResource IconLabel}"
+                               FontSize="14" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+
+                <SearchBar Grid.Row="1" x:Name="SearchBarControl" Placeholder="Search vehicle" TextChanged="OnSearchTextChanged" />
+
+                <Grid Grid.Row="2">
+                    <HorizontalStackLayout x:Name="NoResultsLabel" Spacing="8" HorizontalOptions="Center" VerticalOptions="Center"
+                                           IsVisible="False" Margin="0,12">
+                        <Label Text="{x:Static services:IconGlyphs.CircleXmark}" Style="{StaticResource IconLabel}" FontSize="14" TextColor="{StaticResource TextSecondaryLight}" />
+                        <Label Text="No vehicles match." Style="{StaticResource EmptyStateLabel}" Margin="0" />
+                    </HorizontalStackLayout>
+
+                    <CollectionView x:Name="ResultsCollectionView">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:VehicleOption">
+                                <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 16" Padding="14" Margin="0,0,0,10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnItemTapped" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                                                BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 20">
+                                            <Label Text="{x:Static services:IconGlyphs.Truck}" Style="{StaticResource IconLabel}"
+                                                   FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                            <Label Text="{Binding VehicleNumber}" FontFamily="PoppinsSemiBold" FontSize="14" />
+                                            <Label Text="{Binding Summary}" Style="{StaticResource MetaLabel}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="2" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                                               FontSize="12" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+
+                <Button Grid.Row="3" Text="Cancel" Clicked="OnCancelClicked" Style="{StaticResource IconTextButton}">
+                    <Button.ImageSource>
+                        <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Xmark}" Color="{StaticResource Primary}" Size="13" />
+                    </Button.ImageSource>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

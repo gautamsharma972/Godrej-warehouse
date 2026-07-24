@@ -1,0 +1,50 @@
+<MudDialog>
+    <DialogContent>
+        <div class="admin-drawer">
+            <div class="admin-drawer-header">
+                <div>
+                    <h2 class="admin-drawer-title">Edit Inward Details</h2>
+                    <p class="admin-drawer-subtitle">Update driver, transporter, and office remarks for this inward job.</p>
+                </div>
+                <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="admin-drawer-body">
+                <div class="admin-form-grid">
+                    <div class="admin-form-field">
+                        <label>Driver Name</label>
+                        <input class="admin-form-control" @bind="DriverName" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field">
+                        <label>Driver Mobile</label>
+                        <input class="admin-form-control" @bind="DriverMobile" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field full">
+                        <label>Transporter Name</label>
+                        <input class="admin-form-control" @bind="TransporterName" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field full">
+                        <label>Remarks</label>
+                        <textarea class="admin-form-control admin-form-textarea" rows="4" @bind="Remarks" @bind:event="oninput"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-drawer-actions">
+                <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+                <button class="admin-drawer-btn primary" type="button" @onclick="Submit">Save</button>
+            </div>
+        </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string? DriverName { get; set; }
+    [Parameter] public string? DriverMobile { get; set; }
+    [Parameter] public string? TransporterName { get; set; }
+    [Parameter] public string? Remarks { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(new UpdateInwardOfficeFieldsRequest(DriverName, DriverMobile, TransporterName, Remarks)));
+    private void Cancel() => MudDialog.Cancel();
+}

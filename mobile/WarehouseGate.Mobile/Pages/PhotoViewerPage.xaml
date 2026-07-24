@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             x:Class="WarehouseGate.Mobile.Pages.PhotoViewerPage"
+             BackgroundColor="Black">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Grid.Row="0" Padding="16,16,16,0">
+            <Border WidthRequest="40" HeightRequest="40" HorizontalOptions="End" StrokeThickness="0"
+                    StrokeShape="RoundRectangle 20" BackgroundColor="#33FFFFFF">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnCloseTapped" />
+                </Border.GestureRecognizers>
+                <Label Text="{x:Static services:IconGlyphs.Xmark}" FontFamily="FaSolid" FontSize="16"
+                       TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Image x:Name="PhotoImage" Aspect="AspectFit" IsVisible="False" Margin="12" />
+            <VerticalStackLayout x:Name="PlaceholderContainer" IsVisible="False" VerticalOptions="Center" Spacing="10" HorizontalOptions="Center">
+                <Label Text="{x:Static services:IconGlyphs.Camera}" FontFamily="FaSolid" FontSize="36" TextColor="White" HorizontalOptions="Center" />
+                <Label Text="Photo not available for preview" FontSize="13" TextColor="White" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <Border Grid.Row="2" Padding="18,14" StrokeThickness="0" BackgroundColor="#1A1A1A">
+            <Label x:Name="DescriptionLabel" FontSize="13" TextColor="White" HorizontalOptions="Center" />
+        </Border>
+
+    </Grid>
+</ContentPage>

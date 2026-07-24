@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/mobile/">
+    <Project Path="mobile/WarehouseGate.Mobile/WarehouseGate.Mobile.csproj">
+      <Deploy Solution="Debug|*" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/WarehouseGate.Api/WarehouseGate.Api.csproj" />
+    <Project Path="src/WarehouseGate.Api.Tests/WarehouseGate.Api.Tests.csproj" />
+    <Project Path="src/WarehouseGate.Domain/WarehouseGate.Domain.csproj" />
+    <Project Path="src/WarehouseGate.Infrastructure/WarehouseGate.Infrastructure.csproj" />
+    <Project Path="src/WarehouseGate.LoadPlanning.Tests/WarehouseGate.LoadPlanning.Tests.csproj" />
+    <Project Path="src/WarehouseGate.LoadPlanning/WarehouseGate.LoadPlanning.csproj" />
+  </Folder>
+  <Folder Name="/web/">
+    <Project Path="web/WarehouseGate.Web/WarehouseGate.Web.csproj" />
+  </Folder>
+</Solution>

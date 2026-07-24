@@ -1,0 +1,332 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<AuthorizeView>
+    <Authorized>
+        <div class="@ShellClass">
+            @if (_isSidebarOpen)
+            {
+                <button class="wg-sidebar-backdrop" type="button" aria-label="Close navigation" @onclick="CloseSidebar"></button>
+            }
+
+            @if (_isProfileOpen || _isNotificationsOpen)
+            {
+                <button class="wg-popover-backdrop" type="button" aria-label="Close open menu" @onclick="CloseMenus"></button>
+            }
+
+            <aside class="wg-sidebar">
+                <div>
+                    <div class="wg-brand">
+                        <div class="wg-brand-logo">WG</div>
+                        <div>
+                            <div class="wg-brand-title">WarehouseGate</div>
+                            <div class="wg-brand-subtitle">Operations Portal</div>
+                        </div>
+                    </div>
+
+                    <nav class="wg-menu" aria-label="Primary navigation">
+                        <AuthorizeView Roles="SuperAdmin" Context="admin">
+                            <Authorized>
+                                <a href="/admin/dashboard" class="@MenuClass("/admin/dashboard", exact: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Dashboard">
+                                    <i class="bx bx-grid-alt"></i>
+                                    <span>Dashboard</span>
+                                </a>
+
+                                <div class="wg-menu-section">
+                                    <button class="wg-menu-section-title" type="button" aria-expanded="@_isMasterDataOpen" @onclick="ToggleMasterData" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Master Data">
+                                        <span><i class="bx bx-data"></i><span>Master Data</span></span>
+                                        <i class="@MasterDataChevronClass"></i>
+                                    </button>
+                                    <div class="wg-menu-children" style="@MasterDataChildrenStyle">
+                                        <a href="/admin/countries" class="@MenuClass("/admin/countries", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Countries"><i class="bx bx-map"></i><span>Countries</span></a>
+                                        <a href="/admin/states" class="@MenuClass("/admin/states", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="States"><i class="bx bx-map-pin"></i><span>States</span></a>
+                                        <a href="/admin/cities" class="@MenuClass("/admin/cities", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Cities"><i class="bx bx-buildings"></i><span>Cities</span></a>
+                                        <a href="/admin/regions" class="@MenuClass("/admin/regions", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Regions"><i class="bx bx-globe"></i><span>Regions</span></a>
+                                        <a href="/admin/locations" class="@MenuClass("/admin/locations", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Locations"><i class="bx bx-current-location"></i><span>Locations</span></a>
+                                        <a href="/admin/warehouses" class="@MenuClass("/admin/warehouses", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Warehouses"><i class="bx bx-store-alt"></i><span>Warehouses</span></a>
+                                        <a href="/admin/dock-bays" class="@MenuClass("/admin/dock-bays", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Dock Bays"><i class="bx bx-dock-top"></i><span>Dock Bays</span></a>
+                                        <a href="/admin/transporters" class="@MenuClass("/admin/transporters", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Transporters"><i class="bx bxs-truck"></i><span>Transporters</span></a>
+                                        <a href="/admin/products" class="@MenuClass("/admin/products", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Products (SKU)"><i class="bx bx-package"></i><span>Products (SKU)</span></a>
+                                        <a href="/admin/vehicle-types" class="@MenuClass("/admin/vehicle-types", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Vehicle Types"><i class="bx bx-car"></i><span>Vehicle Types</span></a>
+                                        <a href="/admin/vehicle-categories" class="@MenuClass("/admin/vehicle-categories", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Vehicle Categories"><i class="bx bx-category"></i><span>Vehicle Categories</span></a>
+                                        <a href="/admin/vehicles" class="@MenuClass("/admin/vehicles", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Vehicle Masters"><i class="bx bx-slider-alt"></i><span>Vehicle Masters</span></a>
+                                        <a href="/admin/vehicle-registry" class="@MenuClass("/admin/vehicle-registry", child: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Vehicle Registry"><i class="bx bx-id-card"></i><span>Vehicle Registry</span></a>
+                                    </div>
+                                </div>
+
+                                <div class="wg-menu-separator"></div>
+                                <a href="/admin/users" class="@MenuClass("/admin/users")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Users">
+                                    <i class="bx bx-group"></i>
+                                    <span>Users</span>
+                                </a>
+                                <a href="/admin/audit-log" class="@MenuClass("/admin/audit-log")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Audit Log">
+                                    <i class="bx bx-history"></i>
+                                    <span>Audit Log</span>
+                                </a>
+                                <a href="/admin/reports" class="@MenuClass("/admin/reports")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Reports">
+                                    <i class="bx bx-line-chart"></i>
+                                    <span>Reports</span>
+                                </a>
+                            </Authorized>
+                        </AuthorizeView>
+
+                        <AuthorizeView Roles="LogisticsManager" Context="logistics">
+                            <Authorized>
+                                <a href="/logistics/dashboard" class="@MenuClass("/logistics/dashboard", exact: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Dashboard">
+                                    <i class="bx bx-grid-alt"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                                <a href="/logistics/vehicle-records" class="@MenuClass("/logistics/vehicle-records")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Dispatch Plan">
+                                    <i class="bx bx-package"></i>
+                                    <span>Dispatch Plan</span>
+                                </a>
+                                <a href="/logistics/reports" class="@MenuClass("/logistics/reports")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Reports">
+                                    <i class="bx bx-line-chart"></i>
+                                    <span>Reports</span>
+                                </a>
+                            </Authorized>
+                        </AuthorizeView>
+
+                        <AuthorizeView Roles="Office" Context="office">
+                            <Authorized>
+                                <a href="/office/dashboard" class="@MenuClass("/office/dashboard", exact: true)" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Dashboard">
+                                    <i class="bx bx-grid-alt"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                                <a href="/office/inward-jobs" class="@MenuClass("/office/inward-jobs")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Inward Jobs">
+                                    <i class="bx bxs-truck"></i>
+                                    <span>Inward Jobs</span>
+                                </a>
+                                <a href="/office/dispatch-orders" class="@MenuClass("/office/dispatch-orders")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Dispatch Orders">
+                                    <i class="bx bx-file"></i>
+                                    <span>Dispatch Orders</span>
+                                </a>
+                                <a href="/office/outward-jobs" class="@MenuClass("/office/outward-jobs")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Outward Jobs">
+                                    <i class="bx bx-package"></i>
+                                    <span>Outward Jobs</span>
+                                </a>
+                                <a href="/office/follow-ups" class="@MenuClass("/office/follow-ups")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Follow-ups">
+                                    <i class="bx bx-task"></i>
+                                    <span>Follow-ups</span>
+                                </a>
+                                <a href="/office/audit-trail" class="@MenuClass("/office/audit-trail")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Audit Trail">
+                                    <i class="bx bx-history"></i>
+                                    <span>Audit Trail</span>
+                                </a>
+                                <a href="/office/reports" class="@MenuClass("/office/reports")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Reports">
+                                    <i class="bx bx-line-chart"></i>
+                                    <span>Reports</span>
+                                </a>
+                            </Authorized>
+                        </AuthorizeView>
+                    </nav>
+                </div>
+
+                <form method="post" action="/logout-handler">
+                    <button class="wg-logout-btn" type="submit" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Logout">
+                        <i class="bx bx-log-out"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
+            </aside>
+
+            <main class="wg-main">
+                <header class="wg-topbar">
+                    <button class="wg-icon-button" type="button" aria-label="Toggle navigation" aria-expanded="@_isSidebarOpen" @onclick="ToggleSidebar">
+                        <i class="bx bx-menu"></i>
+                    </button>
+
+                    <div class="wg-topbar-copy">
+                        <strong>@Greeting, @(context.User.FindFirst("displayName")?.Value ?? "Super Admin")</strong>
+                        <span>Here's what's happening in your warehouse operations today.</span>
+                    </div>
+
+                    <div class="wg-topbar-actions ms-auto">
+                        <button class="wg-theme-toggle" type="button" @onclick="ToggleTheme" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="@ThemeTooltip">
+                            <i class="@ThemeIconClass"></i>
+                            <span>@ThemeLabel</span>
+                        </button>
+                        <span class="wg-live-pill"><span aria-hidden="true"></span>Live</span>
+                        <span class="wg-date-pill">
+                            <i class="bx bx-calendar"></i>
+                            @DateTime.Now.ToString("dd MMM yyyy")
+                        </span>
+                        <div class="wg-popover-anchor">
+                            <button class="wg-notification-btn" type="button" aria-label="Notifications" aria-expanded="@_isNotificationsOpen" @onclick="ToggleNotifications">
+                                <i class="bx bx-bell"></i>
+                                <span>4</span>
+                            </button>
+                            @if (_isNotificationsOpen)
+                            {
+                                <div class="wg-dropdown wg-notification-menu" role="menu">
+                                    <strong>Notifications</strong>
+                                    <a href="/admin/audit-log">4 recent audit events</a>
+                                    <a href="/admin/users">Review user access</a>
+                                    <a href="/admin/warehouses">Check warehouse setup</a>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="wg-popover-anchor">
+                            <button class="wg-profile" type="button" aria-label="Open profile menu" aria-expanded="@_isProfileOpen" @onclick="ToggleProfile">
+                                <div class="wg-avatar">SA</div>
+                                <div>
+                                    <strong>@(context.User.FindFirst("displayName")?.Value ?? "Super Admin")</strong>
+                                    <span>@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                                </div>
+                                <i class="@ProfileChevronClass"></i>
+                            </button>
+                            @if (_isProfileOpen)
+                            {
+                                <div class="wg-dropdown wg-profile-menu" role="menu">
+                                    <div class="wg-profile-summary">
+                                        <strong>@(context.User.FindFirst("displayName")?.Value ?? "Super Admin")</strong>
+                                        <span>@context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                                    </div>
+                                    @if (context.User.IsInRole("SuperAdmin"))
+                                    {
+                                        <a href="/admin/users">User management</a>
+                                        <a href="/admin/audit-log">Audit log</a>
+                                    }
+                                    <form method="post" action="/logout-handler">
+                                        <button type="submit">Logout</button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </header>
+
+                @Body
+
+                <footer class="wg-site-footer">
+                    <span>Designed &amp; Developed by <strong>Nexspire</strong></span>
+                    <span>Copyright © 2025 WarehouseGate</span>
+                </footer>
+            </main>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="wg-public-shell">
+            @Body
+
+            <footer class="wg-site-footer">
+                <span>Designed &amp; Developed by <strong>Nexspire</strong></span>
+                <span>Copyright © 2025 WarehouseGate</span>
+            </footer>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">x</span>
+</div>
+
+@code {
+    private bool _isSidebarCollapsed;
+    private bool _isSidebarOpen;
+    private bool _isMasterDataOpen = true;
+    private bool _isProfileOpen;
+    private bool _isNotificationsOpen;
+    private bool _isBlueTheme;
+    private bool _themeLoaded;
+    private System.Threading.Timer? _greetingTimer;
+
+    private string ShellClass => $"wg-shell{(_isBlueTheme ? " wg-theme-blue" : "")}{(_isSidebarCollapsed ? " wg-sidebar-collapsed" : "")}{(_isSidebarOpen ? " wg-sidebar-open" : "")}";
+    private string MasterDataChevronClass => $"bx {(_isMasterDataOpen ? "bx-chevron-up" : "bx-chevron-down")}";
+    private string ProfileChevronClass => $"bx {(_isProfileOpen ? "bx-chevron-up" : "bx-chevron-down")}";
+    private string ThemeIconClass => $"bx {(_isBlueTheme ? "bx-droplet" : "bx-palette")}";
+    private string ThemeLabel => _isBlueTheme ? "Blue" : "Teal";
+    private string ThemeTooltip => _isBlueTheme ? "Switch to teal theme" : "Switch to blue theme";
+    private string Greeting => DateTime.Now.Hour switch
+    {
+        >= 5 and < 12 => "Good morning",
+        >= 12 and < 17 => "Good afternoon",
+        >= 17 and < 21 => "Good evening",
+        _ => "Good night"
+    };
+    private string MasterDataChildrenStyle => _isMasterDataOpen
+        ? "max-height: 510px; opacity: 1; visibility: visible;"
+        : "max-height: 0; opacity: 0; visibility: hidden;";
+
+    protected override void OnInitialized()
+    {
+        _greetingTimer = new System.Threading.Timer(_ => InvokeAsync(StateHasChanged), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_themeLoaded)
+        {
+            _isBlueTheme = string.Equals(await JS.InvokeAsync<string>("warehouseGate.getTheme"), "blue", StringComparison.OrdinalIgnoreCase);
+            _themeLoaded = true;
+            StateHasChanged();
+        }
+
+        await JS.InvokeVoidAsync("warehouseGate.initTooltips");
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isBlueTheme = !_isBlueTheme;
+        await JS.InvokeVoidAsync("warehouseGate.setTheme", _isBlueTheme ? "blue" : "teal");
+    }
+
+    private void ToggleSidebar()
+    {
+        _isSidebarCollapsed = !_isSidebarCollapsed;
+        _isSidebarOpen = !_isSidebarOpen;
+        CloseMenus();
+    }
+
+    private void CloseSidebar()
+    {
+        _isSidebarOpen = false;
+        CloseMenus();
+    }
+
+    private void ToggleMasterData() => _isMasterDataOpen = !_isMasterDataOpen;
+
+    private void ToggleProfile()
+    {
+        _isProfileOpen = !_isProfileOpen;
+        _isNotificationsOpen = false;
+    }
+
+    private void ToggleNotifications()
+    {
+        _isNotificationsOpen = !_isNotificationsOpen;
+        _isProfileOpen = false;
+    }
+
+    private void CloseMenus()
+    {
+        _isProfileOpen = false;
+        _isNotificationsOpen = false;
+    }
+
+    private string MenuClass(string href, bool exact = false, bool child = false)
+    {
+        var relativePath = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].TrimEnd('/');
+        var normalizedHref = href.TrimEnd('/');
+        var isActive = exact
+            ? string.Equals(relativePath, normalizedHref, StringComparison.OrdinalIgnoreCase)
+            : relativePath.StartsWith(normalizedHref, StringComparison.OrdinalIgnoreCase);
+
+        return $"wg-menu-item{(child ? " wg-menu-child" : "")}{(isActive ? " active" : "")}";
+    }
+
+    public void Dispose()
+    {
+        _greetingTimer?.Dispose();
+    }
+}

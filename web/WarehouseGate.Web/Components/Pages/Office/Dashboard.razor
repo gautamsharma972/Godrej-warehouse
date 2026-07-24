@@ -1,0 +1,239 @@
+@page "/office/dashboard"
+@attribute [Authorize(Roles = "Office")]
+@implements IAsyncDisposable
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject DashboardRealtimeClient Realtime
+
+<PageTitle>Dashboard - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Warehouse Overview</p>
+            <h1 class="admin-page-title">Office Dashboard</h1>
+            <p class="admin-page-subtitle">Scoped movement, active inward jobs, and completion health for your assigned warehouse.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bx-store-alt"></i>@(_summary?.ScopeLabel ?? "Warehouse scope")</span>
+            <a class="admin-primary-btn" href="/office/inward-jobs"><i class="bx bxs-truck"></i>Inward Jobs</a>
+            <a class="admin-primary-btn" href="/office/outward-jobs"><i class="bx bx-package"></i>Outward Jobs</a>
+        </div>
+    </div>
+
+    @if (_summary is null)
+    {
+        <div class="admin-table-card">
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading office dashboard</span></div>
+        </div>
+    }
+    else
+    {
+        <section class="logistics-hero-grid">
+            <article class="logistics-metric-card accent">
+                <div class="logistics-metric-icon"><i class="bx bx-log-in-circle"></i></div>
+                <div>
+                    <div class="logistics-metric-label">Total gate-ins today</div>
+                    <div class="logistics-metric-value">@TotalGateInsToday</div>
+                </div>
+                <i class="bx bxs-truck logistics-illustration gate" aria-hidden="true"></i>
+            </article>
+
+            <article class="logistics-metric-card green">
+                <div class="logistics-metric-icon"><i class="bx bxs-truck"></i></div>
+                <div>
+                    <div class="logistics-metric-label">Active inward jobs</div>
+                    <div class="logistics-metric-value">@_summary.ActiveInwardJobs</div>
+                </div>
+                <i class="bx bxs-buildings logistics-illustration warehouse" aria-hidden="true"></i>
+            </article>
+
+            <article class="logistics-metric-card blue">
+                <div class="logistics-metric-icon"><i class="bx bx-check-circle"></i></div>
+                <div>
+                    <div class="logistics-metric-label">Completed today</div>
+                    <div class="logistics-metric-value">@TotalCompletedToday</div>
+                </div>
+                <i class="bx bxs-badge-check logistics-illustration completed" aria-hidden="true"></i>
+            </article>
+        </section>
+
+        <section class="logistics-stats-panel">
+            <div class="logistics-stat-item">
+                <div class="logistics-panel-icon green"><i class="bx bx-log-in"></i></div>
+                <div><span>Inward gate-ins</span><strong>@_summary.TodayInwardGateIns</strong></div>
+            </div>
+            <div class="logistics-stat-item">
+                <div class="logistics-panel-icon blue"><i class="bx bx-log-out"></i></div>
+                <div><span>Outward gate-ins</span><strong>@_summary.TodayOutwardGateIns</strong></div>
+            </div>
+            <div class="logistics-stat-item">
+                <div class="logistics-panel-icon green"><i class="bx bxs-truck"></i></div>
+                <div><span>Active inward jobs</span><strong>@_summary.ActiveInwardJobs</strong></div>
+            </div>
+            <div class="logistics-stat-item">
+                <div class="logistics-panel-icon orange"><i class="bx bxs-truck"></i></div>
+                <div><span>Active outward jobs</span><strong>@_summary.ActiveOutwardJobs</strong></div>
+            </div>
+            <div class="logistics-stat-item">
+                <div class="logistics-panel-icon green"><i class="bx bx-check-circle"></i></div>
+                <div><span>Completed inward</span><strong>@_summary.CompletedTodayInward</strong></div>
+            </div>
+            <div class="logistics-stat-item">
+                <div class="logistics-panel-icon blue"><i class="bx bx-check-circle"></i></div>
+                <div><span>Completed outward</span><strong>@_summary.CompletedTodayOutward</strong></div>
+            </div>
+        </section>
+
+        <section class="logistics-panels">
+            <article class="logistics-panel">
+                <div class="logistics-panel-head">
+                    <div>
+                        <p class="logistics-panel-kicker">Queue</p>
+                        <h2>Inward workload</h2>
+                    </div>
+                    <div class="logistics-panel-icon green"><i class="bx bx-briefcase"></i></div>
+                </div>
+                <div class="logistics-progress-row">
+                    <div class="logistics-progress-label"><span>Active inward</span><strong>@_summary.ActiveInwardJobs</strong></div>
+                    <div class="logistics-progress-track"><span style="@($"width:{Math.Max(InwardJobPercent, 2)}%")"></span></div>
+                </div>
+                <div class="logistics-panel-footer"><span>Total active</span><strong>@TotalActiveJobs</strong></div>
+            </article>
+
+            <article class="logistics-panel">
+                <div class="logistics-panel-head">
+                    <div>
+                        <p class="logistics-panel-kicker">Queue</p>
+                        <h2>Outward workload</h2>
+                    </div>
+                    <div class="logistics-panel-icon orange"><i class="bx bx-package"></i></div>
+                </div>
+                <div class="logistics-progress-row">
+                    <div class="logistics-progress-label"><span>Active outward</span><strong>@_summary.ActiveOutwardJobs</strong></div>
+                    <div class="logistics-progress-track"><span style="@($"width:{Math.Max(OutwardJobPercent, 2)}%")"></span></div>
+                </div>
+                <div class="logistics-panel-footer"><span>Total active</span><strong>@TotalActiveJobs</strong></div>
+            </article>
+
+            <article class="logistics-panel">
+                <div class="logistics-panel-head">
+                    <div>
+                        <p class="logistics-panel-kicker">Quick Access</p>
+                        <h2>Office controls</h2>
+                    </div>
+                    <div class="logistics-panel-icon blue"><i class="bx bx-customize"></i></div>
+                </div>
+                <a class="logistics-quick-link" href="/office/inward-jobs"><i class="bx bxs-truck"></i><strong>Inward Jobs</strong><i class="bx bx-chevron-right"></i></a>
+                <a class="logistics-quick-link" href="/office/outward-jobs"><i class="bx bx-package"></i><strong>Outward Jobs</strong><i class="bx bx-chevron-right"></i></a>
+                <a class="logistics-quick-link" href="/office/audit-trail"><i class="bx bx-history"></i><strong>Audit Trail</strong><i class="bx bx-chevron-right"></i></a>
+            </article>
+        </section>
+
+        @if (_analytics is not null)
+        {
+            <section class="dash-analytics-section">
+                <div class="dash-section-heading">
+                    <div>
+                        <p class="admin-eyebrow">Performance</p>
+                        <h2>Supervisor Performance &amp; KPIs</h2>
+                    </div>
+                    <p class="dash-section-subtitle">Based on completed loading/unloading jobs for your warehouse</p>
+                </div>
+
+                <div class="dash-grid-2">
+                    <SupervisorLeaderboardCard Entries="_analytics.Leaderboard" />
+                    <SupervisorPerformanceTable Entries="_analytics.SupervisorPerformance" />
+                </div>
+
+                <div class="dash-charts-grid">
+                    <TrendChart Title="Vehicles Processed" Kicker="Daily &middot; last 14 days" Labels="@DailyLabels" Series="@VehiclesProcessedSeries" />
+                    <TrendChart Title="Material Quantity" Kicker="Daily &middot; last 14 days" Labels="@DailyLabels" Series="@MaterialQtySeries" />
+                    <TrendChart Title="Productivity" Kicker="Daily &middot; last 14 days" Labels="@DailyLabels" Series="@ProductivitySeries" />
+                </div>
+
+                <div class="dash-grid-2">
+                    <TrendChart Title="Team Comparison" Kicker="Weekly &middot; last 7 days" Type="ChartType.Bar" Labels="@WeeklyLabels" Series="@WeeklyVehiclesSeries" Height="280px" />
+                    <TrendChart Title="Performance Trend" Kicker="Monthly &middot; avg load/unload time (min)" Labels="@MonthlyLabels" Series="@MonthlyTrendSeries" Height="280px" />
+                </div>
+
+                <AdvancedKpiTiles Kpis="_analytics.Kpis" />
+            </section>
+        }
+    }
+</section>
+
+@code {
+    private DashboardSummaryDto? _summary;
+    private DashboardAnalyticsDto? _analytics;
+
+    private int TotalGateInsToday => (_summary?.TodayInwardGateIns ?? 0) + (_summary?.TodayOutwardGateIns ?? 0);
+    private int TotalActiveJobs => (_summary?.ActiveInwardJobs ?? 0) + (_summary?.ActiveOutwardJobs ?? 0);
+    private int TotalCompletedToday => (_summary?.CompletedTodayInward ?? 0) + (_summary?.CompletedTodayOutward ?? 0);
+    private int InwardJobPercent => GetPercent(_summary?.ActiveInwardJobs ?? 0, TotalActiveJobs);
+    private int OutwardJobPercent => GetPercent(_summary?.ActiveOutwardJobs ?? 0, TotalActiveJobs);
+
+    private string[] DailyLabels => _analytics?.DailyTrends.Select(d => d.Date.ToString("dd MMM")).ToArray() ?? Array.Empty<string>();
+    private List<ChartSeries<double>> VehiclesProcessedSeries => new() { new() { Name = "Vehicles", Data = _analytics?.DailyTrends.Select(d => (double)d.VehiclesProcessed).ToArray() ?? Array.Empty<double>() } };
+    private List<ChartSeries<double>> MaterialQtySeries => new() { new() { Name = "Material Qty", Data = _analytics?.DailyTrends.Select(d => (double)d.MaterialQty).ToArray() ?? Array.Empty<double>() } };
+    private List<ChartSeries<double>> ProductivitySeries => new() { new() { Name = "Boxes/hr", Data = _analytics?.DailyTrends.Select(d => (double)d.ProductivityPerHour).ToArray() ?? Array.Empty<double>() } };
+
+    private string[] WeeklyLabels => _analytics?.WeeklyTeamComparison.Select(w => w.SupervisorName).ToArray() ?? Array.Empty<string>();
+    private List<ChartSeries<double>> WeeklyVehiclesSeries => new() { new() { Name = "Vehicles handled", Data = _analytics?.WeeklyTeamComparison.Select(w => (double)w.VehiclesHandled).ToArray() ?? Array.Empty<double>() } };
+
+    private string[] MonthlyLabels => _analytics?.MonthlyTrends.Select(m => m.MonthLabel).ToArray() ?? Array.Empty<string>();
+    private List<ChartSeries<double>> MonthlyTrendSeries => new() { new() { Name = "Avg minutes", Data = _analytics?.MonthlyTrends.Select(m => (double)m.AvgProcessingMinutes).ToArray() ?? Array.Empty<double>() } };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Realtime.DashboardChanged += OnDashboardChanged;
+        await LoadAsync();
+    }
+
+    // OnInitializedAsync also runs during Blazor's prerender pass (before a real interactive
+    // circuit exists, in a throwaway DI scope) - opening a real SignalR connection there was
+    // destabilizing the actual circuit once it connected for real. OnAfterRenderAsync never runs
+    // during prerendering, so this only starts once we're genuinely interactive.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Realtime.StartAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            var summaryTask = Api.GetAsync<DashboardSummaryDto>("api/dashboard/summary");
+            var analyticsTask = Api.GetAsync<DashboardAnalyticsDto>("api/dashboard/analytics");
+            await Task.WhenAll(summaryTask, analyticsTask);
+            _summary = summaryTask.Result;
+            _analytics = analyticsTask.Result;
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    // Fires on the SignalR connection's own thread - marshal back onto the render's
+    // synchronization context before touching component state.
+    private void OnDashboardChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    // Unsubscribe only - Realtime is a scoped (per-circuit) service; its underlying connection
+    // must stay open for the circuit's lifetime, disposing it here would break it the moment
+    // this page unmounts.
+    public ValueTask DisposeAsync()
+    {
+        Realtime.DashboardChanged -= OnDashboardChanged;
+        return ValueTask.CompletedTask;
+    }
+
+    private static int GetPercent(int value, int total) => total <= 0 ? 0 : Math.Clamp((int)Math.Round(value * 100m / total), 0, 100);
+}

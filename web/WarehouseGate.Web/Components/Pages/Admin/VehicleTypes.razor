@@ -1,0 +1,171 @@
+@page "/admin/vehicle-types"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Vehicle Types - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Master Data</p>
+            <h1 class="admin-page-title">Vehicle Types</h1>
+            <p class="admin-page-subtitle">Maintain the vehicle body/type master used by vehicle capacity profiles.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bxs-truck"></i>@(_types?.Count ?? 0) Types</span>
+            <button class="admin-primary-btn" type="button" @onclick="() => OpenEditor(null)"><i class="bx bx-plus"></i>Add Type</button>
+        </div>
+    </div>
+
+    <div class="admin-table-card">
+        @if (_types is null)
+        {
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading vehicle types</span></div>
+        }
+        else if (_types.Count == 0)
+        {
+            <div class="admin-empty"><i class="bx bxs-truck"></i><span>No vehicle types found.</span></div>
+        }
+        else
+        {
+            <div class="admin-table-toolbar">
+                <AdminSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search vehicle types..." />
+            </div>
+
+            @if (_view.Count == 0)
+            {
+                <div class="admin-empty"><i class="bx bxs-truck"></i><span>No vehicle types match your search.</span></div>
+            }
+            else
+            {
+                <div class="admin-table-scroll">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <AdminSortHeader Label="Name" Column="Name" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <th class="admin-actions-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var type in _view)
+                            {
+                                <tr>
+                                    <td><div class="admin-name-cell"><span class="admin-row-icon"><i class="bx bxs-truck"></i></span><span>@type.Name</span></div></td>
+                                    <td class="admin-actions-cell">
+                                        <button class="admin-icon-btn edit" type="button" title="Edit" @onclick="() => OpenEditor(type)"><i class="bx bx-edit"></i></button>
+                                        <button class="admin-icon-btn delete" type="button" title="Delete" @onclick="() => DeleteAsync(type)"><i class="bx bx-trash"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <AdminPager @bind-Page="_page" @bind-PageSize="_pageSize" TotalItems="_filteredCount" />
+        }
+    </div>
+</section>
+
+@code {
+    private List<VehicleTypeDto>? _types;
+    private string _search = string.Empty;
+    private string _sortColumn = "Name";
+    private bool _sortAscending = true;
+    private int _page = 1;
+    private int _pageSize = 10;
+
+    private IEnumerable<VehicleTypeDto> Filtered => (_types ?? [])
+        .Where(t => string.IsNullOrWhiteSpace(_search) || t.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<VehicleTypeDto> Sorted => _sortAscending
+        ? Filtered.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+        : Filtered.OrderByDescending(t => t.Name, StringComparer.OrdinalIgnoreCase);
+
+    private int _filteredCount => Filtered.Count();
+    private List<VehicleTypeDto> _view => Sorted.Skip((_page - 1) * _pageSize).Take(_pageSize).ToList();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _types = await Api.GetAsync<List<VehicleTypeDto>>("api/admin/vehicle-types");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        _search = value;
+        _page = 1;
+    }
+
+    private void SetSort(string column)
+    {
+        if (_sortColumn == column)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _sortColumn = column;
+            _sortAscending = true;
+        }
+    }
+
+    private async Task OpenEditor(VehicleTypeDto? existing)
+    {
+        var parameters = new DialogParameters<CountryEditorDialog> { { d => d.Name, existing?.Name ?? string.Empty } };
+        var dialog = await DialogService.ShowAsync<CountryEditorDialog>(existing is null ? "Add Vehicle Type" : "Edit Vehicle Type", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not string name)
+        {
+            return;
+        }
+
+        try
+        {
+            if (existing is null)
+            {
+                await Api.PostAsync<VehicleTypeDto>("api/admin/vehicle-types", new UpsertVehicleTypeRequest(name));
+            }
+            else
+            {
+                await Api.PutAsync<VehicleTypeDto>($"api/admin/vehicle-types/{existing.Id}", new UpsertVehicleTypeRequest(name));
+            }
+            Snackbar.Add("Saved.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(VehicleTypeDto type)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Delete vehicle type", $"Delete '{type.Name}'?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.DeleteAsync($"api/admin/vehicle-types/{type.Id}");
+            Snackbar.Add("Deleted.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

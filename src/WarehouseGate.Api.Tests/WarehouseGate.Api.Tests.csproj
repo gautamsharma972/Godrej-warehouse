@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Needed to resolve ASP.NET Core types (IHubContext, SignalR) referenced from
+         WarehouseGate.Api - this project itself is a plain class library, so the shared
+         framework isn't implicit the way it is for WarehouseGate.Api's Sdk.Web. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WarehouseGate.Api\WarehouseGate.Api.csproj" />
+    <ProjectReference Include="..\WarehouseGate.Domain\WarehouseGate.Domain.csproj" />
+    <ProjectReference Include="..\WarehouseGate.Infrastructure\WarehouseGate.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

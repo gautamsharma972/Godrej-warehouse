@@ -1,0 +1,75 @@
+<MudDialog>
+    <DialogContent>
+    <div class="admin-drawer">
+        <div class="admin-drawer-header">
+            <div><h2 class="admin-drawer-title">Warehouse Details</h2><p class="admin-drawer-subtitle">Configure warehouse type and geography.</p></div>
+            <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+        </div>
+        <div class="admin-drawer-body">
+            <div class="admin-form-grid">
+                <div class="admin-form-field"><label>Name</label><input class="admin-form-control" @bind="Name" @bind:event="oninput" /></div>
+                <div class="admin-form-field"><label>Warehouse Type</label><select class="admin-form-select" @bind="WarehouseType"><option value="Warehouse">Warehouse</option><option value="CPA">CPA</option></select></div>
+                <div class="admin-form-field"><label>Region / Zone</label><select class="admin-form-select" @bind="RegionId">@foreach (var region in Regions){<option value="@region.Id">@region.Name</option>}</select></div>
+                <div class="admin-form-field"><label>Country</label><select class="admin-form-select" @bind="CountryId">@foreach (var country in Countries){<option value="@country.Id">@country.Name</option>}</select></div>
+                <div class="admin-form-field"><label>State</label><select class="admin-form-select" @bind="StateId">@foreach (var state in States.Where(s => s.CountryId == CountryId)){<option value="@state.Id">@state.Name</option>}</select></div>
+                <div class="admin-form-field"><label>City</label><select class="admin-form-select" @bind="CityId">@foreach (var city in Cities.Where(c => c.StateId == StateId)){<option value="@city.Id">@city.Name</option>}</select></div>
+                <div class="admin-form-field"><label>SLA Target (minutes)</label><input class="admin-form-control" type="number" min="1" placeholder="Default: 30" @bind="SlaTargetMinutes" /></div>
+                <div class="admin-form-field"><label>Dock Hours / Day</label><input class="admin-form-control" type="number" min="1" max="24" step="0.5" placeholder="Default: 10" @bind="DockOperatingHoursPerDay" /></div>
+                <div class="admin-form-field"><label>Shift Hours / Day</label><input class="admin-form-control" type="number" min="1" max="24" step="0.5" placeholder="Default: 8" @bind="ShiftHoursPerDay" /></div>
+            </div>
+        </div>
+        <div class="admin-drawer-actions">
+            <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+            <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(string.IsNullOrWhiteSpace(Name) || RegionId == 0 || StateId == 0 || CityId == 0 || CountryId == 0)">Save</button>
+        </div>
+    </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    [Parameter]
+    public string WarehouseType { get; set; } = "Warehouse";
+
+    [Parameter]
+    public int RegionId { get; set; }
+
+    [Parameter]
+    public int StateId { get; set; }
+
+    [Parameter]
+    public int CityId { get; set; }
+
+    [Parameter]
+    public int CountryId { get; set; }
+
+    [Parameter]
+    public List<RegionDto> Regions { get; set; } = new();
+
+    [Parameter]
+    public List<StateDto> States { get; set; } = new();
+
+    [Parameter]
+    public List<CityDto> Cities { get; set; } = new();
+
+    [Parameter]
+    public List<CountryDto> Countries { get; set; } = new();
+
+    [Parameter]
+    public int? SlaTargetMinutes { get; set; }
+
+    [Parameter]
+    public decimal? DockOperatingHoursPerDay { get; set; }
+
+    [Parameter]
+    public decimal? ShiftHoursPerDay { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(
+        (Name.Trim(), WarehouseType, RegionId, StateId, CityId, CountryId, SlaTargetMinutes, DockOperatingHoursPerDay, ShiftHoursPerDay)));
+    private void Cancel() => MudDialog.Cancel();
+}

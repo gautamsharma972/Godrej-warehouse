@@ -1,0 +1,69 @@
+<MudDialog>
+    <DialogContent>
+    <div class="admin-drawer">
+        <div class="admin-drawer-header">
+            <div><h2 class="admin-drawer-title">Product Details</h2><p class="admin-drawer-subtitle">Maintain SKU dimensions, category, and stacking rules.</p></div>
+            <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+        </div>
+        <div class="admin-drawer-body">
+            <div class="admin-form-grid">
+                <div class="admin-form-field"><label>SKU Code</label><input class="admin-form-control" @bind="SkuCode" @bind:event="oninput" /></div>
+                <div class="admin-form-field"><label>Name</label><input class="admin-form-control" @bind="Name" @bind:event="oninput" /></div>
+                <div class="admin-form-field"><label>Length (cm)</label><input class="admin-form-control" type="number" step="0.01" min="0" @bind="LengthCm" /></div>
+                <div class="admin-form-field"><label>Width (cm)</label><input class="admin-form-control" type="number" step="0.01" min="0" @bind="WidthCm" /></div>
+                <div class="admin-form-field"><label>Height (cm)</label><input class="admin-form-control" type="number" step="0.01" min="0" @bind="HeightCm" /></div>
+                <div class="admin-form-field"><label>Weight (kg)</label><input class="admin-form-control" type="number" step="0.01" min="0" @bind="WeightKg" /></div>
+                <div class="admin-form-field"><label>Weight Category</label><select class="admin-form-select" @bind="Category"><option>Fragile</option><option>Light</option><option>Medium</option><option>Heavy</option></select></div>
+                <div class="admin-form-field"><label>Max Stack Layers</label><input class="admin-form-control" type="number" min="1" disabled="@(!IsStackable)" @bind="MaxStackLayers" /></div>
+                <label class="admin-form-check"><input type="checkbox" @bind="IsStackable" /> Stackable</label>
+                <div class="admin-form-field"><label>Color Hex</label><input class="admin-form-control" placeholder="#4f7cff" @bind="ColorHex" @bind:event="oninput" /></div>
+            </div>
+        </div>
+        <div class="admin-drawer-actions">
+            <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+            <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(SkuCode))">Save</button>
+        </div>
+    </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    [Parameter]
+    public string SkuCode { get; set; } = string.Empty;
+
+    [Parameter]
+    public decimal WeightKg { get; set; }
+
+    [Parameter]
+    public decimal LengthCm { get; set; }
+
+    [Parameter]
+    public decimal WidthCm { get; set; }
+
+    [Parameter]
+    public decimal HeightCm { get; set; }
+
+    [Parameter]
+    public string Category { get; set; } = "Medium";
+
+    [Parameter]
+    public bool IsStackable { get; set; } = true;
+
+    [Parameter]
+    public int MaxStackLayers { get; set; } = 99;
+
+    [Parameter]
+    public string? ColorHex { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(new UpsertProductRequest(
+        Name.Trim(), SkuCode.Trim(), WeightKg, LengthCm, WidthCm, HeightCm,
+        Category, IsStackable, IsStackable ? MaxStackLayers : 1, ColorHex)));
+
+    private void Cancel() => MudDialog.Cancel();
+}

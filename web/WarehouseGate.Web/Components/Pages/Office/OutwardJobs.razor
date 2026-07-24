@@ -1,0 +1,264 @@
+@page "/office/outward-jobs"
+@attribute [Authorize(Roles = "Office")]
+@implements IAsyncDisposable
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject OfficeRealtimeClient Realtime
+
+<PageTitle>Outward Jobs - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Office Operations</p>
+            <h1 class="admin-page-title">Outward Jobs</h1>
+            <p class="admin-page-subtitle">Track outward dispatch jobs, supervisor assignment, dispatch order context, and warehouse activity.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bx-package"></i>@(_jobs?.Count ?? 0) Jobs</span>
+            <label class="admin-form-check">
+                <input type="checkbox" checked="@_activeOnly" @onchange="OnActiveOnlyChangedAsync" />
+                <span>Active only</span>
+            </label>
+        </div>
+    </div>
+
+    @if (_jobs is null)
+    {
+        <div class="admin-table-card">
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading outward jobs</span></div>
+        </div>
+    }
+    else if (_jobs.Count == 0)
+    {
+        <div class="admin-table-card">
+            <div class="admin-empty"><i class="bx bx-package"></i><span>No outward jobs found.</span></div>
+        </div>
+    }
+    else
+    {
+        <div class="admin-table-card">
+            <div class="admin-table-toolbar">
+                <AdminSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search vehicle, DO number, or customer..." />
+                <div class="admin-table-toolbar-filters">
+                    <AdminFilterSelect Value="@_statusFilter" ValueChanged="OnStatusFilterChanged" Options="_statusNames" AllLabel="All Statuses" />
+                </div>
+            </div>
+        </div>
+
+        @if (_view.Count == 0)
+        {
+            <div class="admin-table-card">
+                <div class="admin-empty"><i class="bx bx-package"></i><span>No outward jobs match your search or filters.</span></div>
+            </div>
+        }
+        else
+        {
+        <div class="dispatch-accordion-list">
+            @foreach (var job in _view)
+            {
+                <details class="dispatch-card">
+                    <summary>
+                        <div class="dispatch-card-summary office-job-summary">
+                            <div class="dispatch-card-vehicle">
+                                <span class="admin-row-icon"><i class="bx bx-package"></i></span>
+                                <div>
+                                    <span>Vehicle</span>
+                                    <strong>@ValueOrDash(job.VehicleNumber)</strong>
+                                </div>
+                            </div>
+                            <div>
+                                <span>DO Number</span>
+                                <strong>@job.DispatchOrderNumber</strong>
+                            </div>
+                            <div>
+                                <span>Customer</span>
+                                <strong>@job.CustomerName</strong>
+                            </div>
+                            <div>
+                                <span>Status</span>
+                                <strong><span class="@OfficeStatusBadgeClass(job.Status)">@job.Status</span></strong>
+                            </div>
+                            <div>
+                                <span>Created</span>
+                                <strong>@job.CreatedTime.ToString("yyyy-MM-dd HH:mm")</strong>
+                            </div>
+                            <div>
+                                <span>Supervisor</span>
+                                <strong>@SupervisorName(job.AssignedSupervisorUserId)</strong>
+                            </div>
+                            <div class="dispatch-card-actions">
+                                <button class="admin-icon-btn edit" type="button" title="View" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => ViewDetail(job)"><i class="bx bx-show"></i></button>
+                                @if (job.Status != "Completed")
+                                {
+                                    <button class="admin-icon-btn edit" type="button" title="Assign" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => OpenAssignDialog(job)"><i class="bx bx-user-check"></i></button>
+                                }
+                            </div>
+                            <div class="dispatch-card-toggle"><i class="bx bx-chevron-down"></i></div>
+                        </div>
+                    </summary>
+
+                    <div class="dispatch-card-body">
+                        <div><span>Outward Txn</span><strong>@job.OutwardTxnNumber</strong></div>
+                        <div><span>Gate</span><strong>@ValueOrDash(job.GateName)</strong></div>
+                        <div><span>Driver</span><strong>@ValueOrDash(job.DriverName)</strong></div>
+                        <div><span>Driver Mobile</span><strong>@ValueOrDash(job.DriverMobile)</strong></div>
+                        <div><span>Transporter</span><strong>@ValueOrDash(job.TransporterName)</strong></div>
+                        <div><span>Assigned At</span><strong>@(job.AssignedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong></div>
+                        <div><span>Bay</span><strong>@ValueOrDash(job.BayName)</strong></div>
+                        <div><span>Dock-In</span><strong>@(job.DockInTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong></div>
+                    </div>
+                </details>
+            }
+        </div>
+
+        <div class="admin-table-card">
+            <AdminPager @bind-Page="_page" @bind-PageSize="_pageSize" TotalItems="_filteredCount" />
+        </div>
+        }
+    }
+</section>
+
+@code {
+    private List<OutwardJobDto>? _jobs;
+    private List<SupervisorOptionDto> _supervisors = new();
+    private bool _activeOnly = true;
+    private string _search = string.Empty;
+    private string? _statusFilter;
+    private int _page = 1;
+    private int _pageSize = 10;
+
+    private List<string> _statusNames => (_jobs ?? []).Select(j => j.Status).Distinct().OrderBy(n => n).ToList();
+
+    private IEnumerable<OutwardJobDto> Filtered => (_jobs ?? [])
+        .Where(j => string.IsNullOrWhiteSpace(_search) ||
+            (j.VehicleNumber ?? string.Empty).Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+            j.DispatchOrderNumber.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+            j.CustomerName.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .Where(j => _statusFilter is null || j.Status == _statusFilter);
+
+    private int _filteredCount => Filtered.Count();
+    private List<OutwardJobDto> _view => Filtered.Skip((_page - 1) * _pageSize).Take(_pageSize).ToList();
+
+    private void OnSearchChanged(string value)
+    {
+        _search = value;
+        _page = 1;
+    }
+
+    private void OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value;
+        _page = 1;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Realtime.OutwardJobChanged += OnOutwardJobChanged;
+        Realtime.SupervisorsChanged += OnSupervisorsChanged;
+        await LoadAsync();
+    }
+
+    // See InwardJobs.razor's identical OnAfterRenderAsync for why StartAsync moved here -
+    // OnInitializedAsync also runs during Blazor's prerender pass (throwaway DI scope, no real
+    // circuit yet), and opening a real SignalR connection there was destabilizing the actual
+    // circuit once it connected for real.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Realtime.StartAsync();
+        }
+    }
+
+    private void OnOutwardJobChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    // SuperAdmin adding/re-warehousing a supervisor elsewhere shouldn't need a full jobs reload -
+    // just refetch the supervisor list so it's ready next time the Assign dialog opens.
+    private void OnSupervisorsChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadSupervisorsAsync();
+        StateHasChanged();
+    });
+
+    // Unsubscribe only - see InwardJobs.razor's identical DisposeAsync for why Realtime itself
+    // isn't disposed here (it's a scoped, per-circuit service shared across every Office page).
+    public ValueTask DisposeAsync()
+    {
+        Realtime.OutwardJobChanged -= OnOutwardJobChanged;
+        Realtime.SupervisorsChanged -= OnSupervisorsChanged;
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            await LoadSupervisorsAsync();
+            _jobs = await Api.GetAsync<List<OutwardJobDto>>($"api/office/outward-jobs?activeOnly={_activeOnly}");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task LoadSupervisorsAsync()
+    {
+        _supervisors = await Api.GetAsync<List<SupervisorOptionDto>>("api/office/supervisors");
+    }
+
+    private async Task OnActiveOnlyChangedAsync(ChangeEventArgs args)
+    {
+        _activeOnly = args.Value is bool value && value;
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private string SupervisorName(string? id) =>
+        id is null ? "-" : (_supervisors.FirstOrDefault(s => s.Id == id)?.DisplayName ?? "(unassigned supervisor)");
+
+    private static string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+
+    private static string OfficeStatusBadgeClass(string status) => status switch
+    {
+        "Completed" => "admin-badge success",
+        "Cancelled" or "Deleted" => "admin-badge danger",
+        "PickListGenerated" => "admin-badge warning",
+        _ => "admin-badge info"
+    };
+
+    private void ViewDetail(OutwardJobDto job) => Navigation.NavigateTo($"/office/outward-jobs/{job.Id}");
+
+    private async Task OpenAssignDialog(OutwardJobDto job)
+    {
+        var parameters = new DialogParameters<AssignSupervisorDialog>
+        {
+            { d => d.SupervisorUserId, job.AssignedSupervisorUserId },
+            { d => d.Supervisors, _supervisors }
+        };
+        var dialog = await DialogService.ShowAsync<AssignSupervisorDialog>($"Assign Supervisor - {job.DispatchOrderNumber}", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not string supervisorUserId)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.PostAsync<OutwardJobDto>($"api/office/outward-jobs/{job.Id}/assign", new AssignSupervisorRequest(supervisorUserId));
+            Snackbar.Add("Supervisor assigned.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

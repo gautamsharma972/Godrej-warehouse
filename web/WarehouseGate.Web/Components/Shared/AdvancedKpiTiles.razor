@@ -1,0 +1,17 @@
+<div class="dash-kpi-grid">
+    <KpiCard Title="Vehicle Turnaround Time" Value="@($"{Kpis.AvgVehicleTurnaroundMinutes:0.#} min")"
+             Subtitle="Gate-in to gate-out, last 7 days" IconCss="bx bx-time-five" Tone="teal" />
+    <KpiCard Title="Dock Utilization" Value="@($"{Kpis.DockUtilizationPct:0.#}%")"
+             Subtitle="Last 7 days" IconCss="bx bx-building-house" Tone="blue" />
+    <KpiCard Title="Productivity" Value="@($"{Kpis.ProductivityPerHour:0.#}/hr")"
+             Subtitle="Cartons handled per hour" IconCss="bx bx-trending-up" Tone="green" />
+    <KpiCard Title="Exception Rate (Inward)" Value="@($"{Kpis.ExceptionRatePct:0.#}%")"
+             Subtitle="Damaged/short/mismatch vs received" IconCss="bx bx-error" Tone="orange" />
+    <KpiCard Title="SLA Compliance" Value="@($"{Kpis.SlaCompliancePct:0.#}%")"
+             Subtitle="@($"{Kpis.SlaVehiclesMeetingTarget} of {Kpis.SlaTotalVehicles} within 30 min")" IconCss="bx bx-check-shield" Tone="green" />
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public AdvancedKpiSummaryDto Kpis { get; set; } = null!;
+}

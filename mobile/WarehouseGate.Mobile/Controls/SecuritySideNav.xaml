@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             x:Class="WarehouseGate.Mobile.Controls.SecuritySideNav"
+             BackgroundColor="Transparent">
+
+    <Grid ColumnDefinitions="*,18">
+        <Grid x:Name="SidebarRoot" Grid.Column="0" Grid.ColumnSpan="2" RowDefinitions="Auto,*,Auto"
+              Padding="20,24" BackgroundColor="#F4FCF8">
+            <VerticalStackLayout Grid.Row="0" Spacing="10" Padding="4,0,4,24">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border Grid.Column="0" WidthRequest="46" HeightRequest="46" StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12" BackgroundColor="{StaticResource Primary}">
+                    <Label Text="WG" TextColor="White" FontFamily="PoppinsSemiBold"
+                           FontSize="15" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <VerticalStackLayout x:Name="BrandCopy" Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                    <Label Text="WarehouseGate" FontFamily="PoppinsSemiBold"
+                           FontSize="16" TextColor="#172033" />
+                    <Label Text="Security Console" FontSize="12" TextColor="#687387" />
+                </VerticalStackLayout>
+            </Grid>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout x:Name="NavStack" Grid.Row="1" Spacing="6">
+            <Border x:Name="HomePill" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="14,13" BackgroundColor="Transparent">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnHomeTapped" />
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout x:Name="HomeRow" Spacing="12">
+                    <Label x:Name="HomeIcon" Text="{x:Static services:IconGlyphs.House}" Style="{StaticResource IconLabel}" FontSize="17"
+                           WidthRequest="22" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                    <Label x:Name="HomeLabel" Text="Dashboard" FontSize="14" FontFamily="PoppinsSemiBold" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+
+            <Border x:Name="CheckInPill" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="14,13" BackgroundColor="Transparent">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnCheckInTapped" />
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout x:Name="CheckInRow" Spacing="12">
+                    <Label x:Name="CheckInIcon" Text="{x:Static services:IconGlyphs.Warehouse}" Style="{StaticResource IconLabel}" FontSize="17"
+                           WidthRequest="22" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                    <Label x:Name="CheckInLabel" Text="Check-In" FontSize="14" FontFamily="PoppinsRegular" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+
+            <Border x:Name="StatusPill" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="14,13" BackgroundColor="Transparent">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnStatusTapped" />
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout x:Name="StatusRow" Spacing="12">
+                    <Label x:Name="StatusIcon" Text="{x:Static services:IconGlyphs.ClipboardList}" Style="{StaticResource IconLabel}" FontSize="17"
+                           WidthRequest="22" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                    <Label x:Name="StatusLabel" Text="Status" FontSize="14" FontFamily="PoppinsRegular" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+
+            <Border x:Name="OutwardsPill" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="14,13" BackgroundColor="Transparent">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnOutwardsTapped" />
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout x:Name="OutwardsRow" Spacing="12">
+                    <Label x:Name="OutwardsIcon" Text="{x:Static services:IconGlyphs.RightFromBracket}" Style="{StaticResource IconLabel}" FontSize="17"
+                           WidthRequest="22" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                    <Label x:Name="OutwardsLabel" Text="Outwards" FontSize="14" FontFamily="PoppinsRegular" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+
+            <Border x:Name="AlertsPill" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="14,13" BackgroundColor="Transparent">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnAlertsTapped" />
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout x:Name="AlertsRow" Spacing="12">
+                    <Grid x:Name="AlertsIconWrap" WidthRequest="22" VerticalOptions="Center">
+                        <Label x:Name="AlertsIcon" Text="{x:Static services:IconGlyphs.Bell}" Style="{StaticResource IconLabel}" FontSize="17"
+                               WidthRequest="22" HorizontalTextAlignment="Center" />
+                        <Border x:Name="AlertsBadge" WidthRequest="18" HeightRequest="18" StrokeShape="RoundRectangle 9"
+                                StrokeThickness="0" BackgroundColor="{StaticResource StatusException}"
+                                HorizontalOptions="End" VerticalOptions="Start" Margin="0,-4,-6,0" IsVisible="False" InputTransparent="True">
+                            <Label x:Name="AlertsBadgeLabel" FontSize="9" FontFamily="PoppinsBold" TextColor="White"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                    </Grid>
+                    <Label x:Name="AlertsLabel" Text="Alerts" FontSize="14" FontFamily="PoppinsRegular" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+
+            <Border x:Name="SettingsPill" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="14,13" BackgroundColor="Transparent">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnSettingsTapped" />
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout x:Name="SettingsRow" Spacing="12">
+                    <Label x:Name="SettingsIcon" Text="{x:Static services:IconGlyphs.Gear}" Style="{StaticResource IconLabel}" FontSize="17"
+                           WidthRequest="22" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                    <Label x:Name="SettingsLabel" Text="Settings" FontSize="14" FontFamily="PoppinsRegular" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+            </VerticalStackLayout>
+
+            <Border x:Name="LogoutPill" Grid.Row="2" Stroke="#FECACA" StrokeThickness="1"
+                StrokeShape="RoundRectangle 12" Padding="14,13"
+                BackgroundColor="#FFF1F2">
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnLogoutTapped" />
+            </Border.GestureRecognizers>
+            <HorizontalStackLayout x:Name="LogoutRow" Spacing="14" HorizontalOptions="Center">
+                <Label Text="{x:Static services:IconGlyphs.RightFromBracket}" Style="{StaticResource IconLabel}" FontSize="17"
+                       TextColor="#B42318" VerticalOptions="Center" Rotation="180" />
+                <Label x:Name="LogoutLabel" Text="Log out" FontSize="14" FontFamily="PoppinsRegular"
+                       TextColor="#B42318" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            </Border>
+        </Grid>
+
+        <Border x:Name="CollapseButton" Grid.ColumnSpan="2" WidthRequest="32" HeightRequest="44"
+                Stroke="#D8DEE9" StrokeThickness="1" StrokeShape="RoundRectangle 10"
+                BackgroundColor="White" HorizontalOptions="End" VerticalOptions="Center"
+                ZIndex="10" SemanticProperties.Description="Collapse sidebar">
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnToggleCollapseTapped" />
+            </Border.GestureRecognizers>
+            <Label x:Name="CollapseIcon" Text="{x:Static services:IconGlyphs.ChevronLeft}"
+                   Style="{StaticResource IconLabel}" FontSize="13" TextColor="#687387"
+                   HorizontalOptions="Center" VerticalOptions="Center" />
+        </Border>
+    </Grid>
+</ContentView>

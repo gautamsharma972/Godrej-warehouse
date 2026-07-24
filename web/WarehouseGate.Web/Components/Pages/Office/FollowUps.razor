@@ -1,0 +1,160 @@
+@page "/office/follow-ups"
+@attribute [Authorize(Roles = "Office")]
+@implements IAsyncDisposable
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject OfficeRealtimeClient Realtime
+
+<PageTitle>Follow-ups - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Office Operations</p>
+            <h1 class="admin-page-title">Follow-ups</h1>
+            <p class="admin-page-subtitle">Automatic to-dos from completed jobs that need action - exception GRNs awaiting supplier follow-up and partial loads needing a stock transfer-out note.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bx-task"></i>@OpenCount open</span>
+        </div>
+    </div>
+
+    @if (_tasks is null)
+    {
+        <div class="admin-table-card">
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading follow-ups</span></div>
+        </div>
+    }
+    else if (_tasks.Count == 0)
+    {
+        <div class="admin-table-card">
+            <div class="admin-empty"><i class="bx bx-check-circle"></i><span>No follow-ups - completed jobs have no pending actions.</span></div>
+        </div>
+    }
+    else
+    {
+        <div class="admin-table-card">
+            <div class="admin-table-scroll">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Title</th>
+                            <th>Details</th>
+                            <th>Created</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var task in _tasks)
+                        {
+                            <tr>
+                                <td><span class="admin-badge @TypeBadge(task.Type)">@TypeLabel(task.Type)</span></td>
+                                <td>@task.Title</td>
+                                <td class="admin-muted">@task.Details</td>
+                                <td>@task.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                                <td>
+                                    @if (task.Status == "Resolved")
+                                    {
+                                        <span class="admin-badge success">Resolved</span>
+                                        <div class="admin-muted" style="font-size:12px; margin-top:4px;">
+                                            @task.ResolvedByName · @task.ResolvedAtUtc?.ToLocalTime().ToString("dd MMM HH:mm")
+                                            @if (!string.IsNullOrWhiteSpace(task.ResolutionNotes))
+                                            {
+                                                <br />@task.ResolutionNotes
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="admin-badge warning">Open</span>
+                                    }
+                                </td>
+                                <td class="admin-actions-cell">
+                                    @if (task.Status == "Open")
+                                    {
+                                        <button class="admin-primary-btn" type="button" @onclick="() => ResolveAsync(task)">
+                                            <i class="bx bx-check"></i>Resolve
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    private List<FollowUpTaskDto>? _tasks;
+
+    private int OpenCount => (_tasks ?? []).Count(t => t.Status == "Open");
+
+    protected override async Task OnInitializedAsync()
+    {
+        Realtime.FollowUpsChanged += OnFollowUpsChanged;
+        await LoadAsync();
+    }
+
+    // OnInitializedAsync also runs during Blazor's prerender pass - only start the SignalR
+    // connection once genuinely interactive (same pattern as every other realtime page).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Realtime.StartAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _tasks = await Api.GetAsync<List<FollowUpTaskDto>>("api/office/follow-ups");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private void OnFollowUpsChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    private async Task ResolveAsync(FollowUpTaskDto task)
+    {
+        try
+        {
+            // Notes are optional - resolution itself is the signal; details of what was done
+            // (e.g. the transfer-out note number) go here when the office has one.
+            await Api.PostAsync<FollowUpTaskDto>($"api/office/follow-ups/{task.Id}/resolve", new ResolveFollowUpRequest(null));
+            Snackbar.Add("Follow-up resolved.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private static string TypeBadge(string type) => type == "InwardException" ? "danger" : "warning";
+
+    private static string TypeLabel(string type) => type switch
+    {
+        "InwardException" => "GRN Exception",
+        "PartialLoadDispatch" => "Partial Load",
+        _ => type
+    };
+
+    public ValueTask DisposeAsync()
+    {
+        Realtime.FollowUpsChanged -= OnFollowUpsChanged;
+        return ValueTask.CompletedTask;
+    }
+}

@@ -1,0 +1,41 @@
+<MudDialog>
+    <DialogContent>
+    <div class="admin-drawer">
+        <div class="admin-drawer-header">
+            <div><h2 class="admin-drawer-title">Dock Bay Details</h2><p class="admin-drawer-subtitle">Configure a dock bay used for gate-in bay assignment.</p></div>
+            <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+        </div>
+        <div class="admin-drawer-body">
+            <div class="admin-form-grid">
+                <div class="admin-form-field"><label>Warehouse</label><select class="admin-form-select" @bind="WarehouseId">@foreach (var warehouse in Warehouses){<option value="@warehouse.Id">@warehouse.Name</option>}</select></div>
+                <div class="admin-form-field"><label>Bay Name</label><input class="admin-form-control" placeholder="e.g. Bay-1" @bind="Name" @bind:event="oninput" /></div>
+                <label class="admin-form-check"><input type="checkbox" @bind="IsActive" /> Active</label>
+            </div>
+        </div>
+        <div class="admin-drawer-actions">
+            <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+            <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(string.IsNullOrWhiteSpace(Name) || WarehouseId == 0)">Save</button>
+        </div>
+    </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public int WarehouseId { get; set; }
+
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsActive { get; set; } = true;
+
+    [Parameter]
+    public List<WarehouseDto> Warehouses { get; set; } = new();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok((WarehouseId, Name.Trim(), IsActive)));
+    private void Cancel() => MudDialog.Cancel();
+}

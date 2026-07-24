@@ -1,0 +1,21 @@
+@page "/"
+@inject NavigationManager Navigation
+@attribute [Authorize]
+
+@code {
+    [CascadingParameter]
+    public Task<Microsoft.AspNetCore.Components.Authorization.AuthenticationState>? AuthState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState!;
+        var role = state.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var landing = role switch
+        {
+            "SuperAdmin" => "/admin/dashboard",
+            "LogisticsManager" => "/logistics/dashboard",
+            _ => "/office/dashboard"
+        };
+        Navigation.NavigateTo(landing, replace: true);
+    }
+}

@@ -1,0 +1,210 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Users - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Access Control</p>
+            <h1 class="admin-page-title">Users</h1>
+            <p class="admin-page-subtitle">Create and manage portal users, roles, warehouse scope, and regional ownership.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bx-group"></i>@(_users?.Count ?? 0) Users</span>
+            <button class="admin-primary-btn" type="button" @onclick="() => OpenEditor(null)"><i class="bx bx-plus"></i>Add User</button>
+        </div>
+    </div>
+
+    <div class="admin-table-card">
+        @if (_users is null)
+        {
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading users</span></div>
+        }
+        else if (_users.Count == 0)
+        {
+            <div class="admin-empty"><i class="bx bx-group"></i><span>No users found.</span></div>
+        }
+        else
+        {
+            <div class="admin-table-toolbar">
+                <AdminSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search users..." />
+                <div class="admin-table-toolbar-filters">
+                    <AdminFilterSelect Value="@_roleFilter" ValueChanged="OnRoleFilterChanged" Options="_roleNames" AllLabel="All Roles" />
+                    <AdminFilterSelect Value="@_warehouseFilter" ValueChanged="OnWarehouseFilterChanged" Options="_warehouseNames" AllLabel="All Warehouses" />
+                </div>
+            </div>
+
+            @if (_view.Count == 0)
+            {
+                <div class="admin-empty"><i class="bx bx-group"></i><span>No users match your search or filters.</span></div>
+            }
+            else
+            {
+                <div class="admin-table-scroll">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <AdminSortHeader Label="Username" Column="UserName" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <AdminSortHeader Label="Display Name" Column="DisplayName" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <AdminSortHeader Label="Role" Column="Role" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <th>Region</th>
+                                <AdminSortHeader Label="Warehouse" Column="Warehouse" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <th class="admin-actions-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in _view)
+                            {
+                                <tr>
+                                    <td><div class="admin-name-cell"><span class="admin-row-icon"><i class="bx bx-user"></i></span><span>@user.UserName</span></div></td>
+                                    <td>@user.DisplayName</td>
+                                    <td><span class="admin-badge success">@user.Role</span></td>
+                                    <td>@(!string.IsNullOrWhiteSpace(user.RegionName) ? user.RegionName : "-")</td>
+                                    <td>@(!string.IsNullOrWhiteSpace(user.WarehouseName) ? user.WarehouseName : "-")</td>
+                                    <td class="admin-actions-cell">
+                                        <button class="admin-icon-btn edit" type="button" title="Edit" @onclick="() => OpenEditor(user)"><i class="bx bx-edit"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <AdminPager @bind-Page="_page" @bind-PageSize="_pageSize" TotalItems="_filteredCount" />
+        }
+    </div>
+</section>
+
+@code {
+    private List<AdminUserDto>? _users;
+    private List<RegionDto>? _regions;
+    private List<WarehouseDto>? _warehouses;
+    private string _search = string.Empty;
+    private string? _roleFilter;
+    private string? _warehouseFilter;
+    private string _sortColumn = "UserName";
+    private bool _sortAscending = true;
+    private int _page = 1;
+    private int _pageSize = 10;
+
+    private List<string> _roleNames => (_users ?? []).Select(u => u.Role).Distinct().OrderBy(n => n).ToList();
+    private List<string> _warehouseNames => (_users ?? []).Select(u => u.WarehouseName).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().OrderBy(n => n).ToList()!;
+
+    private IEnumerable<AdminUserDto> Filtered => (_users ?? [])
+        .Where(u => string.IsNullOrWhiteSpace(_search) ||
+            u.UserName.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+            u.DisplayName.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .Where(u => _roleFilter is null || u.Role == _roleFilter)
+        .Where(u => _warehouseFilter is null || u.WarehouseName == _warehouseFilter);
+
+    private IEnumerable<AdminUserDto> Sorted => _sortColumn switch
+    {
+        "DisplayName" => _sortAscending
+            ? Filtered.OrderBy(u => u.DisplayName, StringComparer.OrdinalIgnoreCase)
+            : Filtered.OrderByDescending(u => u.DisplayName, StringComparer.OrdinalIgnoreCase),
+        "Role" => _sortAscending
+            ? Filtered.OrderBy(u => u.Role, StringComparer.OrdinalIgnoreCase)
+            : Filtered.OrderByDescending(u => u.Role, StringComparer.OrdinalIgnoreCase),
+        "Warehouse" => _sortAscending
+            ? Filtered.OrderBy(u => u.WarehouseName, StringComparer.OrdinalIgnoreCase)
+            : Filtered.OrderByDescending(u => u.WarehouseName, StringComparer.OrdinalIgnoreCase),
+        _ => _sortAscending
+            ? Filtered.OrderBy(u => u.UserName, StringComparer.OrdinalIgnoreCase)
+            : Filtered.OrderByDescending(u => u.UserName, StringComparer.OrdinalIgnoreCase)
+    };
+
+    private int _filteredCount => Filtered.Count();
+    private List<AdminUserDto> _view => Sorted.Skip((_page - 1) * _pageSize).Take(_pageSize).ToList();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private void OnSearchChanged(string value)
+    {
+        _search = value;
+        _page = 1;
+    }
+
+    private void OnRoleFilterChanged(string? value)
+    {
+        _roleFilter = value;
+        _page = 1;
+    }
+
+    private void OnWarehouseFilterChanged(string? value)
+    {
+        _warehouseFilter = value;
+        _page = 1;
+    }
+
+    private void SetSort(string column)
+    {
+        if (_sortColumn == column)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _sortColumn = column;
+            _sortAscending = true;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _regions = await Api.GetAsync<List<RegionDto>>("api/admin/regions");
+            _warehouses = await Api.GetAsync<List<WarehouseDto>>("api/admin/warehouses");
+            _users = await Api.GetAsync<List<AdminUserDto>>("api/admin/users");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OpenEditor(AdminUserDto? existing)
+    {
+        var parameters = new DialogParameters<UserEditorDialog>
+        {
+            { d => d.IsEdit, existing is not null },
+            { d => d.UserName, existing?.UserName ?? string.Empty },
+            { d => d.DisplayName, existing?.DisplayName ?? string.Empty },
+            { d => d.Role, existing?.Role ?? "Office" },
+            { d => d.RegionId, existing?.RegionId },
+            { d => d.WarehouseId, existing?.WarehouseId },
+            { d => d.Regions, _regions! },
+            { d => d.Warehouses, _warehouses! }
+        };
+        var dialog = await DialogService.ShowAsync<UserEditorDialog>(existing is null ? "Add User" : "Edit User", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not ValueTuple<string, string, string, string, int?, int?> data)
+        {
+            return;
+        }
+
+        var (userName, password, displayName, role, warehouseId, regionId) = data;
+        try
+        {
+            if (existing is null)
+            {
+                await Api.PostAsync<AdminUserDto>("api/admin/users", new CreateUserRequest(userName, password, displayName, role, warehouseId, regionId));
+            }
+            else
+            {
+                await Api.PutAsync<AdminUserDto>($"api/admin/users/{existing.Id}", new UpdateUserRequest(displayName, role, warehouseId, regionId));
+            }
+            Snackbar.Add("Saved.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

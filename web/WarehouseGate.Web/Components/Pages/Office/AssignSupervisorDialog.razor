@@ -1,0 +1,42 @@
+<MudDialog>
+    <DialogContent>
+        <div class="admin-drawer">
+            <div class="admin-drawer-header">
+                <div>
+                    <h2 class="admin-drawer-title">Assign Supervisor</h2>
+                    <p class="admin-drawer-subtitle">Select the supervisor responsible for this job.</p>
+                </div>
+                <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="admin-drawer-body">
+                <div class="admin-form-grid">
+                    <div class="admin-form-field full">
+                        <label>Supervisor</label>
+                        <select class="admin-form-select" @bind="SupervisorUserId">
+                            <option value="">Select supervisor</option>
+                            @foreach (var supervisor in Supervisors)
+                            {
+                                <option value="@supervisor.Id">@supervisor.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-drawer-actions">
+                <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+                <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@string.IsNullOrEmpty(SupervisorUserId)">Assign</button>
+            </div>
+        </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string? SupervisorUserId { get; set; }
+    [Parameter] public List<SupervisorOptionDto> Supervisors { get; set; } = new();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(SupervisorUserId));
+    private void Cancel() => MudDialog.Cancel();
+}

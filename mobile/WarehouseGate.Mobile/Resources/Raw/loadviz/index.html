@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f5fbf9; font-family: sans-serif; }
+  #canvas-host { position: absolute; inset: 0; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  #warning {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%); max-width: 60%;
+    font-size: 12px; font-weight: 700; color: #c6342c;
+    background: rgba(255,244,244,0.96); border: 1px solid #f1b7b1; border-radius: 8px; padding: 6px 10px;
+    display: none; pointer-events: none; z-index: 5;
+  }
+  #hint {
+    position: absolute; bottom: 34px; left: 154px; right: 164px;
+    font-size: 11px; color: #61707d; text-align: center;
+    pointer-events: none; transition: background 0.1s, color 0.1s; z-index: 5;
+  }
+  #hint.hint-error {
+    top: 6px; bottom: auto;
+    background: rgba(198,52,44,0.95); color: #fff;
+    font-weight: 700; font-size: 12px; padding: 6px 10px; border-radius: 8px;
+  }
+  #hint.hint-ok {
+    top: 6px; bottom: auto;
+    background: rgba(24,158,106,0.95); color: #fff;
+    font-weight: 700; font-size: 12px; padding: 6px 10px; border-radius: 8px;
+  }
+  #legend {
+    position: absolute; bottom: 6px; left: 146px; right: 158px;
+    display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: center;
+    background: rgba(255,255,255,0.9); border: 1px solid #d9ebe7; border-radius: 9px; padding: 5px 10px;
+    pointer-events: none; z-index: 5; max-height: 42px; overflow: hidden;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #34424d; font-weight: 700; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  #status-legend {
+    position: absolute; top: 6px; right: 6px;
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(255,255,255,0.9); border: 1px solid #d9ebe7; border-radius: 9px; padding: 5px 9px;
+    pointer-events: none; font-size: 10px; font-weight: 700; color: #34424d; z-index: 5;
+  }
+  .status-legend-item { display: flex; align-items: center; gap: 3px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .status-dot.valid { background: #26c281; }
+  .status-dot.warning { background: #f2a413; }
+  .status-dot.invalid { background: #ff6b5f; }
+  #edge-length-label {
+    position: absolute; top: 6px; left: 6px;
+    background: rgba(255,255,255,0.92); border: 1px solid #d9ebe7; border-radius: 9px; padding: 7px 9px;
+    pointer-events: none; max-width: 44%; z-index: 5;
+  }
+  #vehicle-info-line {
+    font-size: 11px; font-weight: 800; color: #24313a;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #edge-length-line { font-size: 10px; font-weight: 700; color: #6f7f8a; margin-top: 2px; }
+
+  /* Left rail: SKU chips - tap to start placing, drag straight onto the truck. */
+  #sku-rail {
+    position: absolute; top: 52px; left: 8px; bottom: 44px; width: 136px;
+    display: flex; flex-direction: column; gap: 6px;
+    overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; z-index: 10;
+  }
+  .sku-chip {
+    background: rgba(255,255,255,0.94); border: 1px solid #d6e7e3; border-radius: 12px;
+    padding: 8px 9px; user-select: none; -webkit-user-select: none; touch-action: none;
+    flex: none; cursor: grab;
+  }
+  .sku-chip.disabled { opacity: 0.4; cursor: default; }
+  .sku-chip .swatch { width: 26px; height: 5px; border-radius: 3px; margin-bottom: 4px; }
+  .sku-chip .name { font-size: 10px; font-weight: 800; color: #24313a; line-height: 1.25; }
+  .sku-chip .meta { font-size: 9px; font-weight: 700; color: #71808b; margin-top: 3px; }
+  #drag-ghost {
+    position: absolute; z-index: 30; pointer-events: none; display: none;
+    background: rgba(38,194,129,0.92); color: #fff; font-size: 9px; font-weight: 700;
+    padding: 5px 8px; border-radius: 8px; max-width: 130px;
+  }
+
+  /* Right rail: saved arrangements, placed groups, and delivery-unloading search. */
+  #side-rail {
+    position: absolute; top: 40px; right: 8px; bottom: 44px; width: 148px;
+    display: flex; flex-direction: column; gap: 8px;
+    overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; z-index: 10;
+  }
+  .rail-section {
+    background: rgba(255,255,255,0.95); border: 1px solid #d6e7e3; border-radius: 13px;
+    padding: 9px 10px; flex: none;
+  }
+  .rail-title {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-size: 10px; font-weight: 800; color: #687781; letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 7px;
+  }
+  .rail-section.collapsible .rail-title {
+    cursor: pointer; user-select: none; -webkit-user-select: none; margin-bottom: 0;
+  }
+  .rail-title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rail-toggle {
+    width: 22px; height: 22px; border-radius: 9px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(15,155,142,0.1); color: #0f9b8e;
+  }
+  .rail-toggle::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    margin-top: -2px;
+  }
+  .rail-section.collapsible .rail-content {
+    margin-top: 8px;
+  }
+  .rail-section.collapsible.collapsed {
+    padding: 8px 10px;
+  }
+  .rail-section.collapsible.collapsed .rail-content {
+    display: none;
+  }
+  .rail-section.collapsible.collapsed .rail-toggle {
+    transform: rotate(-90deg);
+  }
+  .option-chip {
+    border: 1px solid #d6e7e3; border-radius: 10px; padding: 7px 8px; margin-bottom: 6px;
+    user-select: none; -webkit-user-select: none; cursor: pointer; position: relative;
+  }
+  .option-chip.selected { border-color: #0f9b8e; background: rgba(15,155,142,0.12); }
+  .option-chip .label { font-size: 10px; font-weight: 800; color: #24313a; padding-right: 12px; }
+  .option-chip .metrics { font-size: 9px; font-weight: 700; color: #71808b; margin-top: 2px; }
+  .option-chip .metrics.warn { color: #f2a413; }
+  .option-chip .del {
+    position: absolute; top: 2px; right: 5px; font-size: 12px; color: #7c8b96; padding: 1px 3px;
+  }
+  .rail-button {
+    border: 1px dashed #9bcfc7; border-radius: 10px; padding: 7px 6px; text-align: center;
+    font-size: 10px; font-weight: 800; color: #0f9b8e; cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+  }
+  .group-row {
+    display: flex; align-items: center; gap: 5px; padding: 4px 2px; cursor: pointer;
+    border-bottom: 1px solid rgba(214,231,227,0.9);
+    user-select: none; -webkit-user-select: none;
+  }
+  .group-row:last-child { border-bottom: none; }
+  .group-row .dot { width: 10px; height: 10px; border-radius: 4px; flex: none; }
+  .group-row .g-name { font-size: 9.5px; font-weight: 700; color: #24313a; line-height: 1.22; }
+  .lock-ico { width: 8px; height: 8px; fill: #f2a413; margin-left: 3px; vertical-align: -1px; }
+  .group-row .g-meta { font-size: 8.5px; color: #71808b; }
+  #search-input {
+    width: 100%; box-sizing: border-box; background: #f6fbfa; color: #24313a;
+    border: 1px solid #d6e7e3; border-radius: 9px; padding: 7px 8px; font-size: 10px; outline: none;
+  }
+  .search-result { padding: 5px 2px; border-bottom: 1px solid rgba(214,231,227,0.9); border-radius: 9px; }
+  .search-result.active {
+    background: rgba(15,155,142,0.14);
+    box-shadow: inset 3px 0 0 #0f9b8e;
+    padding: 7px 8px;
+    margin: 3px -4px;
+  }
+  .search-result:last-child { border-bottom: none; }
+  .search-result .s-name { font-size: 9.5px; font-weight: 800; color: #24313a; }
+  .search-result .s-pos { font-size: 8.5px; color: #71808b; margin: 2px 0 4px; }
+  .search-result .show-btn {
+    display: inline-block; font-size: 9px; font-weight: 800; color: #0f9b8e;
+    border: 1px solid #0f9b8e; border-radius: 7px; padding: 3px 9px; cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+  }
+  .search-result.active .show-btn { background: #0f9b8e; color: #fff; box-shadow: 0 4px 10px rgba(15,155,142,0.22); }
+  .rail-empty { font-size: 9px; color: #71808b; padding: 2px; }
+
+  /* Layer view: height-band filter chips along the bottom. */
+  #layer-chips {
+    position: absolute; bottom: 62px; left: 146px; right: 158px;
+    display: none; flex-wrap: nowrap; gap: 6px; justify-content: flex-start; z-index: 10;
+    overflow-x: auto; overflow-y: hidden; padding: 0 4px 4px;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  #layer-chips::-webkit-scrollbar { display: none; }
+  .layer-chip {
+    background: rgba(255,255,255,0.94); border: 1px solid #d6e7e3; border-radius: 10px;
+    font-size: 9.5px; font-weight: 800; color: #687781; padding: 4px 9px; cursor: pointer;
+    user-select: none; -webkit-user-select: none; flex: 0 0 auto;
+  }
+  .layer-chip.active { border-color: #0f9b8e; color: #0f9b8e; background: rgba(15,155,142,0.12); }
+</style>
+</head>
+<body>
+  <div id="canvas-host"></div>
+  <div id="warning"></div>
+  <div id="hint"></div>
+  <div id="legend"></div>
+  <div id="edge-length-label">
+    <div id="vehicle-info-line"></div>
+    <div id="edge-length-line"></div>
+  </div>
+  <div id="status-legend">
+    <span class="status-legend-item"><span class="status-dot valid"></span>Valid</span>
+    <span class="status-legend-item"><span class="status-dot warning"></span>Warning</span>
+    <span class="status-legend-item"><span class="status-dot invalid"></span>Invalid</span>
+  </div>
+  <div id="sku-rail"></div>
+  <div id="side-rail">
+    <div class="rail-section collapsible collapsed">
+      <div class="rail-title" role="button" aria-expanded="false">
+        <span class="rail-title-text">Arrangements</span>
+        <span class="rail-toggle"></span>
+      </div>
+      <div class="rail-content">
+        <div id="options-list"></div>
+        <div id="new-option-btn" class="rail-button">+ New</div>
+        <div id="compact-btn" class="rail-button" style="margin-top:5px">Compact load</div>
+      </div>
+    </div>
+    <div class="rail-section collapsible collapsed">
+      <div class="rail-title" role="button" aria-expanded="false">
+        <span class="rail-title-text">Placed groups</span>
+        <span class="rail-toggle"></span>
+      </div>
+      <div class="rail-content">
+        <div id="groups-list"></div>
+      </div>
+    </div>
+    <div class="rail-section">
+      <div class="rail-title"><span class="rail-title-text">Find / Unload</span></div>
+      <input id="search-input" type="text" placeholder="Name, code, stop..." />
+      <div id="search-results"></div>
+    </div>
+  </div>
+  <div id="layer-chips"></div>
+  <div id="drag-ghost"></div>
+
+  <script src="scripts/HybridWebView.js"></script>
+  <script src="three.min.js"></script>
+  <script src="loadviz.js"></script>
+</body>
+</html>

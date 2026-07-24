@@ -1,0 +1,89 @@
+<MudDialog>
+    <DialogContent>
+    <div class="admin-drawer">
+        <div class="admin-drawer-header">
+            <div><h2 class="admin-drawer-title">User Details</h2><p class="admin-drawer-subtitle">Configure portal role and operational scope.</p></div>
+            <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+        </div>
+        <div class="admin-drawer-body">
+            <div class="admin-form-grid">
+                <div class="admin-form-field"><label>Username</label><input class="admin-form-control" disabled="@IsEdit" @bind="UserName" @bind:event="oninput" /></div>
+                @if (!IsEdit)
+                {
+                    <div class="admin-form-field"><label>Password</label><input class="admin-form-control" type="password" @bind="Password" @bind:event="oninput" /></div>
+                }
+                <div class="admin-form-field"><label>Display Name</label><input class="admin-form-control" @bind="DisplayName" @bind:event="oninput" /></div>
+                <div class="admin-form-field">
+                    <label>Role</label>
+                    <select class="admin-form-select" @bind="Role">
+                        <option value="SuperAdmin">Super Admin</option>
+                        <option value="LogisticsManager">Logistics Manager</option>
+                        <option value="Office">Office Staff</option>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Security">Security</option>
+                    </select>
+                </div>
+                <div class="admin-form-field">
+                    <label>Region (Logistics Manager)</label>
+                    <select class="admin-form-select" @bind="RegionId">
+                        <option value="">None</option>
+                        @foreach (var region in Regions)
+                        {
+                            <option value="@region.Id">@region.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="admin-form-field">
+                    <label>Warehouse (Office/Security/Supervisor)</label>
+                    <select class="admin-form-select" @bind="WarehouseId">
+                        <option value="">None</option>
+                        @foreach (var warehouse in Warehouses)
+                        {
+                            <option value="@warehouse.Id">@warehouse.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="admin-drawer-actions">
+            <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+            <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(string.IsNullOrWhiteSpace(UserName) || string.IsNullOrWhiteSpace(DisplayName) || (!IsEdit && string.IsNullOrWhiteSpace(Password)))">Save</button>
+        </div>
+    </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public bool IsEdit { get; set; }
+
+    [Parameter]
+    public string UserName { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Password { get; set; } = string.Empty;
+
+    [Parameter]
+    public string DisplayName { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Role { get; set; } = "Office";
+
+    [Parameter]
+    public int? RegionId { get; set; }
+
+    [Parameter]
+    public int? WarehouseId { get; set; }
+
+    [Parameter]
+    public List<RegionDto> Regions { get; set; } = new();
+
+    [Parameter]
+    public List<WarehouseDto> Warehouses { get; set; } = new();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok((UserName.Trim(), Password, DisplayName.Trim(), Role, WarehouseId, RegionId)));
+    private void Cancel() => MudDialog.Cancel();
+}

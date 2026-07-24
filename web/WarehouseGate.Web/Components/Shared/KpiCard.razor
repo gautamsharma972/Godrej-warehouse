@@ -1,0 +1,41 @@
+<article class="@CardClass">
+    <div class="kpi-topline">
+        <span class="kpi-icon-shell" aria-hidden="true">
+            <i class="@IconCss"></i>
+        </span>
+        <span class="kpi-status">@StatusLabel</span>
+    </div>
+
+    <div class="kpi-body">
+        <p class="kpi-label">@Title</p>
+        <strong class="kpi-value">@Value</strong>
+        @if (!string.IsNullOrWhiteSpace(Subtitle))
+        {
+            <p class="kpi-subtitle">@Subtitle</p>
+        }
+    </div>
+
+    <i class="@($"{IconCss} kpi-watermark")" aria-hidden="true"></i>
+</article>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    [Parameter]
+    public string IconCss { get; set; } = "bx bx-pulse";
+
+    [Parameter]
+    public string Tone { get; set; } = "teal";
+
+    [Parameter]
+    public string StatusLabel { get; set; } = "Live";
+
+    private string CardClass => $"kpi-card kpi-tone-{Tone}";
+}

@@ -1,0 +1,521 @@
+@page "/office/inward-jobs"
+@attribute [Authorize(Roles = "Office")]
+@implements IAsyncDisposable
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject OfficeRealtimeClient Realtime
+
+<PageTitle>Inward Jobs - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Office Operations</p>
+            <h1 class="admin-page-title">Inward Jobs</h1>
+            <p class="admin-page-subtitle">Track inward gate jobs, supervisor assignment, PO context, and warehouse activity.</p>
+        </div>
+        <div class="admin-page-actions">
+            <div class="office-job-toggle">
+                <button type="button" class="@OfficeJobTabClass("expected")" @onclick='() => _activeInwardTab = "expected"'>
+                    <i class="bx bx-time-five"></i>
+                    <span>Expected</span>
+                    <em>@PendingCount</em>
+                </button>
+                <button type="button" class="@OfficeJobTabClass("other")" @onclick='() => _activeInwardTab = "other"'>
+                    <i class="bx bxs-truck"></i>
+                    <span>Inward Jobs</span>
+                    <em>@(_jobs?.Count ?? 0)</em>
+                </button>
+            </div>
+            <span class="admin-count-pill"><i class="bx bxs-truck"></i>@(_jobs?.Count ?? 0) Jobs</span>
+            <label class="admin-form-check">
+                <input type="checkbox" checked="@_activeOnly" @onchange="OnActiveOnlyChangedAsync" />
+                <span>Active only</span>
+            </label>
+        </div>
+    </div>
+
+    @if (_activeInwardTab == "expected")
+    {
+        @if (_pendingInward is { Count: > 0 })
+        {
+            <section class="office-pending-section">
+                <div class="office-pending-section-head">
+                    <h2>Expected (Not Yet Arrived)</h2>
+                    <span class="admin-count-pill"><i class="bx bx-time-five"></i>@_pendingInward.Count Pending</span>
+                </div>
+
+                <div class="admin-table-card">
+                    <div class="admin-table-toolbar">
+                        <AdminSearchBox Value="@_expectedSearch" ValueChanged="OnExpectedSearchChanged" Placeholder="Search vehicle or warehouse..." />
+                        <div class="admin-table-toolbar-filters">
+                            <AdminFilterSelect Value="@_expectedWarehouseFilter" ValueChanged="OnExpectedWarehouseFilterChanged" Options="_expectedWarehouseNames" AllLabel="All Warehouses" />
+                        </div>
+                    </div>
+                </div>
+
+                @if (ExpectedView.Count == 0)
+                {
+                    <div class="admin-table-card">
+                        <div class="admin-empty"><i class="bx bx-time-five"></i><span>No expected vehicles match your search or filters.</span></div>
+                    </div>
+                }
+                else
+                {
+                <div class="dispatch-accordion-list">
+                    @foreach (var group in ExpectedView)
+                    {
+                        <details class="dispatch-card">
+                            <summary>
+                                <div class="dispatch-card-summary office-pending-summary">
+                                    <div class="dispatch-card-vehicle">
+                                        <span class="admin-row-icon"><i class="bx bxs-truck"></i></span>
+                                        <div>
+                                            <span>Vehicle</span>
+                                            <strong>@group.VehicleNumber</strong>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span>From Warehouse</span>
+                                        <strong>@group.CounterpartWarehouseName</strong>
+                                    </div>
+                                    <div>
+                                        <span>ETA</span>
+                                        <strong>@(group.EtaDateTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong>
+                                    </div>
+                                    <div>
+                                        <span>Lines</span>
+                                        <strong>@group.Lines.Count line@(group.Lines.Count == 1 ? "" : "s")</strong>
+                                        <em>@group.Lines.Sum(l => l.BoxQuantity) total qty</em>
+                                    </div>
+                                    <div class="dispatch-card-toggle"><i class="bx bx-chevron-down"></i></div>
+                                </div>
+                            </summary>
+
+                            <div class="dispatch-card-body">
+                                <div class="dispatch-sku-table-wrap">
+                                    <span>SKU Lines</span>
+                                    <div class="admin-table-scroll">
+                                        <table class="admin-table compact">
+                                            <thead>
+                                                <tr>
+                                                    <th>SKU</th>
+                                                    <th>SKU Code</th>
+                                                    <th>PO</th>
+                                                    <th>Boxes</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var line in group.Lines)
+                                                {
+                                                    <tr>
+                                                        <td>@line.Sku</td>
+                                                        <td class="admin-muted">@ValueOrDash(line.SkuCode)</td>
+                                                        <td>@ValueOrDash(line.PoNumber)</td>
+                                                        <td>@line.BoxQuantity</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                    }
+                </div>
+
+                <div class="admin-table-card">
+                    <AdminPager @bind-Page="_expectedPage" @bind-PageSize="_expectedPageSize" TotalItems="ExpectedFilteredCount" />
+                </div>
+                }
+            </section>
+        }
+        else
+        {
+            <div class="admin-table-card">
+                <div class="admin-empty"><i class="bx bx-time-five"></i><span>No expected inward vehicles pending arrival.</span></div>
+            </div>
+        }
+    }
+
+    @if (_activeInwardTab == "other")
+    {
+        @if (_jobs is null)
+        {
+            <div class="admin-table-card">
+                <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading inward jobs</span></div>
+            </div>
+        }
+        else if (_jobs.Count == 0)
+        {
+            <div class="admin-table-card">
+                <div class="admin-empty"><i class="bx bxs-truck"></i><span>No inward jobs found.</span></div>
+            </div>
+        }
+        else
+        {
+            <div class="admin-table-card">
+                <div class="admin-table-toolbar">
+                    <AdminSearchBox Value="@_jobsSearch" ValueChanged="OnJobsSearchChanged" Placeholder="Search vehicle, PO, or supplier..." />
+                    <div class="admin-table-toolbar-filters">
+                        <AdminFilterSelect Value="@_jobsStatusFilter" ValueChanged="OnJobsStatusFilterChanged" Options="_jobsStatusNames" AllLabel="All Statuses" />
+                    </div>
+                </div>
+            </div>
+
+            @if (JobGroupsView.Count == 0)
+            {
+                <div class="admin-table-card">
+                    <div class="admin-empty"><i class="bx bxs-truck"></i><span>No inward jobs match your search or filters.</span></div>
+                </div>
+            }
+            else
+            {
+            <div class="dispatch-accordion-list">
+                @foreach (var group in JobGroupsView)
+                {
+                    var groupedStatus = GroupedStatus(group);
+                    <details class="dispatch-card">
+                        <summary>
+                            <div class="dispatch-card-summary office-group-summary">
+                                <div class="dispatch-card-vehicle">
+                                    <span class="admin-row-icon"><i class="bx bxs-truck"></i></span>
+                                    <div>
+                                        <span>Vehicle</span>
+                                        <strong>@group.Key</strong>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span>PO</span>
+                                    <strong>@GroupedPoNumber(group)</strong>
+                                </div>
+                                <div>
+                                    <span>Supplier</span>
+                                    <strong>@GroupedSupplier(group)</strong>
+                                </div>
+                                <div>
+                                    <span>Jobs</span>
+                                    <strong>@group.Count() job@(group.Count() == 1 ? "" : "s")</strong>
+                                    <em>Latest @group.Max(j => j.GateInTime).ToString("yyyy-MM-dd HH:mm")</em>
+                                </div>
+                                <div>
+                                    <span>Status</span>
+                                    <strong><span class="@groupedStatus.BadgeClass">@groupedStatus.Label</span></strong>
+                                </div>
+                                <div class="dispatch-card-toggle"><i class="bx bx-chevron-down"></i></div>
+                            </div>
+                        </summary>
+
+                        <div class="dispatch-card-body">
+                            <div class="dispatch-sku-table-wrap">
+                                <span>Jobs for this Vehicle</span>
+                                <div class="admin-table-scroll">
+                                    <table class="admin-table compact">
+                                        <thead>
+                                            <tr>
+                                                <th>PO</th>
+                                                <th>Supplier</th>
+                                                <th>Status</th>
+                                                <th>Gate-In</th>
+                                                <th>Supervisor</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var job in group)
+                                            {
+                                                <tr>
+                                                    <td>@job.PONumber</td>
+                                                    <td>@job.SupplierName</td>
+                                                    <td><span class="@OfficeStatusBadgeClass(job.Status)">@job.Status</span></td>
+                                                    <td>@job.GateInTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                                    <td>@SupervisorName(job.AssignedSupervisorUserId)</td>
+                                                    <td class="admin-actions-cell">
+                                                        <button class="admin-icon-btn edit" type="button" title="View" @onclick="() => ViewDetail(job)"><i class="bx bx-show"></i></button>
+                                                        @if (job.Status != "Completed")
+                                                        {
+                                                            <button class="admin-icon-btn edit" type="button" title="Assign" @onclick="() => OpenAssignDialog(job)"><i class="bx bx-user-check"></i></button>
+                                                        }
+                                                        <button class="admin-icon-btn edit" type="button" title="Edit" @onclick="() => OpenEditDialog(job)"><i class="bx bx-edit"></i></button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+                }
+            </div>
+
+            <div class="admin-table-card">
+                <AdminPager @bind-Page="_jobsPage" @bind-PageSize="_jobsPageSize" TotalItems="JobGroupsFilteredCount" />
+            </div>
+            }
+        }
+    }
+</section>
+
+@code {
+    private List<InwardJobDto>? _jobs;
+    private List<PendingDispatchPlanGroupDto>? _pendingInward;
+    private List<SupervisorOptionDto> _supervisors = new();
+    private bool _activeOnly = true;
+    private string _activeInwardTab = "expected";
+
+    private string _expectedSearch = string.Empty;
+    private string? _expectedWarehouseFilter;
+    private int _expectedPage = 1;
+    private int _expectedPageSize = 10;
+
+    private string _jobsSearch = string.Empty;
+    private string? _jobsStatusFilter;
+    private int _jobsPage = 1;
+    private int _jobsPageSize = 10;
+
+    private int PendingCount => _pendingInward?.Count ?? 0;
+
+    private string OfficeJobTabClass(string tab) =>
+        _activeInwardTab == tab ? "office-job-toggle-btn active" : "office-job-toggle-btn";
+
+    private List<string> _expectedWarehouseNames =>
+        (_pendingInward ?? []).Select(g => g.CounterpartWarehouseName).Distinct().OrderBy(n => n).ToList();
+
+    private IEnumerable<PendingDispatchPlanGroupDto> ExpectedFiltered => (_pendingInward ?? [])
+        .Where(g => string.IsNullOrWhiteSpace(_expectedSearch) ||
+            g.VehicleNumber.Contains(_expectedSearch, StringComparison.OrdinalIgnoreCase) ||
+            g.CounterpartWarehouseName.Contains(_expectedSearch, StringComparison.OrdinalIgnoreCase))
+        .Where(g => _expectedWarehouseFilter is null || g.CounterpartWarehouseName == _expectedWarehouseFilter);
+
+    private int ExpectedFilteredCount => ExpectedFiltered.Count();
+    private List<PendingDispatchPlanGroupDto> ExpectedView =>
+        ExpectedFiltered.Skip((_expectedPage - 1) * _expectedPageSize).Take(_expectedPageSize).ToList();
+
+    private void OnExpectedSearchChanged(string value)
+    {
+        _expectedSearch = value;
+        _expectedPage = 1;
+    }
+
+    private void OnExpectedWarehouseFilterChanged(string? value)
+    {
+        _expectedWarehouseFilter = value;
+        _expectedPage = 1;
+    }
+
+    // Status options come from each group's OWN grouped label (including "Mixed") rather than
+    // the raw per-job statuses, so the dropdown only ever offers values a user can actually see
+    // in the Status column.
+    private List<string> _jobsStatusNames =>
+        VehicleGroups.Select(g => GroupedStatus(g).Label).Distinct().OrderBy(n => n).ToList();
+
+    private IEnumerable<IGrouping<string, InwardJobDto>> JobGroupsFiltered => VehicleGroups
+        .Where(g => string.IsNullOrWhiteSpace(_jobsSearch) ||
+            g.Key.Contains(_jobsSearch, StringComparison.OrdinalIgnoreCase) ||
+            g.Any(j => j.PONumber.Contains(_jobsSearch, StringComparison.OrdinalIgnoreCase) ||
+                       j.SupplierName.Contains(_jobsSearch, StringComparison.OrdinalIgnoreCase)))
+        .Where(g => _jobsStatusFilter is null || GroupedStatus(g).Label == _jobsStatusFilter);
+
+    private int JobGroupsFilteredCount => JobGroupsFiltered.Count();
+    private List<IGrouping<string, InwardJobDto>> JobGroupsView =>
+        JobGroupsFiltered.Skip((_jobsPage - 1) * _jobsPageSize).Take(_jobsPageSize).ToList();
+
+    private void OnJobsSearchChanged(string value)
+    {
+        _jobsSearch = value;
+        _jobsPage = 1;
+    }
+
+    private void OnJobsStatusFilterChanged(string? value)
+    {
+        _jobsStatusFilter = value;
+        _jobsPage = 1;
+    }
+
+    private List<IGrouping<string, InwardJobDto>> VehicleGroups =>
+        (_jobs ?? [])
+            .GroupBy(j => j.VehicleNumber)
+            .OrderByDescending(g => g.Max(j => j.GateInTime))
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Realtime.InwardJobChanged += OnInwardJobChanged;
+        Realtime.SupervisorsChanged += OnSupervisorsChanged;
+        Realtime.VehicleLogisticsRecordChanged += OnVehicleLogisticsRecordChanged;
+        await LoadAsync();
+    }
+
+    // OnInitializedAsync also runs during Blazor's prerender pass (before a real interactive
+    // circuit exists, in a throwaway DI scope) - opening a real SignalR connection there was
+    // destabilizing the actual circuit once it connected for real. OnAfterRenderAsync never runs
+    // during prerendering, so this only starts once we're genuinely interactive.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Realtime.StartAsync();
+        }
+    }
+
+    // Fires on the SignalR connection's own thread - marshal back onto the render's
+    // synchronization context before touching component state, same as any Blazor event handler
+    // driven by a background source.
+    private void OnInwardJobChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    // SuperAdmin adding/re-warehousing a supervisor elsewhere shouldn't need a full jobs reload -
+    // just refetch the supervisor list so it's ready next time the Assign dialog opens.
+    private void OnSupervisorsChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadSupervisorsAsync();
+        StateHasChanged();
+    });
+
+    // Refreshes just the pending-arrival panel - fires when Logistics Manager edits/uploads
+    // Dispatch Plan data, and when a pending row gets claimed by a real gate check-in (this page's
+    // own or another Office session's), so a vehicle disappears from "Expected" the moment it
+    // actually arrives.
+    private void OnVehicleLogisticsRecordChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadPendingInwardAsync();
+        StateHasChanged();
+    });
+
+    // Unsubscribe only - Realtime is a scoped (per-circuit) service shared with every other Office
+    // page the user visits in this browser tab, so its underlying connection must stay open for
+    // the circuit's lifetime; disposing it here would break it the moment this page unmounts.
+    public ValueTask DisposeAsync()
+    {
+        Realtime.InwardJobChanged -= OnInwardJobChanged;
+        Realtime.SupervisorsChanged -= OnSupervisorsChanged;
+        Realtime.VehicleLogisticsRecordChanged -= OnVehicleLogisticsRecordChanged;
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            await LoadSupervisorsAsync();
+            _jobs = await Api.GetAsync<List<InwardJobDto>>($"api/office/inward-jobs?activeOnly={_activeOnly}");
+            await LoadPendingInwardAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task LoadPendingInwardAsync()
+    {
+        _pendingInward = await Api.GetAsync<List<PendingDispatchPlanGroupDto>>("api/office/dispatch-plan/inward/pending");
+    }
+
+    private async Task LoadSupervisorsAsync()
+    {
+        _supervisors = await Api.GetAsync<List<SupervisorOptionDto>>("api/office/supervisors");
+    }
+
+    private async Task OnActiveOnlyChangedAsync(ChangeEventArgs args)
+    {
+        _activeOnly = args.Value is bool value && value;
+        _jobsPage = 1;
+        await LoadAsync();
+    }
+
+    private string SupervisorName(string? id) =>
+        id is null ? "-" : (_supervisors.FirstOrDefault(s => s.Id == id)?.DisplayName ?? "(unassigned supervisor)");
+
+    private static string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+
+    private static string GroupedPoNumber(IGrouping<string, InwardJobDto> group)
+    {
+        var distinct = group.Select(j => j.PONumber).Distinct().ToList();
+        return distinct.Count == 1 ? distinct[0] : "Multiple";
+    }
+
+    private static string GroupedSupplier(IGrouping<string, InwardJobDto> group)
+    {
+        var distinct = group.Select(j => j.SupplierName).Distinct().ToList();
+        return distinct.Count == 1 ? distinct[0] : "Multiple";
+    }
+
+    private static (string Label, string BadgeClass) GroupedStatus(IGrouping<string, InwardJobDto> group)
+    {
+        var distinct = group.Select(j => j.Status).Distinct().ToList();
+        return distinct.Count == 1
+            ? (distinct[0], OfficeStatusBadgeClass(distinct[0]))
+            : ("Mixed", "admin-badge neutral");
+    }
+
+    private static string OfficeStatusBadgeClass(string status) => status switch
+    {
+        "Completed" => "admin-badge success",
+        "Cancelled" or "Deleted" => "admin-badge danger",
+        "Pending" or "Waiting" => "admin-badge warning",
+        _ => "admin-badge info"
+    };
+
+    private void ViewDetail(InwardJobDto job) => Navigation.NavigateTo($"/office/inward-jobs/{job.Id}");
+
+    private async Task OpenAssignDialog(InwardJobDto job)
+    {
+        var parameters = new DialogParameters<AssignSupervisorDialog>
+        {
+            { d => d.SupervisorUserId, job.AssignedSupervisorUserId },
+            { d => d.Supervisors, _supervisors }
+        };
+        var dialog = await DialogService.ShowAsync<AssignSupervisorDialog>($"Assign Supervisor - {job.VehicleNumber}", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not string supervisorUserId)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.PostAsync<InwardJobDto>($"api/office/inward-jobs/{job.Id}/assign", new AssignSupervisorRequest(supervisorUserId));
+            Snackbar.Add("Supervisor assigned.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OpenEditDialog(InwardJobDto job)
+    {
+        var parameters = new DialogParameters<EditInwardFieldsDialog>
+        {
+            { d => d.DriverName, job.DriverName },
+            { d => d.DriverMobile, job.DriverMobile },
+            { d => d.TransporterName, job.TransporterName },
+            { d => d.Remarks, job.Remarks }
+        };
+        var dialog = await DialogService.ShowAsync<EditInwardFieldsDialog>($"Edit - {job.VehicleNumber}", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not UpdateInwardOfficeFieldsRequest request)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.PutAsync<InwardJobDto>($"api/office/inward-jobs/{job.Id}", request);
+            Snackbar.Add("Saved.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

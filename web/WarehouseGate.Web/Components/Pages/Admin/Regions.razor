@@ -1,0 +1,174 @@
+@page "/admin/regions"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Regions - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Master Data</p>
+            <h1 class="admin-page-title">Regions</h1>
+            <p class="admin-page-subtitle">Define operational regions for logistics ownership and warehouse grouping.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bx-network-chart"></i>@(_regions?.Count ?? 0) Regions</span>
+            <button class="admin-primary-btn" type="button" @onclick="() => OpenEditor(null)">
+                <i class="bx bx-plus"></i>
+                Add Region
+            </button>
+        </div>
+    </div>
+
+    <div class="admin-table-card">
+        @if (_regions is null)
+        {
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading regions</span></div>
+        }
+        else if (_regions.Count == 0)
+        {
+            <div class="admin-empty"><i class="bx bx-network-chart"></i><span>No regions found.</span></div>
+        }
+        else
+        {
+            <div class="admin-table-toolbar">
+                <AdminSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search regions..." />
+            </div>
+
+            @if (_view.Count == 0)
+            {
+                <div class="admin-empty"><i class="bx bx-network-chart"></i><span>No regions match your search.</span></div>
+            }
+            else
+            {
+                <div class="admin-table-scroll">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <AdminSortHeader Label="Name" Column="Name" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <th class="admin-actions-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var region in _view)
+                            {
+                                <tr>
+                                    <td><div class="admin-name-cell"><span class="admin-row-icon"><i class="bx bx-network-chart"></i></span><span>@region.Name</span></div></td>
+                                    <td class="admin-actions-cell">
+                                        <button class="admin-icon-btn edit" type="button" title="Edit" @onclick="() => OpenEditor(region)"><i class="bx bx-edit"></i></button>
+                                        <button class="admin-icon-btn delete" type="button" title="Delete" @onclick="() => DeleteAsync(region)"><i class="bx bx-trash"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <AdminPager @bind-Page="_page" @bind-PageSize="_pageSize" TotalItems="_filteredCount" />
+        }
+    </div>
+</section>
+
+@code {
+    private List<RegionDto>? _regions;
+    private string _search = string.Empty;
+    private string _sortColumn = "Name";
+    private bool _sortAscending = true;
+    private int _page = 1;
+    private int _pageSize = 10;
+
+    private IEnumerable<RegionDto> Filtered => (_regions ?? [])
+        .Where(r => string.IsNullOrWhiteSpace(_search) || r.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<RegionDto> Sorted => _sortAscending
+        ? Filtered.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+        : Filtered.OrderByDescending(r => r.Name, StringComparer.OrdinalIgnoreCase);
+
+    private int _filteredCount => Filtered.Count();
+    private List<RegionDto> _view => Sorted.Skip((_page - 1) * _pageSize).Take(_pageSize).ToList();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _regions = await Api.GetAsync<List<RegionDto>>("api/admin/regions");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        _search = value;
+        _page = 1;
+    }
+
+    private void SetSort(string column)
+    {
+        if (_sortColumn == column)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _sortColumn = column;
+            _sortAscending = true;
+        }
+    }
+
+    private async Task OpenEditor(RegionDto? existing)
+    {
+        var parameters = new DialogParameters<CountryEditorDialog> { { d => d.Name, existing?.Name ?? string.Empty } };
+        var dialog = await DialogService.ShowAsync<CountryEditorDialog>(existing is null ? "Add Region" : "Edit Region", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not string name)
+        {
+            return;
+        }
+
+        try
+        {
+            if (existing is null)
+            {
+                await Api.PostAsync<RegionDto>("api/admin/regions", new UpsertRegionRequest(name));
+            }
+            else
+            {
+                await Api.PutAsync<RegionDto>($"api/admin/regions/{existing.Id}", new UpsertRegionRequest(name));
+            }
+            Snackbar.Add("Saved.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(RegionDto region)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Delete region", $"Delete '{region.Name}'?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.DeleteAsync($"api/admin/regions/{region.Id}");
+            Snackbar.Add("Deleted.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

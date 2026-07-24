@@ -1,0 +1,26 @@
+<th class="@CssClass" @onclick="HandleClick">
+    <span>@Label<i class="bx @IconClass"></i></span>
+</th>
+
+@code {
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Column { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ActiveColumn { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Ascending { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSort { get; set; }
+
+    private bool IsActive => ActiveColumn == Column;
+    private string CssClass => IsActive ? "admin-th-sort active" : "admin-th-sort";
+    private string IconClass => !IsActive ? "bx-sort-alt-2" : (Ascending ? "bx-sort-up" : "bx-sort-down");
+
+    private Task HandleClick() => OnSort.InvokeAsync(Column);
+}

@@ -1,0 +1,1961 @@
+Using launch settings from src\WarehouseGate.Api\Properties\launchSettings.json...
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (32ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (38ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [MigrationId], [ProductVersion]
+      FROM [__EFMigrationsHistory]
+      ORDER BY [MigrationId];
+info: Microsoft.EntityFrameworkCore.Migrations[20405]
+      No migrations were applied. The database is already up to date.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (16ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[Id], [c].[Name]
+      FROM [Countries] AS [c]
+      WHERE [c].[Name] = N'India'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (17ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [s].[Id], [s].[CountryId], [s].[Name]
+      FROM [States] AS [s]
+      WHERE [s].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [s].[Id], [s].[CountryId], [s].[Name]
+      FROM [States] AS [s]
+      WHERE [s].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[Id], [c].[Name], [c].[StateId]
+      FROM [Cities] AS [c]
+      WHERE [c].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[Id], [c].[Name], [c].[StateId]
+      FROM [Cities] AS [c]
+      WHERE [c].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[Name]
+      FROM [Regions] AS [r]
+      WHERE [r].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[Name]
+      FROM [Regions] AS [r]
+      WHERE [r].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [w].[Id], [w].[CityId], [w].[CountryId], [w].[Name], [w].[RegionId], [w].[StateId], [w].[WarehouseType]
+      FROM [Warehouses] AS [w]
+      WHERE [w].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [w].[Id], [w].[CityId], [w].[CountryId], [w].[Name], [w].[RegionId], [w].[StateId], [w].[WarehouseType]
+      FROM [Warehouses] AS [w]
+      WHERE [w].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [w].[Id], [w].[CityId], [w].[CountryId], [w].[Name], [w].[RegionId], [w].[StateId], [w].[WarehouseType]
+      FROM [Warehouses] AS [w]
+      WHERE [w].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [w].[Id], [w].[CityId], [w].[CountryId], [w].[Name], [w].[RegionId], [w].[StateId], [w].[WarehouseType]
+      FROM [Warehouses] AS [w]
+      WHERE [w].[Name] = N'Mumbai DC'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[Name]
+      FROM [Regions] AS [r]
+      WHERE [r].[Name] = N'West'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (12ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__poNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [PurchaseOrders] AS [p]
+              WHERE [p].[PONumber] = @__poNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__poNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [PurchaseOrders] AS [p]
+              WHERE [p].[PONumber] = @__poNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__poNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [PurchaseOrders] AS [p]
+              WHERE [p].[PONumber] = @__poNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__number_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Vehicles] AS [v]
+              WHERE [v].[Number] = @__number_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__number_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Vehicles] AS [v]
+              WHERE [v].[Number] = @__number_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__number_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Vehicles] AS [v]
+              WHERE [v].[Number] = @__number_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__number_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Vehicles] AS [v]
+              WHERE [v].[Number] = @__number_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[CustomerName], [t].[DispatchOrderNumber], [t].[RequestedDate], [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+      FROM (
+          SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+          FROM [DispatchOrders] AS [d]
+          WHERE [d].[DispatchOrderNumber] = N'DO-2009'
+      ) AS [t]
+      LEFT JOIN [DispatchOrderLines] AS [d0] ON [t].[Id] = [d0].[DispatchOrderId]
+      ORDER BY [t].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [DispatchOrders] AS [d]
+              WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[Id], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+      FROM [Products] AS [p]
+      WHERE [p].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [d].[Id], [d].[DeliveryLocation], [d].[DispatchOrderId], [d].[OrderedQty], [d].[ProductId], [d].[ProductName], [d].[UnitOfMeasure]
+      FROM [DispatchOrderLines] AS [d]
+      WHERE [d].[ProductId] IS NULL
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [d].[Id], [d].[DeliveryLocation], [d].[DispatchOrderId], [d].[OrderedQty], [d].[ProductId], [d].[ProductName], [d].[UnitOfMeasure]
+      FROM [DispatchOrderLines] AS [d]
+      WHERE [d].[DeliveryLocation] = N''
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[Name]
+      FROM [VehicleTypes] AS [v]
+      WHERE [v].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[Name]
+      FROM [VehicleTypes] AS [v]
+      WHERE [v].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[Name]
+      FROM [VehicleTypes] AS [v]
+      WHERE [v].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[Name]
+      FROM [VehicleCategories] AS [v]
+      WHERE [v].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[Name]
+      FROM [VehicleCategories] AS [v]
+      WHERE [v].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__name_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[Name]
+      FROM [VehicleCategories] AS [v]
+      WHERE [v].[Name] = @__name_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__vehicleTypeId_0='?' (DbType = Int32), @__vehicleCategoryId_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[VehicleCategoryId], [v].[VehicleTypeId], [v].[WidthCm]
+      FROM [VehicleMasters] AS [v]
+      WHERE [v].[VehicleTypeId] = @__vehicleTypeId_0 AND [v].[VehicleCategoryId] = @__vehicleCategoryId_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__vehicleTypeId_0='?' (DbType = Int32), @__vehicleCategoryId_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[VehicleCategoryId], [v].[VehicleTypeId], [v].[WidthCm]
+      FROM [VehicleMasters] AS [v]
+      WHERE [v].[VehicleTypeId] = @__vehicleTypeId_0 AND [v].[VehicleCategoryId] = @__vehicleCategoryId_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__vehicleTypeId_0='?' (DbType = Int32), @__vehicleCategoryId_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[VehicleCategoryId], [v].[VehicleTypeId], [v].[WidthCm]
+      FROM [VehicleMasters] AS [v]
+      WHERE [v].[VehicleTypeId] = @__vehicleTypeId_0 AND [v].[VehicleCategoryId] = @__vehicleCategoryId_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [v].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm]
+      FROM [Vehicles] AS [v]
+      WHERE [v].[MaxWeightKg] IS NULL
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm]
+      FROM [Vehicles] AS [v]
+      WHERE [v].[Number] = N'GJ01AX7790'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm]
+      FROM [Vehicles] AS [v]
+      WHERE [v].[Number] = N'KA05MZ4521'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm]
+      FROM [Vehicles] AS [v]
+      WHERE [v].[Number] = N'MH04GT3312'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [v].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm]
+      FROM [Vehicles] AS [v]
+      WHERE [v].[Number] = N'MH20BZ9988'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[ActualLoadingStartedAt], [t].[AssignedSupervisorUserId], [t].[AssignedTime], [t].[BayName], [t].[CreatedByOfficeUserId], [t].[CreatedTime], [t].[DispatchOrderId], [t].[DispatchReadyConfirmedAt], [t].[DockInTime], [t].[DockOutTime], [t].[DriverMobile], [t].[DriverName], [t].[ExceptionReason], [t].[ExceptionRemarks], [t].[ExceptionReportedAt], [t].[GateInBySecurityUserId], [t].[GateInTime], [t].[GateName], [t].[GateOutBySecurityUserId], [t].[GateOutTime], [t].[GatePassToken], [t].[GpsLatitude], [t].[GpsLongitude], [t].[LoadingStartTime], [t].[OutwardTxnNumber], [t].[Status], [t].[TransporterName], [t].[VehicleId], [t].[WarehouseId], [t].[Id0], [o0].[Id], [o0].[CreatedAt], [o0].[CreatedByUserId], [o0].[IsSelected], [o0].[Label], [o0].[OutwardTransactionId]
+      FROM (
+          SELECT TOP(1) [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id] AS [Id0]
+          FROM [OutwardTransactions] AS [o]
+          INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+          WHERE [d].[DispatchOrderNumber] = N'DO-2009'
+      ) AS [t]
+      LEFT JOIN [OutwardLoadPlanOptions] AS [o0] ON [t].[Id] = [o0].[OutwardTransactionId]
+      ORDER BY [t].[Id], [t].[Id0]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[ActualLoadingStartedAt], [t].[AssignedSupervisorUserId], [t].[AssignedTime], [t].[BayName], [t].[CreatedByOfficeUserId], [t].[CreatedTime], [t].[DispatchOrderId], [t].[DispatchReadyConfirmedAt], [t].[DockInTime], [t].[DockOutTime], [t].[DriverMobile], [t].[DriverName], [t].[ExceptionReason], [t].[ExceptionRemarks], [t].[ExceptionReportedAt], [t].[GateInBySecurityUserId], [t].[GateInTime], [t].[GateName], [t].[GateOutBySecurityUserId], [t].[GateOutTime], [t].[GatePassToken], [t].[GpsLatitude], [t].[GpsLongitude], [t].[LoadingStartTime], [t].[OutwardTxnNumber], [t].[Status], [t].[TransporterName], [t].[VehicleId], [t].[WarehouseId], [t].[Id0], [o0].[Id], [o0].[CreatedAt], [o0].[CreatedByUserId], [o0].[IsSelected], [o0].[Label], [o0].[OutwardTransactionId]
+      FROM (
+          SELECT TOP(1) [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id] AS [Id0]
+          FROM [OutwardTransactions] AS [o]
+          INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+          WHERE [d].[DispatchOrderNumber] = N'DO-2010'
+      ) AS [t]
+      LEFT JOIN [OutwardLoadPlanOptions] AS [o0] ON [t].[Id] = [o0].[OutwardTransactionId]
+      ORDER BY [t].[Id], [t].[Id0]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[DeliveryLocation], [d].[DispatchOrderId], [d].[OrderedQty], [d].[ProductId], [d].[ProductName], [d].[UnitOfMeasure]
+      FROM [DispatchOrderLines] AS [d]
+      INNER JOIN [DispatchOrders] AS [d0] ON [d].[DispatchOrderId] = [d0].[Id]
+      WHERE [d0].[DispatchOrderNumber] = N'DO-2004'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [d].[Id], [d].[DeliveryLocation], [d].[DispatchOrderId], [d].[OrderedQty], [d].[ProductId], [d].[ProductName], [d].[UnitOfMeasure]
+      FROM [DispatchOrderLines] AS [d]
+      INNER JOIN [DispatchOrders] AS [d0] ON [d].[DispatchOrderId] = [d0].[Id]
+      WHERE [d0].[DispatchOrderNumber] = N'DO-2005'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__dispatchOrderNumber_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate]
+      FROM [DispatchOrders] AS [d]
+      WHERE [d].[DispatchOrderNumber] = @__dispatchOrderNumber_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__dispatchOrder_Id_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [OutwardTransactions] AS [o]
+              WHERE [o].[DispatchOrderId] = @__dispatchOrder_Id_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (19ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [d].[DispatchOrderNumber] = N'DO-2005' AND [o0].[Id] IS NULL
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5080
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: https://localhost:7174
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: D:\Startups\Godrej\src\WarehouseGate.Api
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [Warehouses] AS [w]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (11ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[GateInTime] IS NOT NULL AND [o].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (11ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] = N'Completed' AND [i].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (12ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] = N'Completed' AND [o].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (28ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (9ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (9ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (31ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (22ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [Warehouses] AS [w]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (12ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (13ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[GateInTime] IS NOT NULL AND [o].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (10ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (10ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] = N'Completed' AND [i].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (10ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] = N'Completed' AND [o].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (13ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (12ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (32ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [Warehouses] AS [w]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[GateInTime] IS NOT NULL AND [o].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] = N'Completed' AND [i].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] = N'Completed' AND [o].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [Warehouses] AS [w]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[GateInTime] IS NOT NULL AND [o].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] = N'Completed' AND [i].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] = N'Completed' AND [o].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [Warehouses] AS [w]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[GateInTime] IS NOT NULL AND [o].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] = N'Completed' AND [i].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] = N'Completed' AND [o].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__normalizedUserName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedUserName] = @__normalizedUserName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [Warehouses] AS [w]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[GateInTime] IS NOT NULL AND [o].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (17ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] = N'Completed' AND [i].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] = N'Completed' AND [o].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [Warehouses] AS [w]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[DisplayName], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[RegionId], [a].[Role], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName], [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[GateInTime] IS NOT NULL AND [o].[GateInTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] <> N'Completed'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [InwardTransactions] AS [i]
+      WHERE [i].[WarehouseId] IS NOT NULL AND [i].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [i].[Status] = N'Completed' AND [i].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseIdScope_0='?' (Size = 4000), @__today_1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*)
+      FROM [OutwardTransactions] AS [o]
+      WHERE [o].[WarehouseId] IS NOT NULL AND [o].[WarehouseId] IN (
+          SELECT [w].[value]
+          FROM OPENJSON(@__warehouseIdScope_0) WITH ([value] int '$') AS [w]
+      ) AND [o].[Status] = N'Completed' AND [o].[DockOutTime] >= @__today_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (10ms) [Parameters=[@__id_0='?' (DbType = Int32), @__warehouseId_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[Id] = @__id_0 AND [o].[WarehouseId] = @__warehouseId_1
+      ORDER BY [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[@__id_0='?' (DbType = Int32), @__warehouseId_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t0].[Id], [t0].[DeliveryLocation], [t0].[DispatchOrderId], [t0].[OrderedQty], [t0].[ProductId], [t0].[ProductName], [t0].[UnitOfMeasure], [t0].[Id0], [t0].[Category], [t0].[ColorHex], [t0].[HeightCm], [t0].[IsStackable], [t0].[LengthCm], [t0].[MaxStackLayers], [t0].[Name], [t0].[SkuCode], [t0].[WeightKg], [t0].[WidthCm], [t].[Id], [t].[Id0], [t].[Id1], [t].[Id2]
+      FROM (
+          SELECT TOP(1) [o].[Id], [d].[Id] AS [Id0], [v].[Id] AS [Id1], [o0].[Id] AS [Id2]
+          FROM [OutwardTransactions] AS [o]
+          INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+          LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+          LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+          WHERE [o].[Id] = @__id_0 AND [o].[WarehouseId] = @__warehouseId_1
+      ) AS [t]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t0] ON [t].[Id0] = [t0].[DispatchOrderId]
+      ORDER BY [t].[Id], [t].[Id0], [t].[Id1], [t].[Id2]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@__id_0='?' (DbType = Int32), @__warehouseId_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [t].[Id], [t].[Id0], [t].[Id1], [t].[Id2]
+      FROM (
+          SELECT TOP(1) [o].[Id], [d].[Id] AS [Id0], [v].[Id] AS [Id1], [o0].[Id] AS [Id2]
+          FROM [OutwardTransactions] AS [o]
+          INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+          LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+          LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+          WHERE [o].[Id] = @__id_0 AND [o].[WarehouseId] = @__warehouseId_1
+      ) AS [t]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [t].[Id] = [o1].[OutwardTransactionId]
+      ORDER BY [t].[Id], [t].[Id0], [t].[Id1], [t].[Id2]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[@__id_0='?' (DbType = Int32), @__warehouseId_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t0].[Id], [t0].[DispatchOrderLineId], [t0].[LoadSequence], [t0].[LoadedQty], [t0].[Notes], [t0].[OutwardTransactionId], [t0].[Id0], [t0].[DeliveryLocation], [t0].[DispatchOrderId], [t0].[OrderedQty], [t0].[ProductId], [t0].[ProductName], [t0].[UnitOfMeasure], [t].[Id], [t].[Id0], [t].[Id1], [t].[Id2]
+      FROM (
+          SELECT TOP(1) [o].[Id], [d].[Id] AS [Id0], [v].[Id] AS [Id1], [o0].[Id] AS [Id2]
+          FROM [OutwardTransactions] AS [o]
+          INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+          LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+          LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+          WHERE [o].[Id] = @__id_0 AND [o].[WarehouseId] = @__warehouseId_1
+      ) AS [t]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t0] ON [t].[Id] = [t0].[OutwardTransactionId]
+      ORDER BY [t].[Id], [t].[Id0], [t].[Id1], [t].[Id2]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [a].[Id], [a].[DisplayName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Role] = 1 AND [a].[WarehouseId] = @__warehouseId_0
+      ORDER BY [a].[DisplayName]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__CurrentUserId_0='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[WarehouseId]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[Id] = @__CurrentUserId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o].[Id], [o].[ActualLoadingStartedAt], [o].[AssignedSupervisorUserId], [o].[AssignedTime], [o].[BayName], [o].[CreatedByOfficeUserId], [o].[CreatedTime], [o].[DispatchOrderId], [o].[DispatchReadyConfirmedAt], [o].[DockInTime], [o].[DockOutTime], [o].[DriverMobile], [o].[DriverName], [o].[ExceptionReason], [o].[ExceptionRemarks], [o].[ExceptionReportedAt], [o].[GateInBySecurityUserId], [o].[GateInTime], [o].[GateName], [o].[GateOutBySecurityUserId], [o].[GateOutTime], [o].[GatePassToken], [o].[GpsLatitude], [o].[GpsLongitude], [o].[LoadingStartTime], [o].[OutwardTxnNumber], [o].[Status], [o].[TransporterName], [o].[VehicleId], [o].[WarehouseId], [d].[Id], [d].[CustomerName], [d].[DispatchOrderNumber], [d].[RequestedDate], [v].[Id], [o0].[Id], [v].[HeightCm], [v].[LengthCm], [v].[MaxWeightKg], [v].[Number], [v].[WidthCm], [o0].[DispatchNoteNumber], [o0].[GeneratedAt], [o0].[IsPartial], [o0].[OutwardTransactionId]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [t].[Id0], [t].[Category], [t].[ColorHex], [t].[HeightCm], [t].[IsStackable], [t].[LengthCm], [t].[MaxStackLayers], [t].[Name], [t].[SkuCode], [t].[WeightKg], [t].[WidthCm], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [d0].[Id], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure], [p].[Id] AS [Id0], [p].[Category], [p].[ColorHex], [p].[HeightCm], [p].[IsStackable], [p].[LengthCm], [p].[MaxStackLayers], [p].[Name], [p].[SkuCode], [p].[WeightKg], [p].[WidthCm]
+          FROM [DispatchOrderLines] AS [d0]
+          LEFT JOIN [Products] AS [p] ON [d0].[ProductId] = [p].[Id]
+      ) AS [t] ON [d].[Id] = [t].[DispatchOrderId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [o1].[Id], [o1].[CapturedAt], [o1].[FilePath], [o1].[OutwardLoadPlanGroupId], [o1].[OutwardTransactionId], [o1].[Type], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN [OutwardPhotoEvidences] AS [o1] ON [o].[Id] = [o1].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__warehouseId_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT [t].[Id], [t].[DispatchOrderLineId], [t].[LoadSequence], [t].[LoadedQty], [t].[Notes], [t].[OutwardTransactionId], [t].[Id0], [t].[DeliveryLocation], [t].[DispatchOrderId], [t].[OrderedQty], [t].[ProductId], [t].[ProductName], [t].[UnitOfMeasure], [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+      FROM [OutwardTransactions] AS [o]
+      INNER JOIN [DispatchOrders] AS [d] ON [o].[DispatchOrderId] = [d].[Id]
+      LEFT JOIN [Vehicles] AS [v] ON [o].[VehicleId] = [v].[Id]
+      LEFT JOIN [OutwardDispatchNotes] AS [o0] ON [o].[Id] = [o0].[OutwardTransactionId]
+      INNER JOIN (
+          SELECT [o1].[Id], [o1].[DispatchOrderLineId], [o1].[LoadSequence], [o1].[LoadedQty], [o1].[Notes], [o1].[OutwardTransactionId], [d0].[Id] AS [Id0], [d0].[DeliveryLocation], [d0].[DispatchOrderId], [d0].[OrderedQty], [d0].[ProductId], [d0].[ProductName], [d0].[UnitOfMeasure]
+          FROM [OutwardLoadLines] AS [o1]
+          INNER JOIN [DispatchOrderLines] AS [d0] ON [o1].[DispatchOrderLineId] = [d0].[Id]
+      ) AS [t] ON [o].[Id] = [t].[OutwardTransactionId]
+      WHERE [o].[WarehouseId] = @__warehouseId_0 AND [o].[Status] <> N'Completed'
+      ORDER BY [o].[CreatedTime] DESC, [o].[Id], [d].[Id], [v].[Id], [o0].[Id]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__transactionIds_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT [o0].[OutwardTransactionId] AS [TransactionId], COUNT(*) AS [Total], COUNT(CASE
+          WHEN [o].[ConfirmationStatus] IN (N'Loaded', N'Mismatch', N'ShortLoad', N'Skipped') THEN 1
+      END) AS [Resolved]
+      FROM [OutwardLoadPlanGroups] AS [o]
+      INNER JOIN [OutwardLoadPlanOptions] AS [o0] ON [o].[OutwardLoadPlanOptionId] = [o0].[Id]
+      WHERE [o0].[IsSelected] = CAST(1 AS bit) AND [o0].[OutwardTransactionId] IN (
+          SELECT [t].[value]
+          FROM OPENJSON(@__transactionIds_0) WITH ([value] int '$') AS [t]
+      )
+      GROUP BY [o0].[OutwardTransactionId]

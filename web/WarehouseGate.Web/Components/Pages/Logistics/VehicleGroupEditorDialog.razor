@@ -1,0 +1,215 @@
+<MudDialog>
+    <DialogContent>
+        <div class="admin-drawer">
+            <div class="admin-drawer-header">
+                <div>
+                    <h2 class="admin-drawer-title">@(IsNew ? "Add Vehicle Dispatch" : "Edit Vehicle Dispatch")</h2>
+                    <p class="admin-drawer-subtitle">Maintain vehicle, shipment, route, and warehouse movement information.</p>
+                </div>
+                <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+            </div>
+
+            <div class="admin-drawer-body">
+                <div class="admin-form-grid">
+                    <div class="admin-form-field">
+                        <label>Vehicle Number</label>
+                        <input class="admin-form-control" @bind="VehicleNumber" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field">
+                        <label>Inward Transaction Id</label>
+                        <input class="admin-form-control" @bind="InwardTransactionId" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field">
+                        <label>Transporter Name</label>
+                        <input class="admin-form-control" @bind="TransporterName" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field">
+                        <label>Driver Name</label>
+                        <input class="admin-form-control" @bind="DriverName" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field">
+                        <label>Driver Phone</label>
+                        <input class="admin-form-control" @bind="DriverPhone" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field">
+                        <label>Vehicle Type</label>
+                        <input class="admin-form-control" @bind="VehicleType" @bind:event="oninput" />
+                    </div>
+                    <div class="admin-form-field">
+                        <label>Departure Date</label>
+                        <input class="admin-form-control" type="date" @bind="DepartureDate" />
+                    </div>
+                    <div class="admin-form-field">
+                        <label>From Warehouse</label>
+                        <select class="admin-form-select" @bind="FromWarehouseId">
+                            <option value="0">Select warehouse</option>
+                            @foreach (var warehouse in Warehouses)
+                            {
+                                <option value="@warehouse.Id">@warehouse.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="admin-form-field">
+                        <label>To Warehouse</label>
+                        <select class="admin-form-select" @bind="ToWarehouseId">
+                            <option value="0">Select warehouse</option>
+                            @foreach (var warehouse in Warehouses)
+                            {
+                                <option value="@warehouse.Id">@warehouse.Name</option>
+                            }
+                        </select>
+                    </div>
+                    @if (FromWarehouseId != 0 && FromWarehouseId == ToWarehouseId)
+                    {
+                        <div class="admin-form-field full">
+                            <p class="admin-form-error">From and To warehouse cannot be the same.</p>
+                        </div>
+                    }
+                </div>
+
+                <div class="admin-drawer-section-title">SKU Lines</div>
+                <div class="admin-table-scroll vehicle-sku-edit-table">
+                    <table class="admin-table compact">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>SKU Code</th>
+                                <th>PO</th>
+                                <th>Boxes</th>
+                                <th>ETA</th>
+                                @if (!IsNew)
+                                {
+                                    <th>Status</th>
+                                }
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in _rows)
+                            {
+                                <tr>
+                                    <td><input class="admin-form-control" @bind="row.Sku" @bind:event="oninput" /></td>
+                                    <td><input class="admin-form-control" @bind="row.SkuCode" @bind:event="oninput" /></td>
+                                    <td><input class="admin-form-control" @bind="row.PoNumber" @bind:event="oninput" /></td>
+                                    <td><input class="admin-form-control" type="number" min="0" @bind="row.BoxQuantity" /></td>
+                                    <td><input class="admin-form-control" type="datetime-local" @bind="row.EtaDateTime" /></td>
+                                    @if (!IsNew)
+                                    {
+                                        <td>
+                                            <select class="admin-form-select" @bind="row.Status">
+                                                <option value="InTransit">In-Transit</option>
+                                                <option value="InProgress">In Progress</option>
+                                                <option value="Inactive">Inactive</option>
+                                                <option value="Completed">Completed</option>
+                                                <option value="Deleted">Deleted</option>
+                                            </select>
+                                        </td>
+                                    }
+                                    <td class="admin-actions-cell">
+                                        <button class="admin-icon-btn delete" type="button" title="Remove row" disabled="@(_rows.Count == 1)" @onclick="() => RemoveRow(row)"><i class="bx bx-trash"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <button class="admin-secondary-btn vehicle-sku-add-btn" type="button" @onclick="AddRow"><i class="bx bx-plus"></i>Add SKU</button>
+            </div>
+
+            <div class="admin-drawer-actions">
+                <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+                <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(!CanSave)">
+                    Save
+                </button>
+            </div>
+        </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public bool IsNew { get; set; }
+    [Parameter] public string VehicleNumber { get; set; } = string.Empty;
+    [Parameter] public string? InwardTransactionId { get; set; }
+    [Parameter] public string? TransporterName { get; set; }
+    [Parameter] public string? DriverName { get; set; }
+    [Parameter] public string? DriverPhone { get; set; }
+    [Parameter] public string? VehicleType { get; set; }
+    [Parameter] public DateTime? DepartureDate { get; set; }
+    [Parameter] public int FromWarehouseId { get; set; }
+    [Parameter] public int ToWarehouseId { get; set; }
+    [Parameter] public List<WarehouseDto> Warehouses { get; set; } = new();
+    [Parameter] public List<VehicleSkuRowModel> InitialRows { get; set; } = new();
+
+    private List<VehicleSkuRowModel> _rows = new();
+    private List<int> _originalRecordIds = new();
+
+    protected override void OnInitialized()
+    {
+        _rows = InitialRows.Select(Clone).ToList();
+        _originalRecordIds = InitialRows.Where(r => r.Id.HasValue).Select(r => r.Id!.Value).ToList();
+        if (_rows.Count == 0)
+        {
+            AddRow();
+        }
+    }
+
+    private static VehicleSkuRowModel Clone(VehicleSkuRowModel r) => new()
+    {
+        Id = r.Id,
+        Sku = r.Sku,
+        SkuCode = r.SkuCode,
+        PoNumber = r.PoNumber,
+        BoxQuantity = r.BoxQuantity,
+        EtaDateTime = r.EtaDateTime,
+        Status = r.Status
+    };
+
+    private void AddRow() => _rows.Add(new VehicleSkuRowModel { Status = "InTransit" });
+
+    private void RemoveRow(VehicleSkuRowModel row)
+    {
+        if (_rows.Count > 1)
+        {
+            _rows.Remove(row);
+        }
+    }
+
+    private bool CanSave =>
+        !string.IsNullOrWhiteSpace(VehicleNumber) &&
+        FromWarehouseId != 0 &&
+        ToWarehouseId != 0 &&
+        FromWarehouseId != ToWarehouseId &&
+        _rows.Count > 0 &&
+        _rows.All(r => !string.IsNullOrWhiteSpace(r.Sku));
+
+    private void Submit()
+    {
+        var keptIds = _rows.Where(r => r.Id.HasValue).Select(r => r.Id!.Value).ToList();
+        var removedIds = _originalRecordIds.Except(keptIds).ToList();
+
+        var result = new VehicleGroupSaveResult(
+            VehicleNumber.Trim(), Clean(InwardTransactionId), Clean(TransporterName), Clean(DriverName),
+            Clean(DriverPhone), Clean(VehicleType),
+            DepartureDate, FromWarehouseId, ToWarehouseId,
+            _rows.Select(r => new VehicleSkuRowModel
+            {
+                Id = r.Id,
+                Sku = r.Sku.Trim(),
+                SkuCode = Clean(r.SkuCode),
+                PoNumber = Clean(r.PoNumber),
+                BoxQuantity = r.BoxQuantity,
+                EtaDateTime = r.EtaDateTime,
+                Status = r.Status
+            }).ToList(),
+            removedIds);
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}

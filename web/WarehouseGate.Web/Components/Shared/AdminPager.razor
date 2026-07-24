@@ -1,0 +1,48 @@
+@if (TotalItems > 0)
+{
+    <div class="admin-pager">
+        <div class="admin-pager-info">Showing @StartItem&ndash;@EndItem of @TotalItems</div>
+        <div class="admin-pager-controls">
+            <select class="admin-pager-size" value="@PageSize" @onchange="OnPageSizeChanged">
+                @foreach (var size in PageSizeOptions)
+                {
+                    <option value="@size">@size / page</option>
+                }
+            </select>
+            <button class="admin-icon-btn" type="button" disabled="@(Page <= 1)" @onclick="() => GoToPage(1)" title="First page"><i class="bx bx-chevrons-left"></i></button>
+            <button class="admin-icon-btn" type="button" disabled="@(Page <= 1)" @onclick="() => GoToPage(Page - 1)" title="Previous page"><i class="bx bx-chevron-left"></i></button>
+            <span class="admin-pager-page">Page @Page of @TotalPages</span>
+            <button class="admin-icon-btn" type="button" disabled="@(Page >= TotalPages)" @onclick="() => GoToPage(Page + 1)" title="Next page"><i class="bx bx-chevron-right"></i></button>
+            <button class="admin-icon-btn" type="button" disabled="@(Page >= TotalPages)" @onclick="() => GoToPage(TotalPages)" title="Last page"><i class="bx bx-chevrons-right"></i></button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Page { get; set; } = 1;
+
+    [Parameter]
+    public EventCallback<int> PageChanged { get; set; }
+
+    [Parameter]
+    public int PageSize { get; set; } = 10;
+
+    [Parameter]
+    public EventCallback<int> PageSizeChanged { get; set; }
+
+    [Parameter]
+    public int TotalItems { get; set; }
+
+    [Parameter]
+    public int[] PageSizeOptions { get; set; } = { 10, 20, 50, 100 };
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalItems / (double)PageSize));
+    private int StartItem => TotalItems == 0 ? 0 : (Page - 1) * PageSize + 1;
+    private int EndItem => Math.Min(TotalItems, Page * PageSize);
+
+    private Task GoToPage(int page) => PageChanged.InvokeAsync(Math.Clamp(page, 1, TotalPages));
+
+    private Task OnPageSizeChanged(ChangeEventArgs e) =>
+        int.TryParse((string?)e.Value, out var size) ? PageSizeChanged.InvokeAsync(size) : Task.CompletedTask;
+}

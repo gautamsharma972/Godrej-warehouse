@@ -1,0 +1,237 @@
+@page "/office/outward-jobs/{Id:int}"
+@attribute [Authorize(Roles = "Office")]
+@implements IAsyncDisposable
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject OfficeRealtimeClient Realtime
+
+<PageTitle>Outward Job - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    @if (_job is null)
+    {
+        <div class="admin-table-card">
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading outward job</span></div>
+        </div>
+    }
+    else
+    {
+        <div class="admin-page-header">
+            <div>
+                <p class="admin-eyebrow">Outward Job</p>
+                <h1 class="admin-page-title">@ValueOrDash(_job.VehicleNumber)</h1>
+                <p class="admin-page-subtitle">@_job.DispatchOrderNumber · @_job.CustomerName</p>
+            </div>
+            <div class="admin-page-actions">
+                <span class="admin-count-pill"><i class="bx bx-barcode"></i>@_job.OutwardTxnNumber</span>
+                <span class="admin-badge info">@_job.Status</span>
+                @if (_job.Status != "Completed")
+                {
+                    <button class="admin-secondary-btn" type="button" @onclick="OpenAssignDialog">
+                        <i class="bx bx-user-check"></i>
+                        @(_job.AssignedSupervisorUserId is null ? "Assign Supervisor" : "Reassign Supervisor")
+                    </button>
+                }
+            </div>
+        </div>
+
+        <section class="office-detail-grid">
+            <article class="office-detail-card">
+                <div class="office-detail-card-head">
+                    <div>
+                        <p class="logistics-panel-kicker">Job Details</p>
+                        <h2>Movement context</h2>
+                    </div>
+                    <div class="logistics-panel-icon accent"><i class="bx bx-package"></i></div>
+                </div>
+                <div class="office-field-grid">
+                    <div><span>Created</span><strong>@_job.CreatedTime.ToString("yyyy-MM-dd HH:mm")</strong></div>
+                    <div><span>Gate</span><strong>@ValueOrDash(_job.GateName)</strong></div>
+                    <div><span>Driver</span><strong>@FormatDriver(_job)</strong></div>
+                    <div><span>Transporter</span><strong>@ValueOrDash(_job.TransporterName)</strong></div>
+                    <div><span>Assigned At</span><strong>@(_job.AssignedTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong></div>
+                    <div><span>Bay</span><strong>@ValueOrDash(_job.BayName)</strong></div>
+                    <div><span>Dock-In</span><strong>@(_job.DockInTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong></div>
+                    <div><span>Loading Started</span><strong>@(_job.LoadingStartTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong></div>
+                    <div><span>Dock-Out</span><strong>@(_job.DockOutTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong></div>
+                </div>
+            </article>
+
+            <article class="office-detail-card">
+                <div class="office-detail-card-head">
+                    <div>
+                        <p class="logistics-panel-kicker">DO Lines</p>
+                        <h2>Ordered material</h2>
+                    </div>
+                    <div class="logistics-panel-icon green"><i class="bx bx-package"></i></div>
+                </div>
+                <div class="admin-table-scroll">
+                    <table class="admin-table compact">
+                        <thead><tr><th>Product</th><th>Ordered Qty</th><th>Pick List Qty</th><th>Loaded Qty</th><th>UOM</th></tr></thead>
+                        <tbody>
+                            @foreach (var line in _job.Lines)
+                            {
+                                <tr>
+                                    <td>@line.ProductName</td>
+                                    <td>@line.OrderedQty</td>
+                                    <td>@line.OrderedQty</td>
+                                    <td>@FormatLoadedQty(line.Id)</td>
+                                    <td>@line.UnitOfMeasure</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="office-detail-card">
+                <div class="office-detail-card-head">
+                    <div>
+                        <p class="logistics-panel-kicker">Photos</p>
+                        <h2>Captured images</h2>
+                    </div>
+                    <div class="logistics-panel-icon blue"><i class="bx bx-image"></i></div>
+                </div>
+                @if (_job.Photos.Count == 0)
+                {
+                    <div class="office-empty-inline">No photos captured.</div>
+                }
+                else
+                {
+                    <div class="office-photo-grid">
+                        @foreach (var photo in _job.Photos)
+                        {
+                            <a href="@($"/file-proxy/{photo.FilePath}")" target="_blank" class="office-photo-card">
+                                <img src="@($"/file-proxy/{photo.FilePath}")" alt="@photo.Type" />
+                                <span>@photo.Type</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </article>
+        </section>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private OutwardJobDto? _job;
+    private List<SupervisorOptionDto> _supervisors = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Realtime.OutwardJobChanged += OnOutwardJobChanged;
+        Realtime.LoadPlanChanged += OnLoadPlanChanged;
+        await LoadAsync();
+    }
+
+    // See OutwardJobs.razor's identical OnAfterRenderAsync for why StartAsync moved here -
+    // OnInitializedAsync also runs during Blazor's prerender pass (throwaway DI scope, no real
+    // circuit yet), and opening a real SignalR connection there was destabilizing the actual
+    // circuit once it connected for real.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Realtime.StartAsync();
+        }
+    }
+
+    private void OnOutwardJobChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    // The load plan (3D groups/confirmation) is edited live from the mobile app while this page
+    // may be open for the same job - filter to this job's id since the hub event is untyped.
+    private void OnLoadPlanChanged(int transactionId)
+    {
+        if (transactionId != Id)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        });
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        Realtime.OutwardJobChanged -= OnOutwardJobChanged;
+        Realtime.LoadPlanChanged -= OnLoadPlanChanged;
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _job = await Api.GetAsync<OutwardJobDto>($"api/office/outward-jobs/{Id}");
+            _supervisors = await Api.GetAsync<List<SupervisorOptionDto>>("api/office/supervisors");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OpenAssignDialog()
+    {
+        if (_job is null)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<AssignSupervisorDialog>
+        {
+            { d => d.SupervisorUserId, _job.AssignedSupervisorUserId },
+            { d => d.Supervisors, _supervisors }
+        };
+        var dialog = await DialogService.ShowAsync<AssignSupervisorDialog>($"Assign Supervisor - {_job.DispatchOrderNumber}", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not string supervisorUserId)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.PostAsync<OutwardJobDto>($"api/office/outward-jobs/{Id}/assign", new AssignSupervisorRequest(supervisorUserId));
+            Snackbar.Add("Supervisor assigned.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private static string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+
+    // Outward's DispatchOrderLine has no separate PickListQty column - OrderedQty already IS the
+    // pick list quantity Office released (see GeneratePickListFromDispatchPlanAsync, which sets it
+    // from VehicleLogisticsRecord.PickListQuantity), so both columns read the same field. LoadedQty
+    // is the one value that can genuinely diverge, once the supervisor records actual load lines.
+    private string FormatLoadedQty(int dispatchOrderLineId)
+    {
+        var loadLine = _job?.LoadLines.FirstOrDefault(l => l.DispatchOrderLineId == dispatchOrderLineId);
+        return loadLine is null ? "-" : loadLine.LoadedQty.ToString();
+    }
+
+    private static string FormatDriver(OutwardJobDto job)
+    {
+        if (string.IsNullOrWhiteSpace(job.DriverName) && string.IsNullOrWhiteSpace(job.DriverMobile))
+        {
+            return "-";
+        }
+
+        return string.IsNullOrWhiteSpace(job.DriverMobile) ? job.DriverName! : $"{job.DriverName} ({job.DriverMobile})";
+    }
+}

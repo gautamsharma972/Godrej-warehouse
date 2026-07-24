@@ -1,0 +1,192 @@
+@page "/admin/vehicle-registry"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject PortalApiClient Api
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Vehicle Registry - WarehouseGate</PageTitle>
+
+<section class="admin-page">
+    <div class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">Master Data</p>
+            <h1 class="admin-page-title">Vehicle Registry</h1>
+            <p class="admin-page-subtitle">Look up a real vehicle plate and set or fix its loading capacity. Plates are created automatically at Gate-In/Dock-In with no capacity, which blocks Plan &amp; Load until it's set here.</p>
+        </div>
+        <div class="admin-page-actions">
+            <span class="admin-count-pill"><i class="bx bxs-truck"></i>@(_vehicles?.Count ?? 0) Vehicles</span>
+            <button class="admin-primary-btn" type="button" @onclick="() => OpenEditor(null)"><i class="bx bx-plus"></i>Add Vehicle</button>
+        </div>
+    </div>
+
+    <div class="admin-table-card">
+        @if (_vehicles is null)
+        {
+            <div class="admin-loading"><i class="bx bx-loader-alt admin-spin"></i><span>Loading vehicles</span></div>
+        }
+        else if (_vehicles.Count == 0)
+        {
+            <div class="admin-empty"><i class="bx bxs-truck"></i><span>No vehicles found.</span></div>
+        }
+        else
+        {
+            <div class="admin-table-toolbar">
+                <AdminSearchBox Value="@_search" ValueChanged="OnSearchChanged" Placeholder="Search vehicle number..." />
+                <div class="admin-table-toolbar-filters">
+                    <AdminFilterSelect Value="@_capacityFilter" ValueChanged="OnCapacityFilterChanged" Options="_capacityOptions" AllLabel="All Vehicles" />
+                </div>
+            </div>
+
+            @if (_view.Count == 0)
+            {
+                <div class="admin-empty"><i class="bx bxs-truck"></i><span>No vehicles match your search or filters.</span></div>
+            }
+            else
+            {
+                <div class="admin-table-scroll">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <AdminSortHeader Label="Vehicle Number" Column="Number" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <AdminSortHeader Label="Max Weight" Column="Weight" ActiveColumn="@_sortColumn" Ascending="_sortAscending" OnSort="SetSort" />
+                                <th>L x W x H</th>
+                                <th>Capacity Status</th>
+                                <th class="admin-actions-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var vehicle in _view)
+                            {
+                                <tr>
+                                    <td><div class="admin-name-cell"><span class="admin-row-icon"><i class="bx bxs-truck"></i></span><span>@vehicle.Number</span></div></td>
+                                    <td>@FormatWeight(vehicle.MaxWeightKg)</td>
+                                    <td>@FormatDimensions(vehicle)</td>
+                                    <td><span class="@(HasCapacity(vehicle) ? "admin-badge success" : "admin-badge danger")">@(HasCapacity(vehicle) ? "On file" : "Missing")</span></td>
+                                    <td class="admin-actions-cell">
+                                        <button class="admin-icon-btn edit" type="button" title="Edit" @onclick="() => OpenEditor(vehicle)"><i class="bx bx-edit"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <AdminPager @bind-Page="_page" @bind-PageSize="_pageSize" TotalItems="_filteredCount" />
+        }
+    </div>
+</section>
+
+@code {
+    private List<VehicleDto>? _vehicles;
+    private string _search = string.Empty;
+    private string? _capacityFilter;
+    private readonly List<string> _capacityOptions = ["Missing Capacity", "Capacity On File"];
+    private string _sortColumn = "Number";
+    private bool _sortAscending = true;
+    private int _page = 1;
+    private int _pageSize = 10;
+
+    private static bool HasCapacity(VehicleDto v) =>
+        v.MaxWeightKg is not null && v.LengthCm is not null && v.WidthCm is not null && v.HeightCm is not null;
+
+    private IEnumerable<VehicleDto> Filtered => (_vehicles ?? [])
+        .Where(v => string.IsNullOrWhiteSpace(_search) || v.Number.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .Where(v => _capacityFilter is null ||
+            (_capacityFilter == "Missing Capacity" ? !HasCapacity(v) : HasCapacity(v)));
+
+    private IEnumerable<VehicleDto> Sorted => _sortColumn switch
+    {
+        "Weight" => _sortAscending
+            ? Filtered.OrderBy(v => v.MaxWeightKg ?? 0)
+            : Filtered.OrderByDescending(v => v.MaxWeightKg ?? 0),
+        _ => _sortAscending
+            ? Filtered.OrderBy(v => v.Number, StringComparer.OrdinalIgnoreCase)
+            : Filtered.OrderByDescending(v => v.Number, StringComparer.OrdinalIgnoreCase)
+    };
+
+    private int _filteredCount => Filtered.Count();
+    private List<VehicleDto> _view => Sorted.Skip((_page - 1) * _pageSize).Take(_pageSize).ToList();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private void OnSearchChanged(string value)
+    {
+        _search = value;
+        _page = 1;
+    }
+
+    private void OnCapacityFilterChanged(string? value)
+    {
+        _capacityFilter = value;
+        _page = 1;
+    }
+
+    private void SetSort(string column)
+    {
+        if (_sortColumn == column)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _sortColumn = column;
+            _sortAscending = true;
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _vehicles = await Api.GetAsync<List<VehicleDto>>("api/admin/vehicles");
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OpenEditor(VehicleDto? existing)
+    {
+        var parameters = new DialogParameters<VehicleEditorDialog>
+        {
+            { d => d.Number, existing?.Number ?? string.Empty },
+            { d => d.MaxWeightKg, existing?.MaxWeightKg },
+            { d => d.LengthCm, existing?.LengthCm },
+            { d => d.WidthCm, existing?.WidthCm },
+            { d => d.HeightCm, existing?.HeightCm }
+        };
+        var dialog = await DialogService.ShowAsync<VehicleEditorDialog>(existing is null ? "Add Vehicle" : "Edit Vehicle", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not UpsertVehicleRequest request)
+        {
+            return;
+        }
+
+        try
+        {
+            if (existing is null)
+            {
+                await Api.PostAsync<VehicleDto>("api/admin/vehicles", request);
+            }
+            else
+            {
+                await Api.PutAsync<VehicleDto>($"api/admin/vehicles/{existing.Id}", request);
+            }
+            Snackbar.Add("Saved.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private static string FormatWeight(decimal? weight) => weight is null ? "-" : $"{weight:0.##} kg";
+
+    private static string FormatDimensions(VehicleDto vehicle) =>
+        vehicle.LengthCm is null || vehicle.WidthCm is null || vehicle.HeightCm is null
+            ? "-"
+            : $"{vehicle.LengthCm:0.##} x {vehicle.WidthCm:0.##} x {vehicle.HeightCm:0.##} cm";
+}
