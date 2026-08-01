@@ -1,0 +1,863 @@
+@* Floating chat widget, rendered from MainLayout so it follows the user across every page instead
+   of living on one dedicated route. Gated to Office + LogisticsManager + SuperAdmin - all scoped
+   plugins share WarehouseScopeResolver's scope (null = unscoped for SuperAdmin), so SuperAdmin
+   genuinely sees everything rather than hitting a "no warehouse/region assigned" dead end. Only
+   add another role here once it has real backing tools, not before.
+
+   Write actions (Dispatch Plan creation, Resolve Follow-up) render as a form and/or an explicit
+   Confirm/Cancel pair under the assistant's message, never as something the model can trigger by
+   itself in chat text - see DispatchPlanCreationPlugin's header comment for why that boundary has
+   to be a real button, not a prompt instruction.
+
+   The role's suggestion chips render big in the empty state (first open) AND as a compact row
+   pinned above the input once the conversation has turns - they used to only exist in the empty
+   state, which meant chaining a second action after the first required retyping it from memory. *@
+@using Microsoft.AspNetCore.Components.Forms
+@implements IAsyncDisposable
+@inject PortalApiClient Api
+@inject NavigationManager Navigation
+@inject IJSRuntime Js
+
+<AuthorizeView Roles="Office,LogisticsManager,SuperAdmin" Context="authState">
+    <Authorized>
+        <div class="assistant-widget">
+            @if (_isOpen)
+            {
+                <div class="assistant-widget-panel">
+                    <div class="assistant-widget-header">
+                        <div class="assistant-widget-title">
+                            <i class="bx bx-bot"></i>
+                            <div class="assistant-widget-title-copy">
+                                <span>Assistant</span>
+                                <small>@CurrentPageLabel()</small>
+                            </div>
+                        </div>
+                        <div class="assistant-widget-header-actions">
+                            <button class="assistant-widget-close" type="button" title="New conversation" @onclick="NewConversation">
+                                <i class="bx bx-message-square-add"></i>
+                            </button>
+                            <button class="assistant-widget-close" type="button" title="Close Assistant" @onclick="() => _isOpen = false">
+                                <i class="bx bx-x"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="assistant-widget-body">
+                        @if (_turns.Count == 0)
+                        {
+                            <div class="assistant-widget-empty">
+                                @if (_loadingSuggestions)
+                                {
+                                    <p><i class="bx bx-loader-alt admin-spin"></i> Loading actions for this page...</p>
+                                }
+                                else
+                                {
+                                    <p>Ask me about your warehouse, or try one of these:</p>
+                                    <div class="assistant-suggestions">
+                                        @foreach (var suggestion in _suggestions)
+                                        {
+                                            <button class="assistant-suggestion-chip" type="button"
+                                                    @onclick="() => SendAsync(suggestion.Prompt, suggestion.CapabilityId)"
+                                                    disabled="@_waiting">@suggestion.Label</button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var turn in _turns)
+                            {
+                                <div class="assistant-turn assistant-turn-@turn.Role">
+                                    <div class="assistant-bubble">@turn.Content</div>
+                                </div>
+                                @foreach (var block in turn.Blocks)
+                                {
+                                    @if (block.Metrics is { Count: > 0 })
+                                    {
+                                        <section class="assistant-metrics-card">
+                                            @if (block.Title is not null)
+                                            {
+                                                <div class="assistant-list-title">@block.Title</div>
+                                            }
+                                            <div class="assistant-metrics-grid">
+                                                @foreach (var metric in block.Metrics)
+                                                {
+                                                    <div class="assistant-metric assistant-metric-@(metric.Tone ?? "neutral")">
+                                                        <span>@metric.Label</span>
+                                                        <strong>@metric.Value</strong>
+                                                        @if (metric.Detail is not null)
+                                                        {
+                                                            <small>@metric.Detail</small>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        </section>
+                                    }
+                                    @if (block.ListResult is not null)
+                                    {
+                                        <div class="assistant-list-card">
+                                            <div class="assistant-list-title">@block.ListResult.Title</div>
+                                            @foreach (var item in block.ListResult.Items)
+                                            {
+                                                <div class="assistant-list-item">
+                                                    <div class="assistant-list-item-main">
+                                                        <div class="assistant-list-item-text">
+                                                            <div class="assistant-list-item-title">@item.Title</div>
+                                                            @if (item.Subtitle is not null)
+                                                            {
+                                                                <div class="assistant-list-item-subtitle">@item.Subtitle</div>
+                                                            }
+                                                        </div>
+                                                        @if (item.Badge is not null)
+                                                        {
+                                                            <div class="assistant-list-item-badge">@item.Badge</div>
+                                                        }
+                                                    </div>
+                                                    @if (item.ActionType is not null || item.NavigationUrl is not null)
+                                                    {
+                                                        <div class="assistant-list-item-actions">
+                                                            @if (item.ActionType is not null)
+                                                            {
+                                                                <button type="button" class="assistant-list-action assistant-list-action-primary"
+                                                                        disabled="@_waiting" @onclick="() => ListItemClickAsync(item)">
+                                                                    <i class="bx bx-user-check"></i>
+                                                                    @ActionLabel(item.ActionType)
+                                                                </button>
+                                                            }
+                                                            @if (item.NavigationUrl is not null)
+                                                            {
+                                                                <button type="button" class="assistant-list-action"
+                                                                        @onclick="() => NavigateToResult(item.NavigationUrl)">
+                                                                    @if (item.NavigationLabel?.Contains("job", StringComparison.OrdinalIgnoreCase) == true)
+                                                                    {
+                                                                        <i class="bx bx-link-external"></i>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <i class="bx bx-right-arrow-alt"></i>
+                                                                    }
+                                                                    @(item.NavigationLabel ?? "Open")
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    @if (block.Form is not null)
+                                    {
+                                        <div class="assistant-form-card">
+                                            <form @onsubmit="() => SubmitFormAsync(block)">
+                                                @foreach (var field in block.Form.Fields)
+                                                {
+                                                    <div class="assistant-form-field">
+                                                        <label>@field.Label@(field.Required ? " *" : "")</label>
+                                                        @if (field.Type == "select")
+                                                        {
+                                                            <select class="admin-form-control" value="@GetFormValue(block, field.Name)" disabled="@_waiting"
+                                                                    @onchange="@(e => SetFormValue(block, field.Name, e.Value?.ToString() ?? string.Empty))">
+                                                                <option value="">-- Select --</option>
+                                                                @foreach (var opt in field.Options ?? [])
+                                                                {
+                                                                    <option value="@opt.Value">@opt.Label</option>
+                                                                }
+                                                            </select>
+                                                        }
+                                                        else if (field.Type == "number")
+                                                        {
+                                                            <input class="admin-form-control" type="number" min="1" value="@GetFormValue(block, field.Name)" disabled="@_waiting"
+                                                                   @oninput="@(e => SetFormValue(block, field.Name, e.Value?.ToString() ?? string.Empty))" />
+                                                        }
+                                                        else if (field.Type == "datetime")
+                                                        {
+                                                            <input class="admin-form-control" type="datetime-local" value="@GetFormValue(block, field.Name)" disabled="@_waiting"
+                                                                   @oninput="@(e => SetFormValue(block, field.Name, e.Value?.ToString() ?? string.Empty))" />
+                                                        }
+                                                        else if (field.Type == "file")
+                                                        {
+                                                            <InputFile class="assistant-file-input" OnChange="@(e => block.SelectedFile = e.File)" accept=".xlsx" disabled="@_waiting" />
+                                                            @if (block.SelectedFile is not null)
+                                                            {
+                                                                <div class="assistant-file-selected"><i class="bx bx-file"></i> @block.SelectedFile.Name</div>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <input class="admin-form-control" type="text" value="@GetFormValue(block, field.Name)" disabled="@_waiting"
+                                                                   @oninput="@(e => SetFormValue(block, field.Name, e.Value?.ToString() ?? string.Empty))" />
+                                                        }
+                                                    </div>
+                                                }
+                                                <button class="assistant-confirm-btn assistant-form-submit" type="submit" disabled="@(_waiting || !IsFormValid(block))">
+                                                    <i class="bx bx-check"></i> Preview Entry
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                    @if (block.Pending is not null)
+                                    {
+                                        <div class="assistant-confirm-row">
+                                            <button class="assistant-confirm-btn" type="button" disabled="@_waiting" @onclick="() => ConfirmAsync(block)">
+                                                <i class="bx bx-check"></i> Confirm
+                                            </button>
+                                            <button class="assistant-cancel-btn" type="button" disabled="@_waiting" @onclick="() => CancelPending(block)">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    }
+                                }
+                                @if (turn.TurnId is not null)
+                                {
+                                    <div class="assistant-feedback">
+                                        @if (turn.Helpful is null)
+                                        {
+                                            <span>Was this useful?</span>
+                                            <button type="button" title="Helpful" disabled="@_feedbackSubmitting"
+                                                    @onclick="() => SubmitFeedbackAsync(turn, true)">
+                                                <i class="bx bx-like"></i>
+                                            </button>
+                                            <button type="button" title="Not helpful" disabled="@_feedbackSubmitting"
+                                                    @onclick="() => SubmitFeedbackAsync(turn, false)">
+                                                <i class="bx bx-dislike"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span><i class="bx bx-check"></i> Feedback recorded</span>
+                                        }
+                                    </div>
+                                }
+                            }
+                        }
+                        @if (_waiting)
+                        {
+                            <div class="assistant-turn assistant-turn-assistant">
+                                <div class="assistant-bubble assistant-bubble-pending">
+                                    <i class="bx bx-loader-alt admin-spin"></i>
+                                    <span>@_progressMessage</span>
+                                    <button type="button" @onclick="CancelActiveRequest">Cancel</button>
+                                </div>
+                            </div>
+                        }
+                        <div class="assistant-scroll-anchor" @ref="_scrollAnchor"></div>
+                    </div>
+
+                    @if (_turns.Count > 0)
+                    {
+                        <div class="assistant-quick-actions">
+                            @foreach (var suggestion in _suggestions.Take(6))
+                            {
+                                <button class="assistant-suggestion-chip assistant-suggestion-chip-compact" type="button"
+                                        @onclick="() => SendAsync(suggestion.Prompt, suggestion.CapabilityId)"
+                                        disabled="@_waiting">@suggestion.Label</button>
+                            }
+                        </div>
+                    }
+
+                    <form class="assistant-widget-input" @onsubmit="() => SendAsync(_draft)">
+                        <input class="admin-form-control" @bind="_draft" @bind:event="oninput" placeholder="Ask a question..." disabled="@_waiting" />
+                        <button class="assistant-widget-send" type="submit" disabled="@(_waiting || string.IsNullOrWhiteSpace(_draft))"><i class="bx bx-send"></i></button>
+                    </form>
+                </div>
+            }
+
+            <button class="assistant-widget-fab" type="button" @onclick="ToggleAsync" title="Assistant">
+                <i class="bx @(_isOpen ? "bx-x" : "bx-bot")"></i>
+            </button>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private sealed class Turn
+    {
+        public required string Role { get; init; }
+        public required string Content { get; init; }
+        public List<UiBlockState> Blocks { get; init; } = [];
+        public Guid? TurnId { get; init; }
+        public bool? Helpful { get; set; }
+    }
+
+    private sealed class UiBlockState
+    {
+        public string? Title { get; set; }
+        public List<AssistantMetricDto>? Metrics { get; set; }
+        public AssistantPendingConfirmationDto? Pending { get; set; }
+        public AssistantFormRequestDto? Form { get; set; }
+        public Dictionary<string, string> FormValues { get; } = new();
+        public AssistantListResultDto? ListResult { get; set; }
+        public IBrowserFile? SelectedFile { get; set; }
+    }
+
+    private readonly List<Turn> _turns = new();
+    private IReadOnlyList<AssistantCapabilityDto> _suggestions = [];
+    private Guid? _conversationId;
+    private bool _isOpen;
+    private bool _loadingSuggestions;
+    private string _draft = string.Empty;
+    private bool _waiting;
+    private bool _feedbackSubmitting;
+    private string _progressMessage = "Working...";
+    private CancellationTokenSource? _activeRequest;
+    private bool _cancelRequested;
+    private bool _resettingConversation;
+    private ElementReference _scrollAnchor;
+    private IJSObjectReference? _assistantModule;
+    private int _lastScrolledTurnCount = -1;
+    private bool _lastScrolledWaiting;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _assistantModule = await Js.InvokeAsync<IJSObjectReference>(
+                "import",
+                "./Components/Shared/AssistantWidget.razor.js");
+        }
+
+        if (_isOpen &&
+            _assistantModule is not null &&
+            (_lastScrolledTurnCount != _turns.Count || _lastScrolledWaiting != _waiting))
+        {
+            _lastScrolledTurnCount = _turns.Count;
+            _lastScrolledWaiting = _waiting;
+            await _assistantModule.InvokeVoidAsync("scrollToLatest", _scrollAnchor);
+        }
+    }
+
+    private async Task ToggleAsync()
+    {
+        _isOpen = !_isOpen;
+        if (_isOpen)
+        {
+            _lastScrolledTurnCount = -1;
+            StateHasChanged();
+            await LoadSuggestionsAsync();
+        }
+    }
+
+    private async Task LoadSuggestionsAsync()
+    {
+        _loadingSuggestions = true;
+        StateHasChanged();
+        try
+        {
+            var pagePath = Uri.EscapeDataString(CurrentPagePath());
+            _suggestions = await Api.GetAsync<List<AssistantCapabilityDto>>(
+                $"api/assistant/capabilities?pagePath={pagePath}");
+        }
+        catch (ApiException)
+        {
+            _suggestions = [];
+        }
+        catch (Exception)
+        {
+            // See SendAsync's identical catch-all for why this can't be left to escape uncaught -
+            // failing to load suggestion chips should never be able to crash the circuit.
+            _suggestions = [];
+        }
+        finally
+        {
+            _loadingSuggestions = false;
+        }
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs args)
+    {
+        if (!_isOpen)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            await LoadSuggestionsAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task SendAsync(string message, string? capabilityId = null)
+    {
+        message = message.Trim();
+        if (string.IsNullOrEmpty(message) || _waiting)
+        {
+            return;
+        }
+
+        _turns.Add(new Turn { Role = "user", Content = message });
+        _draft = string.Empty;
+        _waiting = true;
+        _progressMessage = ProgressMessage(capabilityId);
+        _cancelRequested = false;
+        _activeRequest?.Dispose();
+        _activeRequest = new CancellationTokenSource(TimeSpan.FromSeconds(75));
+        StateHasChanged();
+
+        try
+        {
+            var history = _turns
+                .Take(_turns.Count - 1) // everything before the message just added, which the request sends separately
+                .Select(t => new AssistantChatTurnDto(t.Role, t.Content))
+                .ToList();
+            var response = await Api.PostAsync<AssistantChatResponseDto>(
+                "api/assistant/chat",
+                new AssistantChatRequest(
+                    message,
+                    _conversationId,
+                    new AssistantPageContextDto(CurrentPagePath()),
+                    capabilityId,
+                    history),
+                _activeRequest.Token);
+            _conversationId = response.ConversationId ?? _conversationId;
+            _turns.Add(TurnFromResponse(response));
+        }
+        catch (OperationCanceledException)
+        {
+            if (!_resettingConversation)
+            {
+                _turns.Add(new Turn
+                {
+                    Role = "assistant",
+                    Content = _cancelRequested
+                        ? "Request cancelled."
+                        : "This request took longer than expected and was stopped. Please try again."
+                });
+            }
+        }
+        catch (ApiException ex)
+        {
+            _turns.Add(new Turn { Role = "assistant", Content = $"Sorry, I couldn't get an answer: {ex.Message}" });
+        }
+        catch (Exception ex)
+        {
+            // Anything else (a response shape mismatch, a network hiccup that .NET doesn't wrap as
+            // an HttpRequestException, etc.) must still be handled here - Blazor Server has no
+            // ErrorBoundary around this widget, so letting an exception type we didn't anticipate
+            // escape this method crashes the whole circuit, which freezes the UI (including this
+            // very "Analyzing..." spinner) with no recovery short of a full page reload.
+            _turns.Add(new Turn { Role = "assistant", Content = $"Sorry, something went wrong on my end: {ex.Message}" });
+        }
+        finally
+        {
+            _activeRequest?.Dispose();
+            _activeRequest = null;
+            _waiting = false;
+            _resettingConversation = false;
+        }
+    }
+
+    private static string ProgressMessage(string? capabilityId) => capabilityId switch
+    {
+        "operations.briefing" => "Building the live operations briefing...",
+        "job.diagnose" => "Checking this job for blockers...",
+        "outward.active" => "Checking active outward jobs...",
+        "inward.active" => "Checking active inward jobs...",
+        "followups.open" => "Checking open follow-ups...",
+        "supervisors.performance" => "Calculating supervisor performance...",
+        "logistics.intransit" => "Checking vehicles in transit...",
+        var id when id is not null => "Preparing the requested workflow...",
+        _ => "Analyzing your request..."
+    };
+
+    private void CancelActiveRequest()
+    {
+        if (_activeRequest is null)
+        {
+            return;
+        }
+
+        _cancelRequested = true;
+        _activeRequest.Cancel();
+    }
+
+    private void NewConversation()
+    {
+        _resettingConversation = true;
+        CancelActiveRequest();
+        _turns.Clear();
+        _conversationId = null;
+        _draft = string.Empty;
+        _lastScrolledTurnCount = -1;
+        if (_activeRequest is null)
+        {
+            _resettingConversation = false;
+        }
+    }
+
+    // The ONLY path that ever writes data - a real button click, never something the model decides
+    // to do mid-conversation. See DispatchPlanCreationPlugin's header comment for the full story.
+    private async Task ConfirmAsync(UiBlockState block)
+    {
+        var pending = block.Pending;
+        if (pending is null || _waiting)
+        {
+            return;
+        }
+
+        block.Pending = null; // remove the buttons immediately so a double-click can't double-submit
+        _waiting = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Api.PostAsync<AssistantChatResponseDto>(
+                "api/assistant/confirm", new AssistantConfirmActionRequest(pending.Token, pending.ActionType));
+            _turns.Add(TurnFromResponse(response));
+        }
+        catch (ApiException ex)
+        {
+            _turns.Add(new Turn { Role = "assistant", Content = $"Sorry, that didn't go through: {ex.Message}" });
+        }
+        catch (Exception ex)
+        {
+            // See SendAsync's identical catch-all for why this can't be left to escape uncaught.
+            _turns.Add(new Turn { Role = "assistant", Content = $"Sorry, something went wrong on my end: {ex.Message}" });
+        }
+        finally
+        {
+            _waiting = false;
+        }
+    }
+
+    private async Task SubmitFeedbackAsync(Turn turn, bool helpful)
+    {
+        if (turn.TurnId is not { } turnId || _feedbackSubmitting)
+        {
+            return;
+        }
+
+        _feedbackSubmitting = true;
+        try
+        {
+            var result = await Api.PostAsync<AssistantFeedbackResponseDto>(
+                "api/assistant/feedback",
+                new AssistantFeedbackRequest(turnId, helpful));
+            if (result.Recorded)
+            {
+                turn.Helpful = helpful;
+            }
+        }
+        catch (ApiException)
+        {
+            // Keep the controls available so the user can retry.
+        }
+        catch (Exception)
+        {
+            // See SendAsync's identical catch-all for why this can't be left to escape uncaught.
+        }
+        finally
+        {
+            _feedbackSubmitting = false;
+        }
+    }
+
+    private void CancelPending(UiBlockState block)
+    {
+        block.Pending = null;
+        _turns.Add(new Turn { Role = "assistant", Content = "No problem - cancelled. Let me know if you'd like to try again." });
+    }
+
+    // Turns browsing straight into action: clicking an actionable list row fetches the exact same
+    // form the model would have shown for that action (no LLM involved, since the user already
+    // told us which entity they mean by clicking it), then pre-selects that row's ID so the user
+    // only has to fill in whatever's left (e.g. a supervisor to assign, or resolution notes).
+    private async Task ListItemClickAsync(AssistantListItemDto item)
+    {
+        if (_waiting || item.ActionType is null || item.ActionValue is null)
+        {
+            return;
+        }
+
+        _waiting = true;
+        StateHasChanged();
+
+        try
+        {
+            var (endpoint, idFieldName) = item.ActionType switch
+            {
+                "resolve-follow-up" => ("api/assistant/follow-up/resolve/form", "followUpId"),
+                "assign-inward-supervisor" => ("api/assistant/supervisor/assign/inward/form", "jobId"),
+                "assign-outward-supervisor" => ("api/assistant/supervisor/assign/outward/form", "jobId"),
+                _ => (null, null)
+            };
+            if (endpoint is null)
+            {
+                return;
+            }
+
+            var form = await Api.GetAsync<AssistantFormRequestDto>(endpoint);
+            var formBlock = new UiBlockState { Form = form };
+            formBlock.FormValues[idFieldName!] = item.ActionValue;
+            var newTurn = new Turn
+            {
+                Role = "assistant",
+                Content = "Pre-filled from your selection - just fill in the rest and submit.",
+                Blocks = [formBlock]
+            };
+            _turns.Add(newTurn);
+        }
+        catch (ApiException ex)
+        {
+            _turns.Add(new Turn { Role = "assistant", Content = $"Sorry, that didn't go through: {ex.Message}" });
+        }
+        catch (Exception ex)
+        {
+            // See SendAsync's identical catch-all for why this can't be left to escape uncaught.
+            _turns.Add(new Turn { Role = "assistant", Content = $"Sorry, something went wrong on my end: {ex.Message}" });
+        }
+        finally
+        {
+            _waiting = false;
+        }
+    }
+
+    private static string ActionLabel(string actionType) => actionType switch
+    {
+        "resolve-follow-up" => "Resolve",
+        "assign-inward-supervisor" or "assign-outward-supervisor" => "Assign",
+        _ => "Continue"
+    };
+
+    private void NavigateToResult(string navigationUrl)
+    {
+        // Assistant result links are application-relative routes emitted by the API. Reject
+        // protocol-relative/external values defensively before handing one to NavigationManager.
+        if (!navigationUrl.StartsWith('/') || navigationUrl.StartsWith("//", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _isOpen = false;
+        Navigation.NavigateTo(navigationUrl);
+    }
+
+    private static string GetFormValue(UiBlockState block, string field) =>
+        block.FormValues.TryGetValue(field, out var value)
+            ? value
+            : block.Form?.Fields.FirstOrDefault(f => f.Name == field)?.DefaultValue ?? string.Empty;
+
+    private void SetFormValue(UiBlockState block, string field, string value) => block.FormValues[field] = value;
+
+    private static bool IsFormValid(UiBlockState block) =>
+        block.Form is not null && block.Form.Fields
+            .Where(f => f.Required)
+            .All(f => f.Type == "file" ? block.SelectedFile is not null : !string.IsNullOrWhiteSpace(GetFormValue(block, f.Name)));
+
+    // Deterministic path: real form values go straight to a dedicated endpoint per form type, no
+    // LLM involved - see each plugin's PreviewDirectAsync. Reuses the same Confirm-button flow as
+    // the chat path once the preview comes back. Adding a new form type means: a case here plus a
+    // matching endpoint on the API side - see AssistantController's own header comment.
+    private async Task SubmitFormAsync(UiBlockState block)
+    {
+        if (block.Form is null || _waiting || !IsFormValid(block))
+        {
+            return;
+        }
+
+        var formType = block.Form.FormType;
+        var selectedFile = block.SelectedFile; // captured before clearing the form below
+        block.Form = null; // remove the form immediately so it can't be double-submitted
+        _waiting = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = formType switch
+            {
+                "dispatch-plan-entry" => await Api.PostAsync<AssistantChatResponseDto>(
+                    "api/assistant/dispatch-plan/preview", BuildDispatchPlanFormRequest(block)),
+                "resolve-follow-up" => await Api.PostAsync<AssistantChatResponseDto>(
+                    "api/assistant/follow-up/resolve/preview", BuildResolveFollowUpFormRequest(block)),
+                "assign-inward-supervisor" => await Api.PostAsync<AssistantChatResponseDto>(
+                    "api/assistant/supervisor/assign/preview", BuildAssignSupervisorFormRequest(block, "Inward")),
+                "assign-outward-supervisor" => await Api.PostAsync<AssistantChatResponseDto>(
+                    "api/assistant/supervisor/assign/preview", BuildAssignSupervisorFormRequest(block, "Outward")),
+                "generate-picklist" => await Api.PostAsync<AssistantChatResponseDto>(
+                    "api/assistant/pick-list/generate/preview", new GeneratePickListFormSubmitRequest(GetFormValue(block, "vehicleNumber"))),
+                "update-picklist-quantity" => await Api.PostAsync<AssistantChatResponseDto>(
+                    "api/assistant/pick-list/quantity/preview", BuildUpdatePickListQuantityFormRequest(block)),
+                "dispatch-plan-excel-import" => await SubmitExcelImportAsync(selectedFile),
+                _ => throw new ApiException($"Unknown form type '{formType}'.")
+            };
+            _turns.Add(TurnFromResponse(response));
+        }
+        catch (ApiException ex)
+        {
+            _turns.Add(new Turn { Role = "assistant", Content = $"Sorry, that didn't go through: {ex.Message}" });
+        }
+        catch (Exception ex)
+        {
+            // See SendAsync's identical catch-all for why this can't be left to escape uncaught.
+            _turns.Add(new Turn { Role = "assistant", Content = $"Sorry, something went wrong on my end: {ex.Message}" });
+        }
+        finally
+        {
+            _waiting = false;
+        }
+    }
+
+    // The one form submission that isn't plain JSON - a real uploaded file goes as
+    // multipart/form-data, mirroring VehicleRecords.razor's own upload flow exactly.
+    private async Task<AssistantChatResponseDto> SubmitExcelImportAsync(IBrowserFile? file)
+    {
+        if (file is null)
+        {
+            throw new ApiException("No file was selected.");
+        }
+
+        using var content = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+        using var streamContent = new StreamContent(stream);
+        content.Add(streamContent, "file", file.Name);
+
+        return await Api.PostFormAsync<AssistantChatResponseDto>("api/assistant/dispatch-plan/excel-import/preview", content);
+    }
+
+    private static Turn TurnFromResponse(AssistantChatResponseDto response)
+    {
+        var blocks = response.Blocks is { Count: > 0 }
+            ? response.Blocks.Select(ToBlockState).ToList()
+            : LegacyBlocks(response);
+
+        return new Turn
+        {
+            Role = "assistant",
+            Content = response.Reply,
+            Blocks = blocks,
+            TurnId = response.TurnId
+        };
+    }
+
+    private static UiBlockState ToBlockState(AssistantUiBlockDto block) => new()
+    {
+        Title = block.Title,
+        Metrics = block.Metrics,
+        ListResult = block.ListResult,
+        Form = block.FormRequest,
+        Pending = block.Confirmation
+    };
+
+    // Allows a rolling web/API deployment: an older API response using the original optional
+    // fields still renders correctly while newer responses use ordered blocks.
+    private static List<UiBlockState> LegacyBlocks(AssistantChatResponseDto response)
+    {
+        var blocks = new List<UiBlockState>();
+        if (response.ListResult is not null)
+        {
+            blocks.Add(new UiBlockState { ListResult = response.ListResult });
+        }
+        if (response.FormRequest is not null)
+        {
+            blocks.Add(new UiBlockState { Form = response.FormRequest });
+        }
+        if (response.PendingConfirmation is not null)
+        {
+            blocks.Add(new UiBlockState { Pending = response.PendingConfirmation });
+        }
+        return blocks;
+    }
+
+    private DispatchPlanFormSubmitRequest BuildDispatchPlanFormRequest(UiBlockState block)
+    {
+        _ = int.TryParse(GetFormValue(block, "boxQuantity"), out var boxQuantity);
+        return new DispatchPlanFormSubmitRequest(
+            GetFormValue(block, "vehicleNumber"),
+            GetFormValue(block, "fromWarehouseName"),
+            GetFormValue(block, "toWarehouseName"),
+            GetFormValue(block, "sku"),
+            boxQuantity,
+            NullIfEmpty(GetFormValue(block, "poNumber")),
+            NullIfEmpty(GetFormValue(block, "transporterName")),
+            NullIfEmpty(GetFormValue(block, "driverName")),
+            NullIfEmpty(GetFormValue(block, "driverPhone")),
+            NullIfEmpty(GetFormValue(block, "vehicleType")),
+            NullIfEmpty(GetFormValue(block, "departureDate")),
+            NullIfEmpty(GetFormValue(block, "etaDateTime")));
+    }
+
+    private ResolveFollowUpFormSubmitRequest BuildResolveFollowUpFormRequest(UiBlockState block)
+    {
+        _ = int.TryParse(GetFormValue(block, "followUpId"), out var followUpId);
+        return new ResolveFollowUpFormSubmitRequest(followUpId, NullIfEmpty(GetFormValue(block, "notes")));
+    }
+
+    private AssignSupervisorFormSubmitRequest BuildAssignSupervisorFormRequest(UiBlockState block, string jobType)
+    {
+        _ = int.TryParse(GetFormValue(block, "jobId"), out var jobId);
+        return new AssignSupervisorFormSubmitRequest(jobType, jobId, GetFormValue(block, "supervisorUserId"));
+    }
+
+    private UpdatePickListQuantityFormSubmitRequest BuildUpdatePickListQuantityFormRequest(UiBlockState block)
+    {
+        _ = int.TryParse(GetFormValue(block, "lineId"), out var lineId);
+        _ = int.TryParse(GetFormValue(block, "quantity"), out var quantity);
+        return new UpdatePickListQuantityFormSubmitRequest(lineId, quantity);
+    }
+
+    private static string? NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private string CurrentPagePath()
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var path = relative.Split('?', '#')[0].Trim('/');
+        return $"/{path}";
+    }
+
+    private string CurrentPageLabel()
+    {
+        var path = CurrentPagePath();
+        var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 3 && int.TryParse(segments[2], out var id))
+        {
+            if (segments[1].Equals("inward-jobs", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"Inward job #{id}";
+            }
+            if (segments[1].Equals("outward-jobs", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"Outward job #{id}";
+            }
+        }
+
+        return path.ToLowerInvariant() switch
+        {
+            "/office/dashboard" => "Office dashboard",
+            "/office/inward-jobs" => "Inward jobs",
+            "/office/outward-jobs" => "Outward jobs",
+            "/office/dispatch-orders" => "Dispatch orders",
+            "/office/follow-ups" => "Follow-ups",
+            "/office/reports" => "Office reports",
+            "/logistics/dashboard" => "Logistics dashboard",
+            "/logistics/vehicle-records" => "Dispatch Plan",
+            "/logistics/reports" => "Logistics reports",
+            "/admin/dashboard" => "Administration dashboard",
+            _ => "Current page"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+        _activeRequest?.Cancel();
+        _activeRequest?.Dispose();
+        if (_assistantModule is not null)
+        {
+            try
+            {
+                await _assistantModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The browser circuit is already gone.
+            }
+        }
+    }
+}

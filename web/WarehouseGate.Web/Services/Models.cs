@@ -138,6 +138,70 @@ public record OutwardJobDto(
 
 public record SupervisorOptionDto(string Id, string DisplayName);
 public record AssignSupervisorRequest(string SupervisorUserId);
+
+public record AssistantChatTurnDto(string Role, string Content);
+public record AssistantPageContextDto(string Path);
+public record AssistantCapabilityDto(
+    string Label,
+    string Prompt,
+    string? CapabilityId,
+    bool IsContextual);
+public record AssistantChatRequest(
+    string Message,
+    Guid? ConversationId = null,
+    AssistantPageContextDto? PageContext = null,
+    string? CapabilityId = null,
+    List<AssistantChatTurnDto>? History = null);
+public record AssistantPendingConfirmationDto(string Token, string Summary, string ActionType);
+public record AssistantFormOptionDto(string Value, string Label);
+public record AssistantFormFieldDto(
+    string Name,
+    string Label,
+    string Type,
+    bool Required,
+    List<AssistantFormOptionDto>? Options = null,
+    string? DefaultValue = null);
+public record AssistantFormRequestDto(string FormType, List<AssistantFormFieldDto> Fields);
+public record AssistantListItemDto(
+    string Title,
+    string? Subtitle,
+    string? Badge,
+    string? ActionType = null,
+    string? ActionValue = null,
+    string? NavigationUrl = null,
+    string? NavigationLabel = null);
+public record AssistantListResultDto(string Title, List<AssistantListItemDto> Items, int TotalCount);
+public record AssistantMetricDto(
+    string Label,
+    string Value,
+    string? Detail = null,
+    string? Tone = null);
+public record AssistantUiBlockDto(
+    string Type,
+    AssistantListResultDto? ListResult = null,
+    AssistantFormRequestDto? FormRequest = null,
+    AssistantPendingConfirmationDto? Confirmation = null,
+    string? Title = null,
+    List<AssistantMetricDto>? Metrics = null);
+public record AssistantChatResponseDto(
+    string Reply,
+    AssistantPendingConfirmationDto? PendingConfirmation = null,
+    AssistantFormRequestDto? FormRequest = null,
+    AssistantListResultDto? ListResult = null,
+    Guid? ConversationId = null,
+    List<AssistantUiBlockDto>? Blocks = null,
+    Guid? TurnId = null);
+public record AssistantFeedbackRequest(Guid TurnId, bool Helpful);
+public record AssistantFeedbackResponseDto(bool Recorded);
+public record AssistantConfirmActionRequest(string Token, string ActionType);
+public record DispatchPlanFormSubmitRequest(
+    string VehicleNumber, string FromWarehouseName, string ToWarehouseName, string Sku, int BoxQuantity,
+    string? PoNumber, string? TransporterName, string? DriverName, string? DriverPhone, string? VehicleType,
+    string? DepartureDate, string? EtaDateTime);
+public record ResolveFollowUpFormSubmitRequest(int FollowUpId, string? Notes);
+public record AssignSupervisorFormSubmitRequest(string JobType, int JobId, string SupervisorUserId);
+public record GeneratePickListFormSubmitRequest(string VehicleNumber);
+public record UpdatePickListQuantityFormSubmitRequest(int LineId, int Quantity);
 public record UpdateInwardOfficeFieldsRequest(string? DriverName, string? DriverMobile, string? TransporterName, string? Remarks);
 
 public record PendingDispatchPlanLineDto(int Id, string Sku, string? SkuCode, int BoxQuantity, int? PickListQuantity, string? PoNumber);

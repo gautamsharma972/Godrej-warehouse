@@ -16,7 +16,13 @@ builder.Services.AddHttpClient("Api", client =>
 {
     var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080/";
     client.BaseAddress = new Uri(apiBaseUrl);
-    client.Timeout = TimeSpan.FromSeconds(20);
+    // 120s, not 20s - api/assistant/chat's tool-calling round trip runs the self-hosted CPU
+    // model twice (decide whether to call a tool, then compose the final answer from its
+    // result). Response time scales with how much text a tool result gives it to reproduce, not
+    // just read - measured ~15s for a 1-line result but ~97s for a real region's full in-transit
+    // list before LogisticsPlugin capped its detail - so this stays generous even after that cap.
+    // Harmless for every other endpoint, which returns in milliseconds regardless of the ceiling.
+    client.Timeout = TimeSpan.FromSeconds(120);
 });
 builder.Services.AddScoped<PortalApiClient>();
 builder.Services.AddScoped<OfficeRealtimeClient>();

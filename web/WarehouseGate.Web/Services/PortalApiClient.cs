@@ -36,6 +36,8 @@ public class PortalApiClient
 
     public async Task<T> GetAsync<T>(string path) => await SendAsync<T>(HttpMethod.Get, path, null);
     public async Task<T> PostAsync<T>(string path, object body) => await SendAsync<T>(HttpMethod.Post, path, body);
+    public async Task<T> PostAsync<T>(string path, object body, CancellationToken cancellationToken) =>
+        await SendAsync<T>(HttpMethod.Post, path, body, cancellationToken);
     public async Task<T> PutAsync<T>(string path, object body) => await SendAsync<T>(HttpMethod.Put, path, body);
     public async Task PutAsync(string path, object body) => await SendAsync<object?>(HttpMethod.Put, path, body);
     public async Task DeleteAsync(string path) => await SendAsync<object?>(HttpMethod.Delete, path, null);
@@ -62,7 +64,11 @@ public class PortalApiClient
         return result is null ? default! : result;
     }
 
-    private async Task<T> SendAsync<T>(HttpMethod method, string path, object? body)
+    private async Task<T> SendAsync<T>(
+        HttpMethod method,
+        string path,
+        object? body,
+        CancellationToken cancellationToken = default)
     {
         var client = await CreateClientAsync();
         var request = new HttpRequestMessage(method, path);
@@ -74,7 +80,11 @@ public class PortalApiClient
         HttpResponseMessage response;
         try
         {
-            response = await client.SendAsync(request);
+            response = await client.SendAsync(request, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception)
         {
@@ -91,7 +101,7 @@ public class PortalApiClient
             return default!;
         }
 
-        var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions);
+        var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
         return result is null ? default! : result;
     }
 

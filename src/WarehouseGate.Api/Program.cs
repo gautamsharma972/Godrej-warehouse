@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using WarehouseGate.Api.Assistant;
 using WarehouseGate.Api.Hubs;
 using WarehouseGate.Api.Services;
 using WarehouseGate.Infrastructure;
@@ -45,6 +46,17 @@ builder.Services.AddSingleton<LoadPlanningEngine>();
 builder.Services.AddScoped<LoadPlanningService>();
 builder.Services.AddScoped<DashboardAnalyticsService>();
 builder.Services.AddScoped<WarehouseScopeResolver>();
+
+// Assistant/ is a self-contained folder (Semantic Kernel + a self-hosted Ollama model) - callers
+// outside it should only ever depend on IAssistantService, never AssistantService/SK types
+// directly (see AssistantService's own header comment for why it isn't a separate project).
+var assistantOptions = builder.Configuration.GetSection("Assistant").Get<AssistantOptions>()
+    ?? new AssistantOptions();
+builder.Services.AddSingleton(assistantOptions);
+builder.Services.AddSingleton<IAssistantService, AssistantService>();
+builder.Services.AddSingleton<PendingActionStore>();
+builder.Services.AddSingleton<AssistantConversationStore>();
+builder.Services.AddSingleton<AssistantTelemetry>();
 
 builder.Services
     .AddAuthentication(options =>
