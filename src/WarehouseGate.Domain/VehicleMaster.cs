@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class VehicleMaster
+public class VehicleMaster : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
     public int VehicleTypeId { get; set; }
     public VehicleType? VehicleType { get; set; }
     public int VehicleCategoryId { get; set; }

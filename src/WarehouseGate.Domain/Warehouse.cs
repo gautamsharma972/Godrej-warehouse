@@ -1,10 +1,12 @@
 namespace WarehouseGate.Domain;
 
-public class Warehouse
+public class Warehouse : ITenantScoped
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public WarehouseType WarehouseType { get; set; }
+
+    public int OrganizationId { get; set; }
 
     public int RegionId { get; set; }
     public Region? Region { get; set; }

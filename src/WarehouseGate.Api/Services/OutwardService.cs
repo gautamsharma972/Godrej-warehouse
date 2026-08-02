@@ -699,6 +699,7 @@ public class OutwardService
                 EntityName = "OutwardTransaction",
                 EntityId = id,
                 WarehouseId = transaction.WarehouseId,
+                OrganizationId = transaction.OrganizationId,
                 Title = $"Partial load {dispatchNoteNumber} - stock transfer-out note required",
                 Details = $"Vehicle {transaction.Vehicle?.Number}, DO {transaction.DispatchOrder?.DispatchOrderNumber}. Short lines - {shortfallSummary}.",
                 CreatedAtUtc = DateTime.UtcNow

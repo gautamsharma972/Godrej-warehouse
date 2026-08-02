@@ -1,0 +1,79 @@
+<MudDialog>
+    <DialogContent>
+    <div class="admin-drawer">
+        <div class="admin-drawer-header">
+            <div><h2 class="admin-drawer-title">Organization Details</h2><p class="admin-drawer-subtitle">@(IsEdit ? "Update limits and active status." : "Create the organization and its first SuperAdmin.")</p></div>
+            <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+        </div>
+        <div class="admin-drawer-body">
+            <div class="admin-form-grid">
+                <div class="admin-form-field"><label>Organization Name</label><input class="admin-form-control" @bind="Name" @bind:event="oninput" /></div>
+                <div class="admin-form-field">
+                    <label>Organization Code</label>
+                    <input class="admin-form-control" disabled="@IsEdit" @bind="Code" @bind:event="oninput" placeholder="e.g. GCPL" />
+                </div>
+                <div class="admin-form-field"><label>Max Users (0 = unlimited)</label><input class="admin-form-control" type="number" min="0" @bind="MaxUsers" @bind:event="oninput" /></div>
+                <div class="admin-form-field"><label>Max Warehouses (0 = unlimited)</label><input class="admin-form-control" type="number" min="0" @bind="MaxWarehouses" @bind:event="oninput" /></div>
+
+                @if (IsEdit)
+                {
+                    <label class="admin-form-check"><input type="checkbox" @bind="IsActive" /> Active</label>
+                }
+                else
+                {
+                    <div class="admin-form-field full"><label>Initial SuperAdmin</label></div>
+                    <div class="admin-form-field"><label>Username</label><input class="admin-form-control" @bind="AdminUserName" @bind:event="oninput" /></div>
+                    <div class="admin-form-field"><label>Password</label><input class="admin-form-control" type="password" @bind="AdminPassword" @bind:event="oninput" /></div>
+                    <div class="admin-form-field"><label>Display Name</label><input class="admin-form-control" @bind="AdminDisplayName" @bind:event="oninput" /></div>
+                }
+            </div>
+        </div>
+        <div class="admin-drawer-actions">
+            <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+            <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(!CanSubmit)">Save</button>
+        </div>
+    </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public bool IsEdit { get; set; }
+
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Code { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsActive { get; set; } = true;
+
+    [Parameter]
+    public int MaxUsers { get; set; }
+
+    [Parameter]
+    public int MaxWarehouses { get; set; }
+
+    private string AdminUserName { get; set; } = string.Empty;
+    private string AdminDisplayName { get; set; } = string.Empty;
+    private string AdminPassword { get; set; } = string.Empty;
+
+    private bool CanSubmit => IsEdit
+        ? !string.IsNullOrWhiteSpace(Name)
+        : !string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(Code)
+            && !string.IsNullOrWhiteSpace(AdminUserName) && !string.IsNullOrWhiteSpace(AdminDisplayName) && !string.IsNullOrWhiteSpace(AdminPassword);
+
+    private void Submit()
+    {
+        object result = IsEdit
+            ? new OrganizationEditResult(Name.Trim(), IsActive, MaxUsers, MaxWarehouses)
+            : new OrganizationCreateResult(Name.Trim(), Code.Trim(), MaxUsers, MaxWarehouses, AdminUserName.Trim(), AdminDisplayName.Trim(), AdminPassword);
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

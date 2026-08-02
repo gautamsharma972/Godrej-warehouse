@@ -23,7 +23,7 @@ public class SqliteDbFixture : IDisposable
         var options = new DbContextOptionsBuilder<WarehouseGateDbContext>()
             .UseSqlite(connection)
             .Options;
-        var context = new WarehouseGateDbContext(options);
+        var context = new WarehouseGateDbContext(options, new NullCurrentTenantProvider());
         context.Database.EnsureCreated();
         return context;
     }

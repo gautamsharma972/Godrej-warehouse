@@ -2,6 +2,30 @@ namespace WarehouseGate.Web.Services;
 
 public record LoginApiResponse(string Token, string Role, string DisplayName, DateTime ExpiresAtUtc);
 
+public record OrganizationDto(
+    int Id, string Name, string Code, bool IsActive, int MaxUsers, int MaxWarehouses,
+    int UserCount, int WarehouseCount, DateTime CreatedAtUtc);
+
+public record CreateOrganizationRequest(
+    string Name, string Code, int MaxUsers, int MaxWarehouses,
+    string AdminUserName, string AdminDisplayName, string AdminPassword);
+
+public record UpdateOrganizationRequest(string Name, bool IsActive, int MaxUsers, int MaxWarehouses);
+
+public record PlatformUserDto(
+    string Id, string UserName, string DisplayName, string Role, int? OrganizationId, string OrganizationName);
+
+public record ResetPasswordRequest(string NewPassword);
+
+// OrganizationEditorDialog's result shape differs between create (also provisions the org's
+// first SuperAdmin) and edit (no admin fields - that user already exists) - two records keep
+// Organizations.razor's dialog-result handling explicit instead of one tuple with unused slots.
+public record OrganizationCreateResult(
+    string Name, string Code, int MaxUsers, int MaxWarehouses,
+    string AdminUserName, string AdminDisplayName, string AdminPassword);
+
+public record OrganizationEditResult(string Name, bool IsActive, int MaxUsers, int MaxWarehouses);
+
 public record CountryDto(int Id, string Name);
 public record UpsertCountryRequest(string Name);
 

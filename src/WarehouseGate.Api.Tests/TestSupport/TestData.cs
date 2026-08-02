@@ -9,16 +9,22 @@ namespace WarehouseGate.Api.Tests.TestSupport;
 // fields first.
 public static class TestData
 {
+    // Fixed id for the one Organization every test's fixtures belong to - tests don't exercise
+    // cross-organization isolation (that's covered separately), so a single shared org keeps
+    // every existing builder call site unchanged.
+    public const int OrganizationId = 1;
+
     // Region/State/City/Country are required (non-nullable) FKs on Warehouse - seeds one of
     // each with fixed ids 1, plus a second Region (2) for tests that need two distinct regions
     // (e.g. WarehouseScopeResolver's LogisticsManager scoping).
     public static void SeedBasicGeography(WarehouseGateDbContext db)
     {
-        db.Countries.Add(new Country { Id = 1, Name = "India" });
-        db.States.Add(new State { Id = 1, Name = "Maharashtra", CountryId = 1 });
-        db.Cities.Add(new City { Id = 1, Name = "Mumbai", StateId = 1 });
-        db.Regions.Add(new Region { Id = 1, Name = "West" });
-        db.Regions.Add(new Region { Id = 2, Name = "South" });
+        db.Organizations.Add(new Organization { Id = OrganizationId, Name = "Test Org", Code = "TEST", IsActive = true, CreatedAtUtc = DateTime.UtcNow });
+        db.Countries.Add(new Country { Id = 1, Name = "India", OrganizationId = OrganizationId });
+        db.States.Add(new State { Id = 1, Name = "Maharashtra", CountryId = 1, OrganizationId = OrganizationId });
+        db.Cities.Add(new City { Id = 1, Name = "Mumbai", StateId = 1, OrganizationId = OrganizationId });
+        db.Regions.Add(new Region { Id = 1, Name = "West", OrganizationId = OrganizationId });
+        db.Regions.Add(new Region { Id = 2, Name = "South", OrganizationId = OrganizationId });
     }
 
     public static Warehouse Warehouse(string name = "Test DC", int regionId = 1, int stateId = 1, int cityId = 1, int countryId = 1) => new()
@@ -28,7 +34,8 @@ public static class TestData
         RegionId = regionId,
         StateId = stateId,
         CityId = cityId,
-        CountryId = countryId
+        CountryId = countryId,
+        OrganizationId = OrganizationId
     };
 
     public static ApplicationUser User(string id, string userName, UserRole role, int? warehouseId = null, int? regionId = null) => new()
@@ -39,22 +46,25 @@ public static class TestData
         DisplayName = userName,
         Role = role,
         WarehouseId = warehouseId,
-        RegionId = regionId
+        RegionId = regionId,
+        OrganizationId = OrganizationId
     };
 
-    public static Vehicle Vehicle(string number) => new() { Number = number };
+    public static Vehicle Vehicle(string number) => new() { Number = number, OrganizationId = OrganizationId };
 
     public static PurchaseOrder PurchaseOrder(string poNumber, string supplierName = "Test Supplier") => new()
     {
         PONumber = poNumber,
-        SupplierName = supplierName
+        SupplierName = supplierName,
+        OrganizationId = OrganizationId
     };
 
     public static DispatchOrder DispatchOrder(string number, string customerName = "Test Customer") => new()
     {
         DispatchOrderNumber = number,
         CustomerName = customerName,
-        RequestedDate = DateTime.UtcNow
+        RequestedDate = DateTime.UtcNow,
+        OrganizationId = OrganizationId
     };
 
     // Status/times are set by the caller - this only wires up the required FKs (Vehicle,
@@ -68,7 +78,8 @@ public static class TestData
         InwardTxnNumber = txnNumber,
         GateInTime = DateTime.UtcNow,
         GateInBySecurityUserId = "security-1",
-        Status = InwardStatus.GateIn
+        Status = InwardStatus.GateIn,
+        OrganizationId = OrganizationId
     };
 
     public static OutwardTransaction OutwardTransaction(
@@ -79,6 +90,7 @@ public static class TestData
         OutwardTxnNumber = txnNumber,
         CreatedTime = DateTime.UtcNow,
         CreatedByOfficeUserId = "office-1",
-        Status = OutwardStatus.PickListGenerated
+        Status = OutwardStatus.PickListGenerated,
+        OrganizationId = OrganizationId
     };
 }

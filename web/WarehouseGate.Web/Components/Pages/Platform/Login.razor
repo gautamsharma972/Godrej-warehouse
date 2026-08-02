@@ -1,25 +1,26 @@
-@page "/login"
+@page "/platform/login"
 @layout Layout.MainLayout
 
-<PageTitle>Login - WarehouseGate</PageTitle>
+<PageTitle>Platform Admin - WarehouseGate</PageTitle>
 
 <main class="login-shell">
-    <section class="login-brand" aria-label="WarehouseGate overview">
+    <section class="login-brand" aria-label="WarehouseGate platform overview">
         <div class="brand-mark" aria-hidden="true">
             <span>WG</span>
         </div>
 
         <div class="brand-copy">
-            <p class="eyebrow">Godrej Warehouse Operations</p>
-            <h1>WarehouseGate Portal</h1>
+            <p class="eyebrow">WarehouseGate Platform</p>
+            <h1>Platform Admin Console</h1>
             <p class="brand-summary">
-                Secure access for management, logistics, and office teams coordinating gated warehouse movement.
+                Create and manage organizations, their user/warehouse limits, and reset
+                passwords across every tenant on WarehouseGate.
             </p>
         </div>
 
         <div class="operations-panel">
             <div class="panel-header">
-                <span>Operations Console</span>
+                <span>Platform Console</span>
                 <strong>Live</strong>
             </div>
             <div class="signal-grid" aria-hidden="true">
@@ -32,36 +33,36 @@
             </div>
             <dl class="trust-list">
                 <div>
-                    <MudIcon Icon="@Icons.Material.Outlined.Timeline" Class="trust-icon" aria-hidden="true" />
-                    <dt>Workflow pace</dt>
-                    <dd>Balanced daily movement planning</dd>
-                </div>
-                <div>
-                    <MudIcon Icon="@Icons.Material.Outlined.Visibility" Class="trust-icon" aria-hidden="true" />
-                    <dt>Yard visibility</dt>
-                    <dd>Clear context across active gates</dd>
+                    <MudIcon Icon="@Icons.Material.Outlined.Business" Class="trust-icon" aria-hidden="true" />
+                    <dt>Organizations</dt>
+                    <dd>Onboard and manage every tenant</dd>
                 </div>
                 <div>
                     <MudIcon Icon="@Icons.Material.Outlined.Groups" Class="trust-icon" aria-hidden="true" />
-                    <dt>Team handoff</dt>
-                    <dd>Smoother coordination between shifts</dd>
+                    <dt>Users</dt>
+                    <dd>Cross-organization visibility and control</dd>
+                </div>
+                <div>
+                    <MudIcon Icon="@Icons.Material.Outlined.Lock" Class="trust-icon" aria-hidden="true" />
+                    <dt>Access</dt>
+                    <dd>Reset any user's password, any org</dd>
                 </div>
             </dl>
         </div>
     </section>
 
-    <section class="login-panel" aria-label="Sign in">
+    <section class="login-panel" aria-label="Platform admin sign in">
         <div class="login-card">
             <div class="card-header">
                 <div>
-                    <p class="eyebrow">Enterprise sign in</p>
+                    <p class="eyebrow">Platform sign in</p>
                     <h2>Welcome back</h2>
                 </div>
                 <span class="secure-badge">Secure</span>
             </div>
 
             <p class="card-intro">
-                Use your assigned WarehouseGate account to continue.
+                Use your platform administrator account to continue.
             </p>
 
             @if (ErrorMessage is not null)
@@ -71,31 +72,20 @@
                 </MudAlert>
             }
 
-            <form method="post" action="/login-handler" class="login-form">
-                <div class="field-group">
-                    <label for="orgCode">Organization Code</label>
-                    <div class="input-wrap">
-                        <span class="input-icon-shell" aria-hidden="true">
-                            <MudIcon Icon="@Icons.Material.Outlined.Business" Class="input-icon" />
-                        </span>
-                        <input id="orgCode" name="orgCode" autocomplete="organization" placeholder="e.g. GCPL" autofocus />
-                    </div>
-                </div>
-
+            <form method="post" action="/platform-login-handler" class="login-form">
                 <div class="field-group">
                     <label for="userName">Username</label>
                     <div class="input-wrap">
                         <span class="input-icon-shell" aria-hidden="true">
                             <MudIcon Icon="@Icons.Material.Outlined.PersonOutline" Class="input-icon" />
                         </span>
-                        <input id="userName" name="userName" autocomplete="username" placeholder="Enter your username" />
+                        <input id="userName" name="userName" autocomplete="username" placeholder="Enter your username" autofocus />
                     </div>
                 </div>
 
                 <div class="field-group">
                     <div class="label-row">
                         <label for="password">Password</label>
-                        <a href="mailto:it-support@godrej.com?subject=WarehouseGate%20password%20support">Forgot password?</a>
                     </div>
                     <div class="input-wrap">
                         <span class="input-icon-shell" aria-hidden="true">
@@ -105,14 +95,6 @@
                     </div>
                 </div>
 
-                <div class="form-options">
-                    <label class="remember-option">
-                        <input type="checkbox" name="rememberUser" value="true" />
-                        <span>Remember username</span>
-                    </label>
-                    <span class="network-note">Private network recommended</span>
-                </div>
-
                 <button type="submit" class="login-button">
                     <span>Log in</span>
                     <MudIcon Icon="@Icons.Material.Outlined.ArrowForward" Class="button-icon" aria-hidden="true" />
@@ -120,8 +102,8 @@
             </form>
 
             <div class="login-footer">
-                <span>Need access?</span>
-                <a href="mailto:it-support@godrej.com?subject=WarehouseGate%20portal%20access">Contact IT support</a>
+                <span>Tenant user?</span>
+                <a href="/login">Go to the organization sign-in</a>
             </div>
         </div>
     </section>
@@ -133,9 +115,9 @@
 
     private string? ErrorMessage => Error switch
     {
-        "invalid" => "Invalid organization code, username, or password.",
+        "invalid" => "Invalid username or password.",
         "connect" => "Could not reach the server. Check your connection and try again.",
-        "role" => "This account isn't provisioned for the web portal.",
+        "role" => "This account isn't provisioned for the platform console.",
         _ => null
     };
 }

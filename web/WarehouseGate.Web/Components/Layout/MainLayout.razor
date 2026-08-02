@@ -126,6 +126,19 @@
                                 </a>
                             </Authorized>
                         </AuthorizeView>
+
+                        <AuthorizeView Roles="PlatformAdmin" Context="platform">
+                            <Authorized>
+                                <a href="/platform/organizations" class="@MenuClass("/platform/organizations")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Organizations">
+                                    <i class="bx bx-buildings"></i>
+                                    <span>Organizations</span>
+                                </a>
+                                <a href="/platform/users" class="@MenuClass("/platform/users")" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Users">
+                                    <i class="bx bx-group"></i>
+                                    <span>Users</span>
+                                </a>
+                            </Authorized>
+                        </AuthorizeView>
                     </nav>
                 </div>
 

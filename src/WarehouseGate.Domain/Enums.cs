@@ -47,7 +47,10 @@ public enum UserRole
     Supervisor,
     Office,
     LogisticsManager,
-    SuperAdmin
+    SuperAdmin,
+    // Manages Organizations from the platform site - not scoped to any single organization
+    // (ApplicationUser.OrganizationId is null for this role). See PlatformController.
+    PlatformAdmin
 }
 
 public enum WarehouseType

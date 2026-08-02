@@ -16,8 +16,8 @@ public class DashboardAnalyticsServiceTests : IClassFixture<SqliteDbFixture>
     private static InwardTransaction AddCompletedInwardJob(
         WarehouseGateDbContext db, Warehouse warehouse, string supervisorId, decimal receivedQty, TimeSpan duration, string bayName = "Bay-1")
     {
-        var vehicle = new Vehicle { Number = $"TEST-{Guid.NewGuid():N}"[..12] };
-        var po = new PurchaseOrder { PONumber = $"PO-{Guid.NewGuid():N}"[..10], SupplierName = "Supplier" };
+        var vehicle = new Vehicle { Number = $"TEST-{Guid.NewGuid():N}"[..12], OrganizationId = TestData.OrganizationId };
+        var po = new PurchaseOrder { PONumber = $"PO-{Guid.NewGuid():N}"[..10], SupplierName = "Supplier", OrganizationId = TestData.OrganizationId };
         var line = new PurchaseOrderLine { PurchaseOrder = po, ProductName = "Widget", ExpectedQty = receivedQty };
         po.Lines.Add(line);
 
@@ -35,7 +35,8 @@ public class DashboardAnalyticsServiceTests : IClassFixture<SqliteDbFixture>
             BayName = bayName,
             UnloadingStartTime = start,
             DockOutTime = now,
-            Status = InwardStatus.Completed
+            Status = InwardStatus.Completed,
+            OrganizationId = TestData.OrganizationId
         };
         txn.InspectionLines.Add(new InspectionLine
         {
@@ -142,9 +143,9 @@ public class DashboardAnalyticsServiceTests : IClassFixture<SqliteDbFixture>
         db.Users.Add(TestData.User("sup-4b", "supervisor4b", UserRole.Supervisor));
         AddCompletedInwardJob(db, warehouseNoBayMaster, "sup-4a", receivedQty: 1, duration: TimeSpan.FromHours(2), bayName: "Bay-1");
         AddCompletedInwardJob(db, warehouseWithBayMaster, "sup-4b", receivedQty: 1, duration: TimeSpan.FromHours(2), bayName: "Bay-1");
-        db.DockBays.Add(new DockBay { WarehouseId = warehouseWithBayMaster.Id, Name = "Bay-1", IsActive = true });
-        db.DockBays.Add(new DockBay { WarehouseId = warehouseWithBayMaster.Id, Name = "Bay-2", IsActive = true });
-        db.DockBays.Add(new DockBay { WarehouseId = warehouseWithBayMaster.Id, Name = "Bay-3", IsActive = true });
+        db.DockBays.Add(new DockBay { WarehouseId = warehouseWithBayMaster.Id, Name = "Bay-1", IsActive = true, OrganizationId = TestData.OrganizationId });
+        db.DockBays.Add(new DockBay { WarehouseId = warehouseWithBayMaster.Id, Name = "Bay-2", IsActive = true, OrganizationId = TestData.OrganizationId });
+        db.DockBays.Add(new DockBay { WarehouseId = warehouseWithBayMaster.Id, Name = "Bay-3", IsActive = true, OrganizationId = TestData.OrganizationId });
         await db.SaveChangesAsync();
 
         var service = new DashboardAnalyticsService(db);

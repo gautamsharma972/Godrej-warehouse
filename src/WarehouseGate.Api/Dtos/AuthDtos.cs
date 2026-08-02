@@ -1,6 +1,10 @@
 namespace WarehouseGate.Api.Dtos;
 
-public record LoginRequest(string UserName, string Password);
+// OrganizationCode disambiguates which org's account "UserName" refers to, since usernames are
+// only unique per-organization (see AuthController.Login). Optional so the mobile app (which
+// only ever sends UserName/Password) keeps working unchanged as long as that username is
+// unambiguous across organizations.
+public record LoginRequest(string UserName, string Password, string? OrganizationCode = null);
 
 public record LoginResponse(
     string Token,
@@ -8,4 +12,5 @@ public record LoginResponse(
     string DisplayName,
     DateTime ExpiresAtUtc,
     string? WarehouseName,
-    string? RegionName);
+    string? RegionName,
+    string? OrganizationName);

@@ -3,6 +3,8 @@
 @code {
     protected override void OnInitialized()
     {
-        Navigation.NavigateTo("/login", forceLoad: true);
+        var path = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0];
+        var destination = path.StartsWith("platform/", StringComparison.OrdinalIgnoreCase) ? "/platform/login" : "/login";
+        Navigation.NavigateTo(destination, forceLoad: true);
     }
 }

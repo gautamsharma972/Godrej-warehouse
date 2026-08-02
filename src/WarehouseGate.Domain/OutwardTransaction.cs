@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class OutwardTransaction
+public class OutwardTransaction : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
 
     public int DispatchOrderId { get; set; }
     public DispatchOrder? DispatchOrder { get; set; }

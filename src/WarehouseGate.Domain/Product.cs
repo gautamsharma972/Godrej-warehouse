@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class Product
+public class Product : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
     public string Name { get; set; } = string.Empty;
     public decimal WeightKg { get; set; }
     public decimal LengthCm { get; set; }

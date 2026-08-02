@@ -12,92 +12,140 @@ public static class SeedData
         var db = services.GetRequiredService<WarehouseGateDbContext>();
         await db.Database.MigrateAsync();
 
-        await SeedMasterDataAsync(db);
-        await SeedUsersAsync(services, db);
-        await SeedPurchaseOrdersAsync(db);
-        await SeedDispatchOrdersAsync(db);
-        await SeedProductsAsync(db);
+        // All demo/fixture data below belongs to one seeded Organization ("GCPL") - multi-tenancy
+        // only adds a second organization once the platform site creates one. A bootstrap
+        // PlatformAdmin account is also seeded so the platform site itself is reachable on first run.
+        var org = await GetOrAddDefaultOrganizationAsync(db);
+        await SeedPlatformAdminAsync(services);
+
+        await SeedMasterDataAsync(db, org.Id);
+        await SeedUsersAsync(services, db, org.Id);
+        await SeedPurchaseOrdersAsync(db, org.Id);
+        await SeedDispatchOrdersAsync(db, org.Id);
+        await SeedProductsAsync(db, org.Id);
         await BackfillDispatchOrderLineProductsAsync(db);
         await BackfillDeliveryLocationsAsync(db);
-        await SeedVehicleMastersAsync(db);
+        await SeedVehicleMastersAsync(db, org.Id);
         await BackfillVehicleCapacityAsync(db);
-        await SeedOutwardTransactionsAsync(services, db);
+        await SeedOutwardTransactionsAsync(services, db, org.Id);
+    }
+
+    private static async Task<Organization> GetOrAddDefaultOrganizationAsync(WarehouseGateDbContext db)
+    {
+        var org = await db.Organizations.FirstOrDefaultAsync(o => o.Code == "GCPL");
+        if (org is not null)
+        {
+            return org;
+        }
+
+        org = new Organization
+        {
+            Name = "Godrej Consumer Products Limited",
+            Code = "GCPL",
+            IsActive = true,
+            MaxUsers = 0,
+            MaxWarehouses = 0,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+        db.Organizations.Add(org);
+        await db.SaveChangesAsync();
+        return org;
+    }
+
+    private static async Task SeedPlatformAdminAsync(IServiceProvider services)
+    {
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        if (await userManager.FindByNameAsync("platformadmin1") is not null)
+        {
+            return;
+        }
+
+        var admin = new ApplicationUser
+        {
+            UserName = "platformadmin1",
+            Email = "platformadmin1@warehousegate.local",
+            DisplayName = "Platform Admin",
+            Role = UserRole.PlatformAdmin,
+            OrganizationId = null,
+            EmailConfirmed = true
+        };
+        await userManager.CreateAsync(admin, "Pass123$");
     }
 
     // India > (Maharashtra > Mumbai, Karnataka > Bengaluru) > (West, South) regions > 3 warehouses -
     // the minimum hierarchy needed to exercise the SuperAdmin master-data screens and give
     // LogisticsManager/Office test users a real region/warehouse to be scoped to.
-    private static async Task SeedMasterDataAsync(WarehouseGateDbContext db)
+    private static async Task SeedMasterDataAsync(WarehouseGateDbContext db, int organizationId)
     {
-        var india = await db.Countries.FirstOrDefaultAsync(c => c.Name == "India");
+        var india = await db.Countries.FirstOrDefaultAsync(c => c.OrganizationId == organizationId && c.Name == "India");
         if (india is null)
         {
-            india = new Country { Name = "India" };
+            india = new Country { Name = "India", OrganizationId = organizationId };
             db.Countries.Add(india);
             await db.SaveChangesAsync();
         }
 
-        var maharashtra = await GetOrAddStateAsync(db, "Maharashtra", india.Id);
-        var karnataka = await GetOrAddStateAsync(db, "Karnataka", india.Id);
+        var maharashtra = await GetOrAddStateAsync(db, "Maharashtra", india.Id, organizationId);
+        var karnataka = await GetOrAddStateAsync(db, "Karnataka", india.Id, organizationId);
         await db.SaveChangesAsync();
 
-        var mumbai = await GetOrAddCityAsync(db, "Mumbai", maharashtra.Id);
-        var bengaluru = await GetOrAddCityAsync(db, "Bengaluru", karnataka.Id);
+        var mumbai = await GetOrAddCityAsync(db, "Mumbai", maharashtra.Id, organizationId);
+        var bengaluru = await GetOrAddCityAsync(db, "Bengaluru", karnataka.Id, organizationId);
         await db.SaveChangesAsync();
 
-        var west = await GetOrAddRegionAsync(db, "West");
-        var south = await GetOrAddRegionAsync(db, "South");
+        var west = await GetOrAddRegionAsync(db, "West", organizationId);
+        var south = await GetOrAddRegionAsync(db, "South", organizationId);
         await db.SaveChangesAsync();
 
-        await GetOrAddWarehouseAsync(db, "Mumbai DC", WarehouseType.Warehouse, west.Id, maharashtra.Id, mumbai.Id, india.Id);
-        await GetOrAddWarehouseAsync(db, "Mumbai CPA", WarehouseType.CPA, west.Id, maharashtra.Id, mumbai.Id, india.Id);
-        await GetOrAddWarehouseAsync(db, "Bengaluru DC", WarehouseType.Warehouse, south.Id, karnataka.Id, bengaluru.Id, india.Id);
+        await GetOrAddWarehouseAsync(db, "Mumbai DC", WarehouseType.Warehouse, west.Id, maharashtra.Id, mumbai.Id, india.Id, organizationId);
+        await GetOrAddWarehouseAsync(db, "Mumbai CPA", WarehouseType.CPA, west.Id, maharashtra.Id, mumbai.Id, india.Id, organizationId);
+        await GetOrAddWarehouseAsync(db, "Bengaluru DC", WarehouseType.Warehouse, south.Id, karnataka.Id, bengaluru.Id, india.Id, organizationId);
         await db.SaveChangesAsync();
     }
 
-    private static async Task<State> GetOrAddStateAsync(WarehouseGateDbContext db, string name, int countryId)
+    private static async Task<State> GetOrAddStateAsync(WarehouseGateDbContext db, string name, int countryId, int organizationId)
     {
-        var existing = await db.States.FirstOrDefaultAsync(s => s.Name == name);
+        var existing = await db.States.FirstOrDefaultAsync(s => s.OrganizationId == organizationId && s.Name == name);
         if (existing is not null)
         {
             return existing;
         }
 
-        var state = new State { Name = name, CountryId = countryId };
+        var state = new State { Name = name, CountryId = countryId, OrganizationId = organizationId };
         db.States.Add(state);
         return state;
     }
 
-    private static async Task<City> GetOrAddCityAsync(WarehouseGateDbContext db, string name, int stateId)
+    private static async Task<City> GetOrAddCityAsync(WarehouseGateDbContext db, string name, int stateId, int organizationId)
     {
-        var existing = await db.Cities.FirstOrDefaultAsync(c => c.Name == name);
+        var existing = await db.Cities.FirstOrDefaultAsync(c => c.OrganizationId == organizationId && c.Name == name);
         if (existing is not null)
         {
             return existing;
         }
 
-        var city = new City { Name = name, StateId = stateId };
+        var city = new City { Name = name, StateId = stateId, OrganizationId = organizationId };
         db.Cities.Add(city);
         return city;
     }
 
-    private static async Task<Region> GetOrAddRegionAsync(WarehouseGateDbContext db, string name)
+    private static async Task<Region> GetOrAddRegionAsync(WarehouseGateDbContext db, string name, int organizationId)
     {
-        var existing = await db.Regions.FirstOrDefaultAsync(r => r.Name == name);
+        var existing = await db.Regions.FirstOrDefaultAsync(r => r.OrganizationId == organizationId && r.Name == name);
         if (existing is not null)
         {
             return existing;
         }
 
-        var region = new Region { Name = name };
+        var region = new Region { Name = name, OrganizationId = organizationId };
         db.Regions.Add(region);
         return region;
     }
 
     private static async Task<Warehouse> GetOrAddWarehouseAsync(
-        WarehouseGateDbContext db, string name, WarehouseType type, int regionId, int stateId, int cityId, int countryId)
+        WarehouseGateDbContext db, string name, WarehouseType type, int regionId, int stateId, int cityId, int countryId, int organizationId)
     {
-        var existing = await db.Warehouses.FirstOrDefaultAsync(w => w.Name == name);
+        var existing = await db.Warehouses.FirstOrDefaultAsync(w => w.OrganizationId == organizationId && w.Name == name);
         if (existing is not null)
         {
             return existing;
@@ -110,13 +158,14 @@ public static class SeedData
             RegionId = regionId,
             StateId = stateId,
             CityId = cityId,
-            CountryId = countryId
+            CountryId = countryId,
+            OrganizationId = organizationId
         };
         db.Warehouses.Add(warehouse);
         return warehouse;
     }
 
-    private static async Task SeedUsersAsync(IServiceProvider services, WarehouseGateDbContext db)
+    private static async Task SeedUsersAsync(IServiceProvider services, WarehouseGateDbContext db, int organizationId)
     {
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
@@ -137,6 +186,7 @@ public static class SeedData
                 DisplayName = "Gate Security",
                 Role = UserRole.Security,
                 WarehouseId = defaultWarehouse.Id,
+                OrganizationId = organizationId,
                 EmailConfirmed = true
             };
             await userManager.CreateAsync(security, "Pass123$");
@@ -157,6 +207,7 @@ public static class SeedData
                 DisplayName = "Dock Supervisor",
                 Role = UserRole.Supervisor,
                 WarehouseId = defaultWarehouse.Id,
+                OrganizationId = organizationId,
                 EmailConfirmed = true
             };
             await userManager.CreateAsync(supervisor, "Pass123$");
@@ -177,6 +228,7 @@ public static class SeedData
                 DisplayName = "Second Dock Supervisor",
                 Role = UserRole.Supervisor,
                 WarehouseId = defaultWarehouse.Id,
+                OrganizationId = organizationId,
                 EmailConfirmed = true
             };
             await userManager.CreateAsync(supervisor2, "Pass123$");
@@ -197,6 +249,7 @@ public static class SeedData
                 DisplayName = "Office Staff",
                 Role = UserRole.Office,
                 WarehouseId = defaultWarehouse.Id,
+                OrganizationId = organizationId,
                 EmailConfirmed = true
             };
             await userManager.CreateAsync(office, "Pass123$");
@@ -215,6 +268,7 @@ public static class SeedData
                 Email = "superadmin1@warehousegate.local",
                 DisplayName = "Super Admin",
                 Role = UserRole.SuperAdmin,
+                OrganizationId = organizationId,
                 EmailConfirmed = true
             };
             await userManager.CreateAsync(superAdmin, "Pass123$");
@@ -229,6 +283,7 @@ public static class SeedData
                 DisplayName = "Logistics Manager",
                 Role = UserRole.LogisticsManager,
                 RegionId = westRegion.Id,
+                OrganizationId = organizationId,
                 EmailConfirmed = true
             };
             await userManager.CreateAsync(logisticsManager, "Pass123$");
@@ -238,31 +293,31 @@ public static class SeedData
     // Reference data grows over time as new test scenarios are needed. Each item is seeded
     // independently (rather than gated behind a single "any rows?" check) so new entries can be
     // added later without being skipped just because earlier ones already exist in the dev DB.
-    private static async Task SeedPurchaseOrdersAsync(WarehouseGateDbContext db)
+    private static async Task SeedPurchaseOrdersAsync(WarehouseGateDbContext db, int organizationId)
     {
         // Expected delivery dates deliberately cover all three check-in scenarios:
         // PO-1001 within the tolerance window (clean check-in), PO-1002 outside it (soft
         // warning demonstrable), PO-1003 with no expected date at all (check skipped).
-        await SeedPurchaseOrderIfMissingAsync(db, "PO-1001", "Acme Steel Works", DateTime.UtcNow.Date,
+        await SeedPurchaseOrderIfMissingAsync(db, organizationId, "PO-1001", "Acme Steel Works", DateTime.UtcNow.Date,
             ("MS Angle 50x50", 200m, "PCS"),
             ("MS Sheet 2mm", 50m, "PCS"));
 
-        await SeedPurchaseOrderIfMissingAsync(db, "PO-1002", "Prime Packaging Ltd", DateTime.UtcNow.Date.AddDays(-10),
+        await SeedPurchaseOrderIfMissingAsync(db, organizationId, "PO-1002", "Prime Packaging Ltd", DateTime.UtcNow.Date.AddDays(-10),
             ("Corrugated Box - Large", 500m, "PCS"));
 
-        await SeedPurchaseOrderIfMissingAsync(db, "PO-1003", "Bharat Fasteners Co.", null,
+        await SeedPurchaseOrderIfMissingAsync(db, organizationId, "PO-1003", "Bharat Fasteners Co.", null,
             ("Hex Bolt M12", 1000m, "PCS"),
             ("Flat Washer M12", 2000m, "PCS"));
 
-        await SeedVehicleIfMissingAsync(db, "MH04GT3312");
-        await SeedVehicleIfMissingAsync(db, "GJ01AX7790");
-        await SeedVehicleIfMissingAsync(db, "KA05MZ4521");
-        await SeedVehicleIfMissingAsync(db, "MH20BZ9988");
+        await SeedVehicleIfMissingAsync(db, organizationId, "MH04GT3312");
+        await SeedVehicleIfMissingAsync(db, organizationId, "GJ01AX7790");
+        await SeedVehicleIfMissingAsync(db, organizationId, "KA05MZ4521");
+        await SeedVehicleIfMissingAsync(db, organizationId, "MH20BZ9988");
 
         await db.SaveChangesAsync();
     }
 
-    private static async Task SeedDispatchOrdersAsync(WarehouseGateDbContext db)
+    private static async Task SeedDispatchOrdersAsync(WarehouseGateDbContext db, int organizationId)
     {
         // DO-2009's fixture shape changed (3 SKUs/tiny qty -> 4 SKUs/qty sized against the
         // vehicle's capacity) after it could already exist from an earlier run - wipe the stale
@@ -270,28 +325,28 @@ public static class SeedData
         // once" convention as the other backfills in this file.
         await ResetStaleDo2009FixtureAsync(db);
 
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2001", "Reliance Retail",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2001", "Reliance Retail",
             ("MS Angle 50x50", 100m, "PCS", ""),
             ("MS Sheet 2mm", 20m, "PCS", ""));
 
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2002", "Vishal Mega Mart",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2002", "Vishal Mega Mart",
             ("Corrugated Box - Large", 300m, "PCS", ""));
 
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2003", "Big Bazaar",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2003", "Big Bazaar",
             ("Hex Bolt M12", 400m, "PCS", ""),
             ("Flat Washer M12", 800m, "PCS", ""));
 
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2004", "D-Mart",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2004", "D-Mart",
             ("LED Bulb 9W", 500m, "PCS", ""),
             ("Extension Cord 5m", 100m, "PCS", ""));
 
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2005", "Spencer's Retail",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2005", "Spencer's Retail",
             ("Steel Almirah", 20m, "PCS", ""));
 
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2006", "Star Bazaar",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2006", "Star Bazaar",
             ("Ceiling Fan 48in", 150m, "PCS", ""));
 
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2007", "More Retail",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2007", "More Retail",
             ("PVC Pipe 2in", 250m, "PCS", ""),
             ("Pipe Elbow 2in", 250m, "PCS", ""));
 
@@ -301,7 +356,7 @@ public static class SeedData
         // to test free placement, collision, and rearranging without immediately overflowing.
         // Delivery locations are distinct dock/stop names so the Unloading View search has
         // something real to match against beyond product name.
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2008", "Reliance Smart Bazaar",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2008", "Reliance Smart Bazaar",
             ("Godrej No.1 Soap (125g) - Carton", 300m, "CTN", "Reliance Smart Bazaar - Dock 3"),
             ("Godrej Ezee Liquid Detergent - Carton", 150m, "CTN", "Reliance Smart Bazaar - Dock 3"),
             ("Good Knight Mosquito Coil - Carton", 400m, "CTN", "Reliance Smart Bazaar - Dock 1"),
@@ -312,7 +367,7 @@ public static class SeedData
         // quantities sized against the MH20BZ9988 18-ton / 960x240x260cm vehicle used at Dock-In:
         // ~7,750kg (43% of the 18,000kg payload) and ~795cm of the 960cm bed length - a
         // substantial, realistic partial load with headroom left on every axis, not a stress test.
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2009", "Metro Cash & Carry",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2009", "Metro Cash & Carry",
             ("Godrej No.1 Soap (125g) - Carton", 244m, "CTN", "Metro Cash & Carry - Dock 2"),
             ("Godrej Ezee Liquid Detergent - Carton", 80m, "CTN", "Metro Cash & Carry - Dock 2"),
             ("Good Knight Mosquito Coil - Carton", 256m, "CTN", "Metro Cash & Carry - Dock 2"),
@@ -325,7 +380,7 @@ public static class SeedData
         // on purpose, so the Rule Validation card shows a genuine Capacity warning during Plan &
         // Load. The other 3 Godrej SKUs from DO-2009 don't fit alongside this one physically
         // (soap alone already spans 900 of the 960cm bed length), so this fixture is soap-only.
-        await SeedDispatchOrderIfMissingAsync(db, "DO-2010", "Big Bazaar Central",
+        await SeedDispatchOrderIfMissingAsync(db, organizationId, "DO-2010", "Big Bazaar Central",
             ("Godrej No.1 Soap (125g) - Carton", 1440m, "CTN", "Big Bazaar Central - Dock 1"));
 
         await db.SaveChangesAsync();
@@ -334,39 +389,39 @@ public static class SeedData
     // Weight (kg) and bounding-box dimensions (cm, L x W x H) per unit - drives the suggested
     // loading-sequence algorithm (heavier/bulkier items sort first). One row per product name
     // already used across the seeded Purchase/Dispatch orders above.
-    private static async Task SeedProductsAsync(WarehouseGateDbContext db)
+    private static async Task SeedProductsAsync(WarehouseGateDbContext db, int organizationId)
     {
-        await SeedProductIfMissingAsync(db, "MS Angle 50x50", 4.0m, 200m, 5m, 5m, "STL-ANG-5050", WeightCategory.Heavy, true, 10);
-        await SeedProductIfMissingAsync(db, "MS Sheet 2mm", 8.0m, 100m, 100m, 0.2m, "STL-SHT-2MM", WeightCategory.Heavy, true, 20);
-        await SeedProductIfMissingAsync(db, "Corrugated Box - Large", 0.5m, 60m, 40m, 40m, "PKG-CTN-LRG", WeightCategory.Light, true, 15);
-        await SeedProductIfMissingAsync(db, "Hex Bolt M12", 0.05m, 6m, 1.2m, 1.2m, "HW-BOLT-M12", WeightCategory.Medium, true, 30);
-        await SeedProductIfMissingAsync(db, "Flat Washer M12", 0.01m, 2.4m, 2.4m, 0.2m, "HW-WASH-M12", WeightCategory.Light, true, 30);
-        await SeedProductIfMissingAsync(db, "LED Bulb 9W", 0.1m, 6m, 6m, 11m, "ELEC-LED-9W", WeightCategory.Fragile, false, 1);
-        await SeedProductIfMissingAsync(db, "Extension Cord 5m", 0.6m, 20m, 15m, 8m, "ELEC-EXT-5M", WeightCategory.Medium, true, 10);
-        await SeedProductIfMissingAsync(db, "Steel Almirah", 45m, 90m, 45m, 185m, "FURN-ALM-STL", WeightCategory.Heavy, false, 1);
-        await SeedProductIfMissingAsync(db, "Ceiling Fan 48in", 5.5m, 60m, 60m, 30m, "ELEC-FAN-48", WeightCategory.Fragile, false, 1);
-        await SeedProductIfMissingAsync(db, "PVC Pipe 2in", 2.2m, 300m, 6m, 6m, "PLM-PIPE-2IN", WeightCategory.Medium, true, 6);
-        await SeedProductIfMissingAsync(db, "Pipe Elbow 2in", 0.15m, 8m, 8m, 8m, "PLM-ELB-2IN", WeightCategory.Light, true, 20);
+        await SeedProductIfMissingAsync(db, organizationId, "MS Angle 50x50", 4.0m, 200m, 5m, 5m, "STL-ANG-5050", WeightCategory.Heavy, true, 10);
+        await SeedProductIfMissingAsync(db, organizationId, "MS Sheet 2mm", 8.0m, 100m, 100m, 0.2m, "STL-SHT-2MM", WeightCategory.Heavy, true, 20);
+        await SeedProductIfMissingAsync(db, organizationId, "Corrugated Box - Large", 0.5m, 60m, 40m, 40m, "PKG-CTN-LRG", WeightCategory.Light, true, 15);
+        await SeedProductIfMissingAsync(db, organizationId, "Hex Bolt M12", 0.05m, 6m, 1.2m, 1.2m, "HW-BOLT-M12", WeightCategory.Medium, true, 30);
+        await SeedProductIfMissingAsync(db, organizationId, "Flat Washer M12", 0.01m, 2.4m, 2.4m, 0.2m, "HW-WASH-M12", WeightCategory.Light, true, 30);
+        await SeedProductIfMissingAsync(db, organizationId, "LED Bulb 9W", 0.1m, 6m, 6m, 11m, "ELEC-LED-9W", WeightCategory.Fragile, false, 1);
+        await SeedProductIfMissingAsync(db, organizationId, "Extension Cord 5m", 0.6m, 20m, 15m, 8m, "ELEC-EXT-5M", WeightCategory.Medium, true, 10);
+        await SeedProductIfMissingAsync(db, organizationId, "Steel Almirah", 45m, 90m, 45m, 185m, "FURN-ALM-STL", WeightCategory.Heavy, false, 1);
+        await SeedProductIfMissingAsync(db, organizationId, "Ceiling Fan 48in", 5.5m, 60m, 60m, 30m, "ELEC-FAN-48", WeightCategory.Fragile, false, 1);
+        await SeedProductIfMissingAsync(db, organizationId, "PVC Pipe 2in", 2.2m, 300m, 6m, 6m, "PLM-PIPE-2IN", WeightCategory.Medium, true, 6);
+        await SeedProductIfMissingAsync(db, organizationId, "Pipe Elbow 2in", 0.15m, 8m, 8m, 8m, "PLM-ELB-2IN", WeightCategory.Light, true, 20);
 
         // Godrej FMCG cartons for DO-2008 - dimensions match the shipping-carton sizes typical of
         // each category (soap/detergent/coil/deodorant), not the individual retail unit. Stack
         // limits/categories are set so the new NonStackable/MaxStackLayers rules have real cases to
         // catch in the existing DO-2008 fixture: Aer Deodorant is non-stackable (aerosol), the coil
         // carton caps out at 4 layers.
-        await SeedProductIfMissingAsync(db, "Godrej No.1 Soap (125g) - Carton", 15m, 40m, 30m, 30m, "GCPL-SOAP-125", WeightCategory.Medium, true, 8, "#4f7cff");
-        await SeedProductIfMissingAsync(db, "Godrej Ezee Liquid Detergent - Carton", 18m, 50m, 35m, 30m, "GCPL-EZEE-1L", WeightCategory.Heavy, true, 5, "#26c281");
-        await SeedProductIfMissingAsync(db, "Good Knight Mosquito Coil - Carton", 8m, 28m, 20m, 20m, "GCPL-COIL-GK", WeightCategory.Fragile, true, 4, "#ffcf44");
-        await SeedProductIfMissingAsync(db, "Godrej Aer Deodorant - Carton", 10m, 40m, 25m, 20m, "GCPL-AER-DEO", WeightCategory.Fragile, false, 1, "#8e6cff");
+        await SeedProductIfMissingAsync(db, organizationId, "Godrej No.1 Soap (125g) - Carton", 15m, 40m, 30m, 30m, "GCPL-SOAP-125", WeightCategory.Medium, true, 8, "#4f7cff");
+        await SeedProductIfMissingAsync(db, organizationId, "Godrej Ezee Liquid Detergent - Carton", 18m, 50m, 35m, 30m, "GCPL-EZEE-1L", WeightCategory.Heavy, true, 5, "#26c281");
+        await SeedProductIfMissingAsync(db, organizationId, "Good Knight Mosquito Coil - Carton", 8m, 28m, 20m, 20m, "GCPL-COIL-GK", WeightCategory.Fragile, true, 4, "#ffcf44");
+        await SeedProductIfMissingAsync(db, organizationId, "Godrej Aer Deodorant - Carton", 10m, 40m, 25m, 20m, "GCPL-AER-DEO", WeightCategory.Fragile, false, 1, "#8e6cff");
 
         await db.SaveChangesAsync();
     }
 
     private static async Task SeedProductIfMissingAsync(
-        WarehouseGateDbContext db, string name, decimal weightKg, decimal lengthCm, decimal widthCm, decimal heightCm,
+        WarehouseGateDbContext db, int organizationId, string name, decimal weightKg, decimal lengthCm, decimal widthCm, decimal heightCm,
         string skuCode = "", WeightCategory category = WeightCategory.Medium, bool isStackable = true, int maxStackLayers = 99,
         string? colorHex = null)
     {
-        var existing = await db.Products.FirstOrDefaultAsync(p => p.Name == name);
+        var existing = await db.Products.FirstOrDefaultAsync(p => p.OrganizationId == organizationId && p.Name == name);
         if (existing is not null)
         {
             // SKU master fields were added after this row could already exist - EF's migration
@@ -397,7 +452,8 @@ public static class SeedData
             Category = category,
             IsStackable = isStackable,
             MaxStackLayers = maxStackLayers,
-            ColorHex = colorHex
+            ColorHex = colorHex,
+            OrganizationId = organizationId
         });
     }
 
@@ -485,10 +541,10 @@ public static class SeedData
     }
 
     private static async Task SeedPurchaseOrderIfMissingAsync(
-        WarehouseGateDbContext db, string poNumber, string supplierName, DateTime? expectedDeliveryDate,
+        WarehouseGateDbContext db, int organizationId, string poNumber, string supplierName, DateTime? expectedDeliveryDate,
         params (string ProductName, decimal Qty, string Uom)[] lines)
     {
-        if (await db.PurchaseOrders.AnyAsync(p => p.PONumber == poNumber))
+        if (await db.PurchaseOrders.AnyAsync(p => p.OrganizationId == organizationId && p.PONumber == poNumber))
         {
             return;
         }
@@ -498,6 +554,7 @@ public static class SeedData
             PONumber = poNumber,
             SupplierName = supplierName,
             ExpectedDeliveryDate = expectedDeliveryDate,
+            OrganizationId = organizationId,
             Lines = lines.Select(l => new PurchaseOrderLine
             {
                 ProductName = l.ProductName,
@@ -508,9 +565,9 @@ public static class SeedData
     }
 
     private static async Task SeedDispatchOrderIfMissingAsync(
-        WarehouseGateDbContext db, string dispatchOrderNumber, string customerName, params (string ProductName, decimal Qty, string Uom, string DeliveryLocation)[] lines)
+        WarehouseGateDbContext db, int organizationId, string dispatchOrderNumber, string customerName, params (string ProductName, decimal Qty, string Uom, string DeliveryLocation)[] lines)
     {
-        if (await db.DispatchOrders.AnyAsync(d => d.DispatchOrderNumber == dispatchOrderNumber))
+        if (await db.DispatchOrders.AnyAsync(d => d.OrganizationId == organizationId && d.DispatchOrderNumber == dispatchOrderNumber))
         {
             return;
         }
@@ -520,6 +577,7 @@ public static class SeedData
             DispatchOrderNumber = dispatchOrderNumber,
             CustomerName = customerName,
             RequestedDate = DateTime.UtcNow.Date,
+            OrganizationId = organizationId,
             Lines = lines.Select(l => new DispatchOrderLine
             {
                 ProductName = l.ProductName,
@@ -535,7 +593,7 @@ public static class SeedData
     // step is being worked on instead of manually walking every job through Claim -> Dock -> Load ->
     // Complete first. Idempotent per dispatch order (skips if a transaction already exists for it),
     // same convention as the other Seed*IfMissingAsync helpers below.
-    private static async Task SeedOutwardTransactionsAsync(IServiceProvider services, WarehouseGateDbContext db)
+    private static async Task SeedOutwardTransactionsAsync(IServiceProvider services, WarehouseGateDbContext db, int organizationId)
     {
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var supervisor = await userManager.FindByNameAsync("supervisor1");
@@ -554,13 +612,13 @@ public static class SeedData
         var now = DateTime.UtcNow;
 
         // DO-2001: fresh pick list, unclaimed - exercises the Claim flow.
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2001", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2001", office.Id, t =>
         {
             t.CreatedTime = now.AddMinutes(-45);
         });
 
         // DO-2002: already claimed - exercises Dock-In directly.
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2002", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2002", office.Id, t =>
         {
             t.CreatedTime = now.AddHours(-2);
             t.Status = OutwardStatus.Assigned;
@@ -571,12 +629,12 @@ public static class SeedData
         // DO-2006 / DO-2007: same two stages as DO-2001/DO-2002 above, on dispatch orders that
         // haven't been used in prior manual testing - guarantees "available to claim" and
         // "already assigned" test fixtures exist even once DO-2001-2003 accumulate real history.
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2006", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2006", office.Id, t =>
         {
             t.CreatedTime = now.AddMinutes(-20);
         });
 
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2007", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2007", office.Id, t =>
         {
             t.CreatedTime = now.AddHours(-1).AddMinutes(-30);
             t.Status = OutwardStatus.Assigned;
@@ -587,7 +645,7 @@ public static class SeedData
         // DO-2008: Godrej FMCG dispatch, gate-checked-in and docked with the 18-ton truck already
         // attached - lands directly in the Docked status the 3D Plan & Load screen requires, with
         // zero groups placed yet. The primary fixture for testing free placement end to end.
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2008", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2008", office.Id, t =>
         {
             t.CreatedTime = now.AddHours(-1).AddMinutes(-15);
             t.Status = OutwardStatus.Docked;
@@ -611,7 +669,7 @@ public static class SeedData
         // "Start Loading Confirmation" -> Confirm Loading (Start/Loaded per group - watch the
         // home-page progress percentage move in real time as each group resolves) -> photo
         // evidence -> dispatch ready -> Complete.
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2009", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2009", office.Id, t =>
         {
             t.CreatedTime = now.AddMinutes(-10);
             t.Status = OutwardStatus.Assigned;
@@ -752,7 +810,7 @@ public static class SeedData
         // DO-2010: same Dock-In-to-Complete walkthrough as DO-2009, but single-SKU and
         // deliberately over the vehicle's weight capacity - see the comment on its
         // SeedDispatchOrderIfMissingAsync call above for the exact numbers.
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2010", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2010", office.Id, t =>
         {
             t.CreatedTime = now.AddMinutes(-8);
             t.Status = OutwardStatus.Assigned;
@@ -806,7 +864,7 @@ public static class SeedData
 
         // DO-2003: gate-checked-in by Security, then docked - exercises the picker checklist /
         // Start Loading step, and shows up in Security's Outward Status search.
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2003", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2003", office.Id, t =>
         {
             t.CreatedTime = now.AddHours(-3);
             t.Status = OutwardStatus.Docked;
@@ -826,7 +884,7 @@ public static class SeedData
         // DO-2004: loading in progress, one line already recorded - exercises load-line reorder,
         // exception reporting, dispatch-ready confirmation, and Complete.
         var doLine = await db.DispatchOrderLines.FirstAsync(l => l.DispatchOrder!.DispatchOrderNumber == "DO-2004");
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2004", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2004", office.Id, t =>
         {
             t.CreatedTime = now.AddHours(-4);
             t.Status = OutwardStatus.Loading;
@@ -847,7 +905,7 @@ public static class SeedData
         // DO-2005: fully completed, not yet gated out - the standard "ready to exit" test case for
         // both Supervisor History and Security's Outward Exit search.
         var completedLines = await db.DispatchOrderLines.Where(l => l.DispatchOrder!.DispatchOrderNumber == "DO-2005").ToListAsync();
-        await CreateOutwardTransactionIfMissingAsync(db, "DO-2005", office.Id, t =>
+        await CreateOutwardTransactionIfMissingAsync(db, organizationId, "DO-2005", office.Id, t =>
         {
             t.CreatedTime = now.AddHours(-6);
             t.Status = OutwardStatus.Completed;
@@ -922,7 +980,7 @@ public static class SeedData
     }
 
     private static async Task CreateOutwardTransactionIfMissingAsync(
-        WarehouseGateDbContext db, string dispatchOrderNumber, string officeUserId, Action<OutwardTransaction> configure)
+        WarehouseGateDbContext db, int organizationId, string dispatchOrderNumber, string officeUserId, Action<OutwardTransaction> configure)
     {
         var dispatchOrder = await db.DispatchOrders.FirstOrDefaultAsync(d => d.DispatchOrderNumber == dispatchOrderNumber)
             ?? throw new InvalidOperationException($"Dispatch order '{dispatchOrderNumber}' must be seeded before its outward transaction.");
@@ -937,7 +995,8 @@ public static class SeedData
             DispatchOrderId = dispatchOrder.Id,
             Status = OutwardStatus.PickListGenerated,
             CreatedTime = DateTime.UtcNow,
-            CreatedByOfficeUserId = officeUserId
+            CreatedByOfficeUserId = officeUserId,
+            OrganizationId = organizationId
         };
         configure(transaction);
 
@@ -950,97 +1009,97 @@ public static class SeedData
         await db.SaveChangesAsync();
     }
 
-    private static async Task SeedVehicleIfMissingAsync(WarehouseGateDbContext db, string number)
+    private static async Task SeedVehicleIfMissingAsync(WarehouseGateDbContext db, int organizationId, string number)
     {
-        if (await db.Vehicles.AnyAsync(v => v.Number == number))
+        if (await db.Vehicles.AnyAsync(v => v.OrganizationId == organizationId && v.Number == number))
         {
             return;
         }
 
-        db.Vehicles.Add(new Vehicle { Number = number });
+        db.Vehicles.Add(new Vehicle { Number = number, OrganizationId = organizationId });
     }
 
     // Covers the realistic spread of vehicles seen at an Indian FMCG warehouse gate, from the
     // smallest last-mile tempo up to a 32-ton multi-axle trailer, plus a reefer for cold-chain
     // loads - so SuperAdmin's Vehicle Masters screen has a full reference set out of the box
     // instead of just the three profiles needed by the original DO-2008/DO-2009 fixtures.
-    private static async Task SeedVehicleMastersAsync(WarehouseGateDbContext db)
+    private static async Task SeedVehicleMastersAsync(WarehouseGateDbContext db, int organizationId)
     {
-        var threeWheeler = await GetOrAddVehicleTypeAsync(db, "Three-Wheeler (Tempo)");
-        var pickupTruck = await GetOrAddVehicleTypeAsync(db, "Pickup Truck");
-        var miniTruck = await GetOrAddVehicleTypeAsync(db, "Mini Truck");
-        var closedBodyTruck = await GetOrAddVehicleTypeAsync(db, "Closed Body Truck");
-        var openTruck = await GetOrAddVehicleTypeAsync(db, "Open Truck");
-        var containerTruck = await GetOrAddVehicleTypeAsync(db, "Container Truck");
-        var multiAxleTrailer = await GetOrAddVehicleTypeAsync(db, "Multi-Axle Trailer");
-        var refrigeratedTruck = await GetOrAddVehicleTypeAsync(db, "Refrigerated Truck");
+        var threeWheeler = await GetOrAddVehicleTypeAsync(db, "Three-Wheeler (Tempo)", organizationId);
+        var pickupTruck = await GetOrAddVehicleTypeAsync(db, "Pickup Truck", organizationId);
+        var miniTruck = await GetOrAddVehicleTypeAsync(db, "Mini Truck", organizationId);
+        var closedBodyTruck = await GetOrAddVehicleTypeAsync(db, "Closed Body Truck", organizationId);
+        var openTruck = await GetOrAddVehicleTypeAsync(db, "Open Truck", organizationId);
+        var containerTruck = await GetOrAddVehicleTypeAsync(db, "Container Truck", organizationId);
+        var multiAxleTrailer = await GetOrAddVehicleTypeAsync(db, "Multi-Axle Trailer", organizationId);
+        var refrigeratedTruck = await GetOrAddVehicleTypeAsync(db, "Refrigerated Truck", organizationId);
 
-        var lightCommercial = await GetOrAddVehicleCategoryAsync(db, "Light Commercial");
-        var mediumCommercial = await GetOrAddVehicleCategoryAsync(db, "Medium Commercial");
-        var heavyCommercial = await GetOrAddVehicleCategoryAsync(db, "Heavy Commercial");
-        var eighteenTon = await GetOrAddVehicleCategoryAsync(db, "18 Ton");
-        var multiAxle32Ton = await GetOrAddVehicleCategoryAsync(db, "Multi-Axle (32 Ton)");
-        var coldChain = await GetOrAddVehicleCategoryAsync(db, "Cold Chain");
+        var lightCommercial = await GetOrAddVehicleCategoryAsync(db, "Light Commercial", organizationId);
+        var mediumCommercial = await GetOrAddVehicleCategoryAsync(db, "Medium Commercial", organizationId);
+        var heavyCommercial = await GetOrAddVehicleCategoryAsync(db, "Heavy Commercial", organizationId);
+        var eighteenTon = await GetOrAddVehicleCategoryAsync(db, "18 Ton", organizationId);
+        var multiAxle32Ton = await GetOrAddVehicleCategoryAsync(db, "Multi-Axle (32 Ton)", organizationId);
+        var coldChain = await GetOrAddVehicleCategoryAsync(db, "Cold Chain", organizationId);
 
         await db.SaveChangesAsync();
 
         // Three-wheeler tempo (e.g. Piaggio Ape/Mahindra Champion) - smallest goods carrier used
         // for last-mile/short-haul loads.
-        await SeedVehicleMasterIfMissingAsync(db, threeWheeler.Id, lightCommercial.Id, 500m, 210m, 140m, 140m);
+        await SeedVehicleMasterIfMissingAsync(db, organizationId, threeWheeler.Id, lightCommercial.Id, 500m, 210m, 140m, 140m);
 
         // Pickup truck (e.g. Tata Ace/Ashok Leyland Dost) - the "Chota Hathi" class, smaller than
         // the Mini Truck profile below.
-        await SeedVehicleMasterIfMissingAsync(db, pickupTruck.Id, lightCommercial.Id, 750m, 220m, 150m, 150m);
+        await SeedVehicleMasterIfMissingAsync(db, organizationId, pickupTruck.Id, lightCommercial.Id, 750m, 220m, 150m, 150m);
 
-        await SeedVehicleMasterIfMissingAsync(db, miniTruck.Id, lightCommercial.Id, 1500m, 300m, 160m, 160m);
-        await SeedVehicleMasterIfMissingAsync(db, openTruck.Id, mediumCommercial.Id, 3000m, 480m, 200m, 190m);
+        await SeedVehicleMasterIfMissingAsync(db, organizationId, miniTruck.Id, lightCommercial.Id, 1500m, 300m, 160m, 160m);
+        await SeedVehicleMasterIfMissingAsync(db, organizationId, openTruck.Id, mediumCommercial.Id, 3000m, 480m, 200m, 190m);
 
         // Closed/box-body truck (e.g. Eicher 14-17ft) - weather-protected FMCG loads too large
         // for the Open Truck profile.
-        await SeedVehicleMasterIfMissingAsync(db, closedBodyTruck.Id, heavyCommercial.Id, 7000m, 580m, 220m, 210m);
+        await SeedVehicleMasterIfMissingAsync(db, organizationId, closedBodyTruck.Id, heavyCommercial.Id, 7000m, 580m, 220m, 210m);
 
         // 18-ton truck (9600x2400x2600mm internal, 18000kg payload) - the standard reference
         // vehicle profile for the Godrej FMCG dispatch order (DO-2008).
-        await SeedVehicleMasterIfMissingAsync(db, containerTruck.Id, eighteenTon.Id, 18000m, 960m, 240m, 260m);
+        await SeedVehicleMasterIfMissingAsync(db, organizationId, containerTruck.Id, eighteenTon.Id, 18000m, 960m, 240m, 260m);
 
         // 32-ton multi-axle trailer (40ft) - the largest vehicle profile, for full-truckload
         // long-haul dispatches.
-        await SeedVehicleMasterIfMissingAsync(db, multiAxleTrailer.Id, multiAxle32Ton.Id, 25000m, 1200m, 240m, 270m);
+        await SeedVehicleMasterIfMissingAsync(db, organizationId, multiAxleTrailer.Id, multiAxle32Ton.Id, 25000m, 1200m, 240m, 270m);
 
         // Reefer/refrigerated truck for cold-chain FMCG (frozen/chilled) loads.
-        await SeedVehicleMasterIfMissingAsync(db, refrigeratedTruck.Id, coldChain.Id, 5000m, 500m, 220m, 220m);
+        await SeedVehicleMasterIfMissingAsync(db, organizationId, refrigeratedTruck.Id, coldChain.Id, 5000m, 500m, 220m, 220m);
 
         await db.SaveChangesAsync();
     }
 
-    private static async Task<VehicleType> GetOrAddVehicleTypeAsync(WarehouseGateDbContext db, string name)
+    private static async Task<VehicleType> GetOrAddVehicleTypeAsync(WarehouseGateDbContext db, string name, int organizationId)
     {
-        var existing = await db.VehicleTypes.FirstOrDefaultAsync(t => t.Name == name);
+        var existing = await db.VehicleTypes.FirstOrDefaultAsync(t => t.OrganizationId == organizationId && t.Name == name);
         if (existing is not null)
         {
             return existing;
         }
 
-        var type = new VehicleType { Name = name };
+        var type = new VehicleType { Name = name, OrganizationId = organizationId };
         db.VehicleTypes.Add(type);
         return type;
     }
 
-    private static async Task<VehicleCategory> GetOrAddVehicleCategoryAsync(WarehouseGateDbContext db, string name)
+    private static async Task<VehicleCategory> GetOrAddVehicleCategoryAsync(WarehouseGateDbContext db, string name, int organizationId)
     {
-        var existing = await db.VehicleCategories.FirstOrDefaultAsync(c => c.Name == name);
+        var existing = await db.VehicleCategories.FirstOrDefaultAsync(c => c.OrganizationId == organizationId && c.Name == name);
         if (existing is not null)
         {
             return existing;
         }
 
-        var category = new VehicleCategory { Name = name };
+        var category = new VehicleCategory { Name = name, OrganizationId = organizationId };
         db.VehicleCategories.Add(category);
         return category;
     }
 
     private static async Task SeedVehicleMasterIfMissingAsync(
-        WarehouseGateDbContext db, int vehicleTypeId, int vehicleCategoryId,
+        WarehouseGateDbContext db, int organizationId, int vehicleTypeId, int vehicleCategoryId,
         decimal maxWeightKg, decimal lengthCm, decimal widthCm, decimal heightCm)
     {
         var existing = await db.VehicleMasters.FirstOrDefaultAsync(v =>
@@ -1064,7 +1123,8 @@ public static class SeedData
             MaxWeightKg = maxWeightKg,
             LengthCm = lengthCm,
             WidthCm = widthCm,
-            HeightCm = heightCm
+            HeightCm = heightCm,
+            OrganizationId = organizationId
         });
     }
 }

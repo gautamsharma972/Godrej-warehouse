@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class DispatchOrder
+public class DispatchOrder : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
     public string DispatchOrderNumber { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
     public DateTime RequestedDate { get; set; }

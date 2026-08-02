@@ -4,7 +4,7 @@ namespace WarehouseGate.Domain;
 // ("Bay-{1..50}"); when a warehouse defines its real bays here, the mobile dock-in screens
 // offer them as a picker instead, and Dock Utilization uses the true bay count as its
 // denominator instead of guessing from distinct bay-name strings.
-public class DockBay
+public class DockBay : ITenantScoped
 {
     public int Id { get; set; }
 
@@ -13,4 +13,6 @@ public class DockBay
 
     public string Name { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+
+    public int OrganizationId { get; set; }
 }

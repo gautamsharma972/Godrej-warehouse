@@ -18,9 +18,10 @@ public enum FollowUpStatus
 // (the "Phase 3/4" items that previously only logged a server warning nobody saw). Scoped to a
 // warehouse like the transactions themselves; EntityName/EntityId point back at the source
 // InwardTransaction/OutwardTransaction the same way AuditLog rows do.
-public class FollowUpTask
+public class FollowUpTask : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
 
     public FollowUpType Type { get; set; }
     public FollowUpStatus Status { get; set; } = FollowUpStatus.Open;

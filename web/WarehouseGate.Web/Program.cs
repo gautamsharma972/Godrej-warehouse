@@ -38,6 +38,31 @@ builder.Services
         options.AccessDeniedPath = "/login";
         options.ExpireTimeSpan = TimeSpan.FromHours(12);
         options.SlidingExpiration = true;
+
+        // The cookie middleware issues this redirect server-side, before Blazor's own router
+        // (and RedirectToLogin.razor's path-aware logic) ever runs - so an unauthenticated request
+        // for a /platform/* URL needs its own redirect target here, not just in the Blazor router.
+        var redirectToLogin = options.Events.OnRedirectToLogin;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/platform"))
+            {
+                var returnUrl = Uri.EscapeDataString(context.Request.Path + context.Request.QueryString);
+                context.Response.Redirect($"/platform/login?ReturnUrl={returnUrl}");
+                return Task.CompletedTask;
+            }
+            return redirectToLogin(context);
+        };
+
+        // Fires when the caller IS authenticated but lacks the required role (e.g. a tenant
+        // SuperAdmin hitting /platform/*, or a PlatformAdmin hitting a tenant-only page) - route
+        // each back to whichever sign-in screen actually matches the account they're on.
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            var landing = context.HttpContext.User.IsInRole("PlatformAdmin") ? "/platform/login" : "/login";
+            context.Response.Redirect(landing);
+            return Task.CompletedTask;
+        };
     });
 builder.Services.AddAuthorization();
 
@@ -65,6 +90,7 @@ app.UseAntiforgery();
 app.MapPost("/login-handler", async (HttpContext http, IHttpClientFactory httpClientFactory) =>
 {
     var form = await http.Request.ReadFormAsync();
+    var orgCode = form["orgCode"].ToString();
     var userName = form["userName"].ToString();
     var password = form["password"].ToString();
 
@@ -77,7 +103,7 @@ app.MapPost("/login-handler", async (HttpContext http, IHttpClientFactory httpCl
     HttpResponseMessage response;
     try
     {
-        response = await client.PostAsJsonAsync("api/auth/login", new { userName, password });
+        response = await client.PostAsJsonAsync("api/auth/login", new { userName, password, organizationCode = orgCode });
     }
     catch (Exception)
     {
@@ -118,10 +144,54 @@ app.MapPost("/login-handler", async (HttpContext http, IHttpClientFactory httpCl
     return Results.Redirect(landing);
 });
 
+// Mirrors /login-handler above, for the platform site instead of a tenant's own portal - no
+// Organization Code (PlatformAdmin isn't scoped to one) and a different allowed-role/landing page.
+app.MapPost("/platform-login-handler", async (HttpContext http, IHttpClientFactory httpClientFactory) =>
+{
+    var form = await http.Request.ReadFormAsync();
+    var userName = form["userName"].ToString();
+    var password = form["password"].ToString();
+
+    if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
+    {
+        return Results.Redirect("/platform/login?error=invalid");
+    }
+
+    var client = httpClientFactory.CreateClient("Api");
+    HttpResponseMessage response;
+    try
+    {
+        response = await client.PostAsJsonAsync("api/auth/login", new { userName, password });
+    }
+    catch (Exception)
+    {
+        return Results.Redirect("/platform/login?error=connect");
+    }
+
+    if (!response.IsSuccessStatusCode)
+    {
+        return Results.Redirect("/platform/login?error=invalid");
+    }
+
+    var login = await response.Content.ReadFromJsonAsync<LoginApiResponse>();
+    if (login is null || login.Role != "PlatformAdmin")
+    {
+        return Results.Redirect("/platform/login?error=role");
+    }
+
+    var jwt = new JwtSecurityTokenHandler().ReadJwtToken(login.Token);
+    var identity = new ClaimsIdentity(jwt.Claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);
+    identity.AddClaim(new Claim("api_token", login.Token));
+
+    await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+    return Results.Redirect("/platform/organizations");
+});
+
 app.MapPost("/logout-handler", async (HttpContext http) =>
 {
+    var isPlatformAdmin = http.User.IsInRole("PlatformAdmin");
     await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    return Results.Redirect("/login");
+    return Results.Redirect(isPlatformAdmin ? "/platform/login" : "/login");
 });
 
 // Browser <img> tags can't attach a Bearer header, so this proxies photo/document requests

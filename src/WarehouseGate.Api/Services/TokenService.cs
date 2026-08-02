@@ -33,7 +33,10 @@ public class TokenService
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
             new Claim(ClaimTypes.Role, user.Role.ToString()),
-            new Claim("displayName", user.DisplayName)
+            new Claim("displayName", user.DisplayName),
+            // Read by HttpContextCurrentTenantProvider to scope every DbContext query for this
+            // request. Empty for PlatformAdmin, who isn't scoped to any single organization.
+            new Claim("orgId", user.OrganizationId?.ToString() ?? "")
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));

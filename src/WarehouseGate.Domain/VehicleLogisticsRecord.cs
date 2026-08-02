@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class VehicleLogisticsRecord
+public class VehicleLogisticsRecord : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
 
     public string VehicleNumber { get; set; } = string.Empty;
     public string? PoNumber { get; set; }

@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class AuditLog
+public class AuditLog : IOptionallyTenantScoped
 {
     public int Id { get; set; }
+    public int? OrganizationId { get; set; }
     public string EntityName { get; set; } = string.Empty;
     public int EntityId { get; set; }
     public AuditAction Action { get; set; }

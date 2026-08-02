@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class Vehicle
+public class Vehicle : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
     public string Number { get; set; } = string.Empty;
 
     // Capacity used by the suggested loading-sequence algorithm. Nullable - Vehicle rows are

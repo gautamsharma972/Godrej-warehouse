@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WarehouseGate.Infrastructure;
 
@@ -11,9 +12,11 @@ using WarehouseGate.Infrastructure;
 namespace WarehouseGate.Infrastructure.Migrations
 {
     [DbContext(typeof(WarehouseGateDbContext))]
-    partial class WarehouseGateDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260802175035_AddMultiTenancy")]
+    partial class AddMultiTenancy
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

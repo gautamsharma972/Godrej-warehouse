@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class PurchaseOrder
+public class PurchaseOrder : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
     public string PONumber { get; set; } = string.Empty;
     public string SupplierName { get; set; } = string.Empty;
     public DateTime? ExpectedDeliveryDate { get; set; }

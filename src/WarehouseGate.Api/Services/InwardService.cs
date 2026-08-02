@@ -832,6 +832,7 @@ public class InwardService
                 EntityName = "InwardTransaction",
                 EntityId = id,
                 WarehouseId = transaction.WarehouseId,
+                OrganizationId = transaction.OrganizationId,
                 Title = $"{grnNumber} flagged exceptions - supplier follow-up",
                 Details = $"Vehicle {transaction.Vehicle?.Number}, PO {transaction.PurchaseOrder?.PONumber}. Exception quantities - {exceptionSummary}.",
                 CreatedAtUtc = DateTime.UtcNow

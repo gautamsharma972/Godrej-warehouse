@@ -21,6 +21,9 @@ var photoStorageOptions = builder.Configuration.GetSection("PhotoStorage").Get<L
 builder.Services.AddSingleton(photoStorageOptions);
 builder.Services.AddSingleton<IPhotoStorageService, LocalDiskPhotoStorageService>();
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentTenantProvider, HttpContextCurrentTenantProvider>();
+
 builder.Services.AddDbContext<WarehouseGateDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 

@@ -21,17 +21,24 @@ public class AdminController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AuditService _audit;
     private readonly IHubContext<InwardHub> _hub;
+    private readonly ICurrentTenantProvider _tenant;
 
-    public AdminController(WarehouseGateDbContext db, UserManager<ApplicationUser> userManager, AuditService audit, IHubContext<InwardHub> hub)
+    public AdminController(WarehouseGateDbContext db, UserManager<ApplicationUser> userManager, AuditService audit, IHubContext<InwardHub> hub, ICurrentTenantProvider tenant)
     {
         _db = db;
         _userManager = userManager;
         _audit = audit;
         _hub = hub;
+        _tenant = tenant;
     }
 
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     private string CurrentUserName => User.FindFirstValue("displayName") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+    // Organizations isn't itself tenant-scoped, so this is the one place AdminController needs
+    // to reach outside the automatic per-request query filter - just to read its own org's limits.
+    private Task<Organization> GetCurrentOrganizationAsync() =>
+        _db.Organizations.FirstAsync(o => o.Id == _tenant.OrganizationId);
 
     // ============================ COUNTRIES ============================
 
@@ -805,6 +812,12 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "Invalid warehouse type." });
         }
 
+        var org = await GetCurrentOrganizationAsync();
+        if (org.MaxWarehouses > 0 && await _db.Warehouses.CountAsync() >= org.MaxWarehouses)
+        {
+            return BadRequest(new { message = $"This organization is limited to {org.MaxWarehouses} warehouse(s). Contact the platform administrator to raise the limit." });
+        }
+
         var warehouse = new Warehouse
         {
             Name = request.Name.Trim(),
@@ -1001,6 +1014,12 @@ public class AdminController : ControllerBase
         if (!Enum.TryParse<UserRole>(request.Role, out var role))
         {
             return BadRequest(new { message = "Invalid role." });
+        }
+
+        var org = await GetCurrentOrganizationAsync();
+        if (org.MaxUsers > 0 && await _db.Users.CountAsync() >= org.MaxUsers)
+        {
+            return BadRequest(new { message = $"This organization is limited to {org.MaxUsers} user(s). Contact the platform administrator to raise the limit." });
         }
 
         var user = new ApplicationUser

@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using WarehouseGate.Domain;
@@ -6,9 +7,15 @@ namespace WarehouseGate.Infrastructure;
 
 public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
 {
-    public WarehouseGateDbContext(DbContextOptions<WarehouseGateDbContext> options) : base(options)
+    private readonly ICurrentTenantProvider _tenant;
+
+    public WarehouseGateDbContext(DbContextOptions<WarehouseGateDbContext> options, ICurrentTenantProvider tenant)
+        : base(options)
     {
+        _tenant = tenant;
     }
+
+    public DbSet<Organization> Organizations => Set<Organization>();
 
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<VehicleMaster> VehicleMasters => Set<VehicleMaster>();
@@ -49,7 +56,7 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
         base.OnModelCreating(builder);
 
         builder.Entity<Vehicle>()
-            .HasIndex(v => v.Number)
+            .HasIndex(v => new { v.OrganizationId, v.Number })
             .IsUnique();
 
         builder.Entity<VehicleMaster>()
@@ -65,15 +72,15 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<VehicleMaster>()
-            .HasIndex(v => new { v.VehicleTypeId, v.VehicleCategoryId })
+            .HasIndex(v => new { v.OrganizationId, v.VehicleTypeId, v.VehicleCategoryId })
             .IsUnique();
 
         builder.Entity<PurchaseOrder>()
-            .HasIndex(p => p.PONumber)
+            .HasIndex(p => new { p.OrganizationId, p.PONumber })
             .IsUnique();
 
         builder.Entity<InwardTransaction>()
-            .HasIndex(t => t.InwardTxnNumber)
+            .HasIndex(t => new { t.OrganizationId, t.InwardTxnNumber })
             .IsUnique();
 
         builder.Entity<InwardTransaction>()
@@ -126,11 +133,11 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .HasPrecision(18, 2);
 
         builder.Entity<DispatchOrder>()
-            .HasIndex(d => d.DispatchOrderNumber)
+            .HasIndex(d => new { d.OrganizationId, d.DispatchOrderNumber })
             .IsUnique();
 
         builder.Entity<OutwardTransaction>()
-            .HasIndex(t => t.OutwardTxnNumber)
+            .HasIndex(t => new { t.OrganizationId, t.OutwardTxnNumber })
             .IsUnique();
 
         builder.Entity<OutwardTransaction>()
@@ -307,7 +314,7 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .HasPrecision(18, 2);
 
         builder.Entity<Country>()
-            .HasIndex(c => c.Name)
+            .HasIndex(c => new { c.OrganizationId, c.Name })
             .IsUnique();
 
         builder.Entity<State>()
@@ -323,11 +330,11 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Region>()
-            .HasIndex(r => r.Name)
+            .HasIndex(r => new { r.OrganizationId, r.Name })
             .IsUnique();
 
         builder.Entity<Location>()
-            .HasIndex(l => l.Name)
+            .HasIndex(l => new { l.OrganizationId, l.Name })
             .IsUnique();
 
         builder.Entity<Location>()
@@ -349,19 +356,19 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Transporter>()
-            .HasIndex(t => t.Name)
+            .HasIndex(t => new { t.OrganizationId, t.Name })
             .IsUnique();
 
         builder.Entity<VehicleType>()
-            .HasIndex(t => t.Name)
+            .HasIndex(t => new { t.OrganizationId, t.Name })
             .IsUnique();
 
         builder.Entity<VehicleCategory>()
-            .HasIndex(c => c.Name)
+            .HasIndex(c => new { c.OrganizationId, c.Name })
             .IsUnique();
 
         builder.Entity<Warehouse>()
-            .HasIndex(w => w.Name)
+            .HasIndex(w => new { w.OrganizationId, w.Name })
             .IsUnique();
 
         builder.Entity<Warehouse>()
@@ -403,6 +410,23 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(u => u.RegionId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ApplicationUser>()
+            .HasOne(u => u.Organization)
+            .WithMany()
+            .HasForeignKey(u => u.OrganizationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Usernames are only unique within an organization (PlatformAdmin accounts, which have a
+        // null OrganizationId, are excluded from this and kept distinct at the application layer -
+        // see PlatformController). Replaces the ASP.NET Identity default's globally-unique
+        // NormalizedUserName index.
+        builder.Entity<ApplicationUser>()
+            .HasIndex(u => u.NormalizedUserName)
+            .IsUnique(false);
+        builder.Entity<ApplicationUser>()
+            .HasIndex(u => new { u.OrganizationId, u.NormalizedUserName })
+            .IsUnique();
 
         builder.Entity<InwardTransaction>()
             .HasOne(t => t.Warehouse)
@@ -461,10 +485,107 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Restrict);
 
         // Filtered (not plain) unique index - SkuCode defaults to "" for un-configured Products,
-        // and a plain unique index would only ever allow one such row in the whole table.
+        // and a plain unique index would only ever allow one such row per organization.
         builder.Entity<Product>()
-            .HasIndex(p => p.SkuCode)
+            .HasIndex(p => new { p.OrganizationId, p.SkuCode })
             .IsUnique()
             .HasFilter("[SkuCode] <> ''");
+
+        ConfigureTenantScoping(builder);
+    }
+
+    // Applies a global query filter, an FK relationship to Organization, and an indexed
+    // OrganizationId column to every ITenantScoped/IOptionallyTenantScoped entity in one place,
+    // so adding a new tenant-scoped entity later needs nothing beyond implementing the marker
+    // interface - no per-controller or per-query filtering code required anywhere else.
+    private void ConfigureTenantScoping(ModelBuilder builder)
+    {
+        var setTenantFilter = typeof(WarehouseGateDbContext)
+            .GetMethod(nameof(SetTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var setOptionalTenantFilter = typeof(WarehouseGateDbContext)
+            .GetMethod(nameof(SetOptionalTenantFilter), BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+        foreach (var entityType in builder.Model.GetEntityTypes())
+        {
+            var clrType = entityType.ClrType;
+
+            if (typeof(ITenantScoped).IsAssignableFrom(clrType))
+            {
+                setTenantFilter.MakeGenericMethod(clrType).Invoke(this, new object[] { builder });
+
+                builder.Entity(clrType)
+                    .HasOne(typeof(Organization))
+                    .WithMany()
+                    .HasForeignKey(nameof(ITenantScoped.OrganizationId))
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.Entity(clrType).HasIndex(nameof(ITenantScoped.OrganizationId));
+            }
+            else if (typeof(IOptionallyTenantScoped).IsAssignableFrom(clrType) && clrType != typeof(ApplicationUser))
+            {
+                // ApplicationUser configures its own Organization relationship/index above
+                // (it already has an explicit navigation property, unlike the other entities here).
+                setOptionalTenantFilter.MakeGenericMethod(clrType).Invoke(this, new object[] { builder });
+
+                builder.Entity(clrType)
+                    .HasOne(typeof(Organization))
+                    .WithMany()
+                    .HasForeignKey(nameof(IOptionallyTenantScoped.OrganizationId))
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.Entity(clrType).HasIndex(nameof(IOptionallyTenantScoped.OrganizationId));
+            }
+        }
+
+        // ApplicationUser implements IOptionallyTenantScoped too but has its own explicit
+        // Organization relationship/index configured above - just needs the query filter.
+        setOptionalTenantFilter.MakeGenericMethod(typeof(ApplicationUser)).Invoke(this, new object[] { builder });
+    }
+
+    private void SetTenantFilter<TEntity>(ModelBuilder builder) where TEntity : class, ITenantScoped
+    {
+        builder.Entity<TEntity>().HasQueryFilter(e => !_tenant.HasContext || e.OrganizationId == _tenant.OrganizationId);
+    }
+
+    private void SetOptionalTenantFilter<TEntity>(ModelBuilder builder) where TEntity : class, IOptionallyTenantScoped
+    {
+        builder.Entity<TEntity>().HasQueryFilter(e => !_tenant.HasContext || e.OrganizationId == _tenant.OrganizationId);
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        StampTenantId();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        StampTenantId();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    // Auto-stamps OrganizationId onto newly-added tenant-scoped rows from the current request's
+    // tenant context, so AdminController's Create endpoints (and everything else) don't need to
+    // set it themselves. Entities created outside a request (SeedData, platform-level actions
+    // that explicitly set OrganizationId themselves, e.g. a new org's first SuperAdmin) are left
+    // alone - this only fills in a still-unset value.
+    private void StampTenantId()
+    {
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State != EntityState.Added)
+            {
+                continue;
+            }
+
+            if (entry.Entity is ITenantScoped tenantScoped && tenantScoped.OrganizationId == 0 && _tenant.OrganizationId.HasValue)
+            {
+                tenantScoped.OrganizationId = _tenant.OrganizationId.Value;
+            }
+            else if (entry.Entity is IOptionallyTenantScoped optionallyScoped && optionallyScoped.OrganizationId is null)
+            {
+                optionallyScoped.OrganizationId = _tenant.OrganizationId;
+            }
+        }
     }
 }

@@ -1,8 +1,9 @@
 namespace WarehouseGate.Domain;
 
-public class InwardTransaction
+public class InwardTransaction : ITenantScoped
 {
     public int Id { get; set; }
+    public int OrganizationId { get; set; }
 
     public int VehicleId { get; set; }
     public Vehicle? Vehicle { get; set; }

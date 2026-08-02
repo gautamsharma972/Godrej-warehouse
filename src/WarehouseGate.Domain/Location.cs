@@ -1,6 +1,6 @@
 namespace WarehouseGate.Domain;
 
-public class Location
+public class Location : ITenantScoped
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -13,4 +13,6 @@ public class Location
 
     public int CityId { get; set; }
     public City? City { get; set; }
+
+    public int OrganizationId { get; set; }
 }
