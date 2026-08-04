@@ -5,12 +5,17 @@ namespace WarehouseGate.Mobile.Pages;
 public partial class TransporterPickerPage : ContentPage
 {
     private readonly Action<string?> _onResult;
+    private readonly IReadOnlyList<string> _transporters;
     private bool _resultSent;
 
-    public TransporterPickerPage(Action<string?> onResult)
+    // transporters defaults to the hardcoded demo list (still used by the Outward gate check-in
+    // flow) - the Inward Gate Check-in screen passes the real Transporter master instead (see
+    // GateController.GetTransporters / ApiClient.GetTransportersAsync).
+    public TransporterPickerPage(Action<string?> onResult, IReadOnlyList<string>? transporters = null)
     {
         InitializeComponent();
         _onResult = onResult;
+        _transporters = transporters ?? VehicleLookupService.KnownTransporters;
         ApplyFilter(string.Empty);
     }
 
@@ -19,13 +24,11 @@ public partial class TransporterPickerPage : ContentPage
     private void ApplyFilter(string query)
     {
         var results = string.IsNullOrWhiteSpace(query)
-            ? VehicleLookupService.KnownTransporters
-            : VehicleLookupService.KnownTransporters
-                .Where(t => t.Contains(query, StringComparison.OrdinalIgnoreCase))
-                .ToArray();
+            ? _transporters
+            : _transporters.Where(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
 
         ResultsCollectionView.ItemsSource = results;
-        NoResultsLabel.IsVisible = results.Length == 0;
+        NoResultsLabel.IsVisible = results.Count == 0;
     }
 
     private async void OnItemTapped(object? sender, EventArgs e)

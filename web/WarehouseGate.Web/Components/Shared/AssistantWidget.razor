@@ -681,7 +681,7 @@
                 "assign-outward-supervisor" => await Api.PostAsync<AssistantChatResponseDto>(
                     "api/assistant/supervisor/assign/preview", BuildAssignSupervisorFormRequest(block, "Outward")),
                 "generate-picklist" => await Api.PostAsync<AssistantChatResponseDto>(
-                    "api/assistant/pick-list/generate/preview", new GeneratePickListFormSubmitRequest(GetFormValue(block, "vehicleNumber"))),
+                    "api/assistant/pick-list/generate/preview", new GeneratePickListFormSubmitRequest(GetFormValue(block, "poNumber"))),
                 "update-picklist-quantity" => await Api.PostAsync<AssistantChatResponseDto>(
                     "api/assistant/pick-list/quantity/preview", BuildUpdatePickListQuantityFormRequest(block)),
                 "dispatch-plan-excel-import" => await SubmitExcelImportAsync(selectedFile),

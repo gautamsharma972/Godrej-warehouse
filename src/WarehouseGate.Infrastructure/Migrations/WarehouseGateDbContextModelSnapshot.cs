@@ -573,10 +573,13 @@ namespace WarehouseGate.Infrastructure.Migrations
                     b.Property<int>("OrganizationId")
                         .HasColumnType("int");
 
-                    b.Property<int>("PurchaseOrderId")
+                    b.Property<int?>("PurchaseOrderId")
                         .HasColumnType("int");
 
                     b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SecurityEnteredPoNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
@@ -711,6 +714,102 @@ namespace WarehouseGate.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("OutwardDispatchNotes");
+                });
+
+            modelBuilder.Entity("WarehouseGate.Domain.OutwardGateArrival", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("DriverMobile")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DriverName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GateInBySecurityUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("GateInTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GateName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("GpsLatitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("GpsLongitude")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime?>("LinkedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LinkedByOfficeUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("LinkedOutwardTransactionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SecurityEnteredDispatchOrderNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TransporterName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("WarehouseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedOutwardTransactionId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("OutwardGateArrivals");
+                });
+
+            modelBuilder.Entity("WarehouseGate.Domain.OutwardGateArrivalPhoto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CapturedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OutwardGateArrivalId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OutwardGateArrivalId");
+
+                    b.ToTable("OutwardGateArrivalPhotos");
                 });
 
             modelBuilder.Entity("WarehouseGate.Domain.OutwardLoadLine", b =>
@@ -900,6 +999,9 @@ namespace WarehouseGate.Infrastructure.Migrations
                     b.Property<DateTime>("CapturedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("DispatchOrderLineId")
+                        .HasColumnType("int");
+
                     b.Property<string>("FilePath")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -915,6 +1017,8 @@ namespace WarehouseGate.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DispatchOrderLineId");
 
                     b.HasIndex("OutwardLoadPlanGroupId");
 
@@ -1058,6 +1162,9 @@ namespace WarehouseGate.Infrastructure.Migrations
                     b.Property<int>("InwardTransactionId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("PurchaseOrderLineId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1065,6 +1172,8 @@ namespace WarehouseGate.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("InwardTransactionId");
+
+                    b.HasIndex("PurchaseOrderLineId");
 
                     b.ToTable("PhotoEvidences");
                 });
@@ -1170,6 +1279,9 @@ namespace WarehouseGate.Infrastructure.Migrations
                     b.Property<decimal>("ExpectedQty")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsExtra")
+                        .HasColumnType("bit");
 
                     b.Property<decimal?>("LoadedQty")
                         .HasPrecision(18, 2)
@@ -1278,6 +1390,36 @@ namespace WarehouseGate.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Transporters");
+                });
+
+            modelBuilder.Entity("WarehouseGate.Domain.UnplannedReceiptLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("InwardTransactionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InwardTransactionId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("UnplannedReceiptLines");
                 });
 
             modelBuilder.Entity("WarehouseGate.Domain.Vehicle", b =>
@@ -1424,7 +1566,6 @@ namespace WarehouseGate.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VehicleNumber")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("VehicleType")
@@ -1865,8 +2006,7 @@ namespace WarehouseGate.Infrastructure.Migrations
                     b.HasOne("WarehouseGate.Domain.PurchaseOrder", "PurchaseOrder")
                         .WithMany()
                         .HasForeignKey("PurchaseOrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("WarehouseGate.Domain.Vehicle", "Vehicle")
                         .WithMany()
@@ -1930,6 +2070,47 @@ namespace WarehouseGate.Infrastructure.Migrations
                     b.Navigation("OutwardTransaction");
                 });
 
+            modelBuilder.Entity("WarehouseGate.Domain.OutwardGateArrival", b =>
+                {
+                    b.HasOne("WarehouseGate.Domain.OutwardTransaction", "LinkedOutwardTransaction")
+                        .WithMany()
+                        .HasForeignKey("LinkedOutwardTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("WarehouseGate.Domain.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseGate.Domain.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseGate.Domain.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId");
+
+                    b.Navigation("LinkedOutwardTransaction");
+
+                    b.Navigation("Vehicle");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("WarehouseGate.Domain.OutwardGateArrivalPhoto", b =>
+                {
+                    b.HasOne("WarehouseGate.Domain.OutwardGateArrival", "OutwardGateArrival")
+                        .WithMany("Photos")
+                        .HasForeignKey("OutwardGateArrivalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OutwardGateArrival");
+                });
+
             modelBuilder.Entity("WarehouseGate.Domain.OutwardLoadLine", b =>
                 {
                     b.HasOne("WarehouseGate.Domain.DispatchOrderLine", "DispatchOrderLine")
@@ -1981,6 +2162,11 @@ namespace WarehouseGate.Infrastructure.Migrations
 
             modelBuilder.Entity("WarehouseGate.Domain.OutwardPhotoEvidence", b =>
                 {
+                    b.HasOne("WarehouseGate.Domain.DispatchOrderLine", "DispatchOrderLine")
+                        .WithMany()
+                        .HasForeignKey("DispatchOrderLineId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("WarehouseGate.Domain.OutwardLoadPlanGroup", "OutwardLoadPlanGroup")
                         .WithMany("Photos")
                         .HasForeignKey("OutwardLoadPlanGroupId")
@@ -1991,6 +2177,8 @@ namespace WarehouseGate.Infrastructure.Migrations
                         .HasForeignKey("OutwardTransactionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("DispatchOrderLine");
 
                     b.Navigation("OutwardLoadPlanGroup");
 
@@ -2036,7 +2224,14 @@ namespace WarehouseGate.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("WarehouseGate.Domain.PurchaseOrderLine", "PurchaseOrderLine")
+                        .WithMany()
+                        .HasForeignKey("PurchaseOrderLineId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("InwardTransaction");
+
+                    b.Navigation("PurchaseOrderLine");
                 });
 
             modelBuilder.Entity("WarehouseGate.Domain.Product", b =>
@@ -2101,6 +2296,25 @@ namespace WarehouseGate.Infrastructure.Migrations
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("WarehouseGate.Domain.UnplannedReceiptLine", b =>
+                {
+                    b.HasOne("WarehouseGate.Domain.InwardTransaction", "InwardTransaction")
+                        .WithMany("UnplannedLines")
+                        .HasForeignKey("InwardTransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseGate.Domain.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("InwardTransaction");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("WarehouseGate.Domain.Vehicle", b =>
@@ -2272,6 +2486,13 @@ namespace WarehouseGate.Infrastructure.Migrations
 
                     b.Navigation("InspectionLines");
 
+                    b.Navigation("Photos");
+
+                    b.Navigation("UnplannedLines");
+                });
+
+            modelBuilder.Entity("WarehouseGate.Domain.OutwardGateArrival", b =>
+                {
                     b.Navigation("Photos");
                 });
 

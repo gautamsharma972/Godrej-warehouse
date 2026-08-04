@@ -954,7 +954,7 @@ public class AssistantController : ControllerBase
                     return string.Join('\n',
                         $"Current page: Inward Job detail (path: {path}).",
                         $"Entity: inward job ID {job.Id}; transaction {Data(job.InwardTxnNumber)}; vehicle {Data(job.VehicleNumber)}; status {job.Status}.",
-                        $"Purchase order: {Data(job.PONumber)}; supplier: {Data(job.SupplierName)}; gate-in: {job.GateInTime:yyyy-MM-dd HH:mm}.",
+                        $"Purchase order: {Data(job.PONumber ?? "not linked to a Dispatch Plan entry yet")}; supplier: {Data(job.SupplierName ?? "unknown")}; gate-in: {job.GateInTime:yyyy-MM-dd HH:mm}.",
                         $"Assignment: {Data(supervisor ?? "unassigned")}; bay: {Data(job.BayName ?? "not docked")}; transporter: {Data(job.TransporterName ?? "not recorded")}.",
                         $"Operational flags: new vehicle={job.IsNewVehicle}; delivery-date mismatch={job.HasDeliveryDateMismatch}; remarks={Data(job.Remarks ?? "none")}.",
                         $"Material lines ({job.Lines.Count}): {string.Join(" | ", job.Lines.Take(20).Select(l => $"{Data(l.ProductName)} expected {l.ExpectedQty} {Data(l.UnitOfMeasure)}"))}.",
@@ -1188,8 +1188,9 @@ public class AssistantController : ControllerBase
 
     // Pending Dispatch Plan rows (VehicleLogisticsRecord, Status still InTransit) outbound from
     // the caller's own warehouse - the same data OfficeController's own Dispatch Plan bridge
-    // section surfaces. Generate Pick List picks by vehicle number (grouping all of that vehicle's
-    // pending lines); Update Quantity picks a single line.
+    // section surfaces. Generate Pick List picks by PO Number (grouping all of that PO's pending
+    // lines - vehicle number is normally still unknown at this stage, see
+    // OutwardService.GeneratePickListFromDispatchPlanAsync); Update Quantity picks a single line.
     private async Task<AssistantFormRequestDto> BuildPickListFormAsync(string formType)
     {
         var warehouseScope = await _scopeResolver.ResolveAsync(User);
@@ -1198,28 +1199,28 @@ public class AssistantController : ControllerBase
         if (officeWarehouseId is null)
         {
             var emptyFields = formType == PickListPlugin.GeneratePickListActionType
-                ? new List<AssistantFormFieldDto> { new("vehicleNumber", "Vehicle", "select", true, []) }
+                ? new List<AssistantFormFieldDto> { new("poNumber", "PO Number", "select", true, []) }
                 : new List<AssistantFormFieldDto> { new("lineId", "Dispatch Plan Line", "select", true, []), new("quantity", "Pick List Quantity", "number", true) };
             return new AssistantFormRequestDto(formType, emptyFields);
         }
 
         var pendingRows = await _db.VehicleLogisticsRecords
             .Where(r => r.FromWarehouseId == officeWarehouseId && r.Status == VehicleLogisticsStatus.InTransit)
-            .OrderBy(r => r.VehicleNumber)
+            .OrderBy(r => r.PoNumber)
             .ToListAsync();
 
         if (formType == PickListPlugin.GeneratePickListActionType)
         {
-            var vehicleOptions = pendingRows
-                .GroupBy(r => r.VehicleNumber)
-                .Select(g => new AssistantFormOptionDto(g.Key, $"{g.Key} ({g.Count()} line(s))"))
+            var poOptions = pendingRows
+                .GroupBy(r => r.PoNumber)
+                .Select(g => new AssistantFormOptionDto(g.Key ?? string.Empty, $"{g.Key} ({g.Count()} line(s))"))
                 .ToList();
 
-            return new AssistantFormRequestDto(formType, [new("vehicleNumber", "Vehicle", "select", true, vehicleOptions)]);
+            return new AssistantFormRequestDto(formType, [new("poNumber", "PO Number", "select", true, poOptions)]);
         }
 
         var lineOptions = pendingRows
-            .Select(r => new AssistantFormOptionDto(r.Id.ToString(), $"{r.VehicleNumber} - {r.Sku} (planned {r.BoxQuantity})"))
+            .Select(r => new AssistantFormOptionDto(r.Id.ToString(), $"{r.PoNumber} - {r.Sku} (planned {r.BoxQuantity})"))
             .ToList();
 
         var fields = new List<AssistantFormFieldDto>
@@ -1401,7 +1402,7 @@ public class AssistantController : ControllerBase
         var warehouseScope = await _scopeResolver.ResolveAsync(User);
         var officeWarehouseId = SingleWarehouseIdOrNull(warehouseScope);
         var plugin = new PickListPlugin(_db, _pendingActions, _hub, _outwardService, _audit, officeWarehouseId, CurrentUserId);
-        var reply = await plugin.PreviewGeneratePickListAsync(request.VehicleNumber);
+        var reply = await plugin.PreviewGeneratePickListAsync(request.PoNumber);
 
         AssistantPendingConfirmationDto? pending = plugin.LastPreview is { } preview
             ? new AssistantPendingConfirmationDto(preview.Token.ToString(), preview.Summary, PickListPlugin.GeneratePickListActionType)

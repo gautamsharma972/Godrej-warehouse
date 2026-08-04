@@ -177,7 +177,7 @@ public partial class LoadConfirmationPage : ContentPage
             return;
         }
 
-        var readOnly = job.Status == "Completed";
+        var readOnly = job.Status is "Completed" or "PendingOfficeVerification";
         var loadLinesRecorded = job.LoadLines.Count > 0;
         // Jobs with no 3D load plan at all (legacy flat flow) have nothing to resolve here -
         // don't block Complete on a set of groups that will never exist.
@@ -186,10 +186,11 @@ public partial class LoadConfirmationPage : ContentPage
         BuildLoadLineRows(job, readOnly, steps);
         LoadLinesSavedBanner.IsVisible = loadLinesRecorded;
 
-        var photoLimitReached = job.Photos.Count >= MaxPhotosPerJob;
-        PhotoCountLabel.Text = job.Photos.Count == 1 ? "1 photo" : $"{job.Photos.Count} photos";
-        CapturePhotoButton.IsVisible = !readOnly;
-        CapturePhotoButton.IsEnabled = !readOnly && !photoLimitReached;
+        var skuPhotoCount = job.Photos.Count(p => p.Type == "SkuLoaded");
+        var photoLimitReached = skuPhotoCount >= MaxSkuPhotosPerJob;
+        PhotoCountLabel.Text = skuPhotoCount == 1 ? "1 photo" : $"{skuPhotoCount} photos";
+        PhotoLimitHintLabel.Text = $"Minimum 1 photo. Maximum {MaxSkuPhotosPerJob} total, {MaxSkuPhotosPerLine} per SKU.";
+        PhotoLimitReachedLabel.Text = $"{skuPhotoCount} of {MaxSkuPhotosPerJob} photos - limit reached";
         PhotoLimitLabel.IsVisible = !readOnly && photoLimitReached;
         RenderPhotos(job);
 
@@ -202,13 +203,13 @@ public partial class LoadConfirmationPage : ContentPage
         }
 
         CompleteButton.IsVisible = true;
-        CompleteButton.IsEnabled = !readOnly && allGroupsResolved && job.Photos.Count > 0 && dispatchReady;
-        CompleteHintLabel.IsVisible = !readOnly && (!allGroupsResolved || job.Photos.Count == 0 || !dispatchReady);
+        CompleteButton.IsEnabled = !readOnly && allGroupsResolved && skuPhotoCount > 0 && dispatchReady;
+        CompleteHintLabel.IsVisible = !readOnly && (!allGroupsResolved || skuPhotoCount == 0 || !dispatchReady);
         CompleteHintLabel.Text = !allGroupsResolved
             ? "Resolve every loading group above before completing."
             : !dispatchReady
             ? "Confirm dispatch readiness before completing."
-            : "Add at least one photo before completing.";
+            : "Add at least one SKU photo before completing.";
     }
 
     private void BuildLoadLineRows(OutwardJob job, bool readOnly, List<LoadConfirmationStep> steps)
@@ -482,6 +483,7 @@ public partial class LoadConfirmationPage : ContentPage
                 };
             }
 
+            cardContent.Children.Add(BuildLinePhotoSection(job, item.Line.Id, readOnly));
             cardContent.Children.Add(fields);
 
             cardRail.Children.Add(new Border
@@ -636,7 +638,7 @@ public partial class LoadConfirmationPage : ContentPage
             ((View)child).Margin = new Thickness(0, 0, 10, 8);
         }
 
-        loadedButton.Clicked += async (_, _) => await ConfirmLineLoadedAsync(lineSteps);
+        loadedButton.Clicked += async (_, _) => await ConfirmLineLoadedAsync(lineSteps, totalPlanned, TryParseCartonsInt(loadedQtyEntry.Text));
 
         shortButton.Clicked += async (_, _) =>
         {
@@ -659,16 +661,27 @@ public partial class LoadConfirmationPage : ContentPage
 
     // Loaded (whole SKU): every zone under this line is confirmed Loaded at its own planned
     // quantity - same "mark it all as planned" semantics as the header's "Start Loading" button,
-    // just scoped to one SKU.
-    private async Task ConfirmLineLoadedAsync(List<LoadConfirmationStep> lineSteps)
+    // just scoped to one SKU. If the supervisor typed a quantity greater than the picklist total
+    // (extra stock loaded beyond what was planned, e.g. to use up remaining vehicle space), every
+    // zone but the last still gets its own planned quantity and the last zone absorbs the whole
+    // surplus - mirrors ConfirmLineShortAsync's own sequential-fill allocation, just inverted for
+    // an excess instead of a shortfall. A blank/invalid entry, or one at-or-below plan, keeps the
+    // original all-zones-at-plan behavior.
+    private async Task ConfirmLineLoadedAsync(List<LoadConfirmationStep> lineSteps, int totalPlanned, int? enteredQty)
     {
         Spinner.IsVisible = true;
         Spinner.IsRunning = true;
         try
         {
-            foreach (var step in lineSteps.OrderBy(s => s.StepNumber))
+            var orderedSteps = lineSteps.OrderBy(s => s.StepNumber).ToList();
+            var surplus = enteredQty is { } qty && qty > totalPlanned ? qty - totalPlanned : 0;
+
+            for (var i = 0; i < orderedSteps.Count; i++)
             {
-                await ApiClient.MarkLoadPlanGroupLoadedAsync(_jobId, step.GroupId, null);
+                var step = orderedSteps[i];
+                var isLast = i == orderedSteps.Count - 1;
+                var actualQuantity = isLast && surplus > 0 ? step.PlannedQuantity + surplus : (int?)null;
+                await ApiClient.MarkLoadPlanGroupLoadedAsync(_jobId, step.GroupId, actualQuantity);
             }
             await LoadAsync();
         }
@@ -854,14 +867,15 @@ public partial class LoadConfirmationPage : ContentPage
 
     private void RenderPhotos(OutwardJob job)
     {
-        NoPhotosLabel.IsVisible = job.Photos.Count == 0;
-        PhotoGallery.IsVisible = job.Photos.Count > 0;
-        PhotoGallery.ItemsSource = BuildPhotoDisplayItems(job);
+        var skuPhotos = job.Photos.Where(p => p.Type == "SkuLoaded").ToList();
+        NoPhotosLabel.IsVisible = skuPhotos.Count == 0;
+        PhotoGallery.IsVisible = skuPhotos.Count > 0;
+        PhotoGallery.ItemsSource = BuildPhotoDisplayItems(skuPhotos);
         _ = DownloadMissingPhotosAsync(job);
     }
 
-    private List<PhotoDisplayItem> BuildPhotoDisplayItems(OutwardJob job) =>
-        job.Photos.Select(photo => new PhotoDisplayItem
+    private List<PhotoDisplayItem> BuildPhotoDisplayItems(List<OutwardPhoto> photos) =>
+        photos.Select(photo => new PhotoDisplayItem
         {
             Id = photo.Id,
             Type = photo.Type,
@@ -903,7 +917,7 @@ public partial class LoadConfirmationPage : ContentPage
 
         if (anyDownloaded && ReferenceEquals(_job, job))
         {
-            PhotoGallery.ItemsSource = BuildPhotoDisplayItems(job);
+            PhotoGallery.ItemsSource = BuildPhotoDisplayItems(job.Photos.Where(p => p.Type == "SkuLoaded").ToList());
         }
     }
 
@@ -1194,17 +1208,32 @@ public partial class LoadConfirmationPage : ContentPage
         return null;
     }
 
-    // ---------- Photo evidence (job-level, single generic capture, capped at MaxPhotosPerJob) ----------
+    // ---------- Photo evidence (per SKU now, capped at MaxSkuPhotosPerLine/MaxSkuPhotosPerJob -
+    // see BuildLinePhotoSection for the per-line "Add Photo" affordance; the gallery/count here
+    // stays a job-wide, read-only review of everything captured across all SKUs) ----------
 
-    private const int MaxPhotosPerJob = 5;
+    private const int MaxSkuPhotosPerLine = 2;
+    private const int MaxSkuPhotosPerJob = 10;
 
-    private async void OnCapturePhotoClicked(object? sender, EventArgs e) => await CaptureJobPhotoAsync();
-
-    private async Task CaptureJobPhotoAsync()
+    private async Task CaptureLinePhotoAsync(int dispatchOrderLineId)
     {
-        if ((_job?.Photos.Count ?? 0) >= MaxPhotosPerJob)
+        var job = _job;
+        if (job is null)
         {
-            await DisplayAlert("Limit reached", $"You can add up to {MaxPhotosPerJob} photos per job.", "OK");
+            return;
+        }
+
+        var lineCount = job.Photos.Count(p => p.Type == "SkuLoaded" && p.DispatchOrderLineId == dispatchOrderLineId);
+        if (lineCount >= MaxSkuPhotosPerLine)
+        {
+            await DisplayAlert("Limit reached", $"You can add up to {MaxSkuPhotosPerLine} photos per SKU.", "OK");
+            return;
+        }
+
+        var jobCount = job.Photos.Count(p => p.Type == "SkuLoaded");
+        if (jobCount >= MaxSkuPhotosPerJob)
+        {
+            await DisplayAlert("Limit reached", $"You can add up to {MaxSkuPhotosPerJob} photos per job.", "OK");
             return;
         }
 
@@ -1224,7 +1253,7 @@ public partial class LoadConfirmationPage : ContentPage
 
             Spinner.IsVisible = true;
             Spinner.IsRunning = true;
-            _job = await ApiClient.UploadOutwardPhotoAsync(_jobId, "VehicleLoaded", localPath);
+            _job = await ApiClient.UploadOutwardPhotoAsync(_jobId, "SkuLoaded", localPath, dispatchOrderLineId);
             var newest = _job.Photos.OrderBy(p => p.Id).LastOrDefault();
             if (newest is not null)
             {
@@ -1245,6 +1274,41 @@ public partial class LoadConfirmationPage : ContentPage
             Spinner.IsVisible = false;
             Spinner.IsRunning = false;
         }
+    }
+
+    // Count/max label + "Add Photo" chip for one SKU line - mirrors JobDetailPage.
+    // BuildSkuPhotoRow's identical pattern on the Inward side, gated on both this line's own cap
+    // and the job-wide cap.
+    private View BuildLinePhotoSection(OutwardJob job, int dispatchOrderLineId, bool readOnly)
+    {
+        var lineCount = job.Photos.Count(p => p.Type == "SkuLoaded" && p.DispatchOrderLineId == dispatchOrderLineId);
+        var jobCount = job.Photos.Count(p => p.Type == "SkuLoaded");
+
+        var countLabel = new Label
+        {
+            Text = $"Photos {lineCount}/{MaxSkuPhotosPerLine}",
+            FontFamily = "PoppinsSemiBold",
+            FontSize = 11,
+            TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"],
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        var addButton = new Button
+        {
+            Text = "Add Photo",
+            IsEnabled = !readOnly && lineCount < MaxSkuPhotosPerLine && jobCount < MaxSkuPhotosPerJob,
+            Style = (Style)Application.Current!.Resources["ChipButton"],
+            FontSize = 11,
+            ImageSource = new FontImageSource { FontFamily = "FaSolid", Glyph = IconGlyphs.Camera, Color = (Color)Application.Current.Resources["Primary"], Size = 11 }
+        };
+        addButton.Clicked += async (_, _) => await CaptureLinePhotoAsync(dispatchOrderLineId);
+
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star), new(GridLength.Auto) } };
+        Grid.SetColumn(countLabel, 0);
+        Grid.SetColumn(addButton, 1);
+        row.Children.Add(countLabel);
+        row.Children.Add(addButton);
+        return row;
     }
 
     private async Task<bool> SubmitCurrentLoadLinesAsync()
@@ -1319,7 +1383,7 @@ public partial class LoadConfirmationPage : ContentPage
             }
 
             await ApiClient.CompleteOutwardAsync(_jobId);
-            await DisplayAlert("Loading complete", "This job has been marked complete.", "OK");
+            await DisplayAlert("Loading complete", "Loading is done and submitted for Office verification.", "OK");
             await Shell.Current.GoToAsync("//SupervisorTabs/SupervisorHomePage");
         }
         catch (ApiException ex)

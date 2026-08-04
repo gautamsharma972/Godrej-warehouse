@@ -17,10 +17,15 @@ public class PhotoDisplayItem
     {
         "ExceptionProof" => "Exception",
         "LoadGroupConfirmation" => "Load confirmation",
+        "EWayBill" => "E-Way Bill",
+        "LorryReceipt" => "Lorry Receipt",
+        "Driver" => "Driver",
+        "VehicleRc" => "Vehicle RC",
+        "DrivingLicense" => "Driving Licence",
         _ when Type.StartsWith("Vehicle", StringComparison.Ordinal) => "Vehicle",
         _ when Type.StartsWith("Material", StringComparison.Ordinal) => "Material",
         _ => Type
     };
 
-    public string Description => $"{FriendlyType} photo · Captured {CapturedAt.ToLocalTime():d MMM, h:mm tt}";
+    public string Description => $"{FriendlyType} · Captured {CapturedAt.ToLocalTime():d MMM, h:mm tt}";
 }

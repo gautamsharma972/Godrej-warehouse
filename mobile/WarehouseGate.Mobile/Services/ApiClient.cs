@@ -90,11 +90,11 @@ public static class ApiClient
         }
     }
 
-    public static async Task<LoginResponse> LoginAsync(string userName, string password)
+    public static async Task<LoginResponse> LoginAsync(string userName, string password, string? organizationCode = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/login")
         {
-            Content = JsonContent.Create(new { userName, password })
+            Content = JsonContent.Create(new { userName, password, organizationCode })
         };
         return await SendAsync<LoginResponse>(request);
     }
@@ -216,6 +216,9 @@ public static class ApiClient
     public static async Task<List<ExpectedShipment>> GetExpectedShipmentsAsync() =>
         await SendAsync<List<ExpectedShipment>>(NewRequest(HttpMethod.Get, "api/gate/expected-shipments"));
 
+    public static async Task<List<string>> GetTransportersAsync() =>
+        await SendAsync<List<string>>(NewRequest(HttpMethod.Get, "api/gate/transporters"));
+
     public static async Task<InwardJob> RecordExitAsync(int id, string filePath)
     {
         var request = NewRequest(HttpMethod.Post, $"api/gate/{id}/exit");
@@ -230,26 +233,29 @@ public static class ApiClient
         return await SendAsync<InwardJob>(request);
     }
 
-    public static async Task<OutwardJob> OutwardGateCheckInAsync(OutwardGateCheckInInput input)
+    // No longer requires a matching pick list - Security just logs the physical arrival (mirrors
+    // GateCheckInAsync's decoupled Inward check-in). Office links this arrival to a pending pick
+    // list afterward from the portal.
+    public static async Task<OutwardGateArrival> OutwardGateCheckInAsync(OutwardGateCheckInInput input)
     {
         var request = NewRequest(HttpMethod.Post, "api/outward-gate/checkin");
         request.Content = JsonContent.Create(new
         {
-            dispatchOrderNumber = input.DispatchOrderNumber,
             vehicleNumber = input.VehicleNumber,
             driverName = input.DriverName,
             driverMobile = input.DriverMobile,
             transporterName = input.TransporterName,
             gateName = input.GateName,
             gpsLatitude = input.GpsLatitude,
-            gpsLongitude = input.GpsLongitude
+            gpsLongitude = input.GpsLongitude,
+            dispatchOrderNumber = input.DispatchOrderNumber
         });
-        return await SendAsync<OutwardJob>(request);
+        return await SendAsync<OutwardGateArrival>(request);
     }
 
-    public static async Task<OutwardJob> UploadOutwardGatePhotoAsync(int id, string type, string filePath)
+    public static async Task<OutwardGateArrival> UploadOutwardGateArrivalPhotoAsync(int arrivalId, string type, string filePath)
     {
-        var request = NewRequest(HttpMethod.Post, $"api/outward-gate/{id}/photos");
+        var request = NewRequest(HttpMethod.Post, $"api/outward-gate/{arrivalId}/photos");
 
         var fileBytes = await File.ReadAllBytesAsync(filePath);
         var content = new MultipartFormDataContent
@@ -261,8 +267,13 @@ public static class ApiClient
         content.Add(fileContent, "file", Path.GetFileName(filePath));
 
         request.Content = content;
-        return await SendAsync<OutwardJob>(request);
+        return await SendAsync<OutwardGateArrival>(request);
     }
+
+    // Real Admin Vehicle Registry, searchable - backs the Outward gate-in picker. Distinct from
+    // GetVehicleMastersAsync below (Supervisor's Dock-In picker, unrelated to this gate-in flow).
+    public static async Task<List<VehicleRegistryEntry>> GetVehicleRegistryAsync() =>
+        await SendAsync<List<VehicleRegistryEntry>>(NewRequest(HttpMethod.Get, "api/gate/vehicle-registry"));
 
     public static async Task<List<OutwardJob>> GetOutwardSecurityTransactionsAsync(
         bool activeOnly, string? vehicleNumber = null, string? dispatchOrderNumber = null, DateTime? date = null)
@@ -325,7 +336,7 @@ public static class ApiClient
     public static async Task<InwardJob> StartUnloadingAsync(int id) =>
         await SendAsync<InwardJob>(NewRequest(HttpMethod.Post, $"api/inward/{id}/start"));
 
-    public static async Task<InwardJob> UploadPhotoAsync(int id, string type, string filePath)
+    public static async Task<InwardJob> UploadPhotoAsync(int id, string type, string filePath, int? purchaseOrderLineId = null)
     {
         var request = NewRequest(HttpMethod.Post, $"api/inward/{id}/photos");
 
@@ -334,6 +345,10 @@ public static class ApiClient
         {
             { new StringContent(type), "type" }
         };
+        if (purchaseOrderLineId is int lineId)
+        {
+            content.Add(new StringContent(lineId.ToString()), "purchaseOrderLineId");
+        }
         var fileContent = new ByteArrayContent(fileBytes);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
         content.Add(fileContent, "file", Path.GetFileName(filePath));
@@ -342,11 +357,17 @@ public static class ApiClient
         return await SendAsync<InwardJob>(request);
     }
 
-    public static async Task<InwardJob> SubmitInspectionAsync(int id, List<InspectionLineInput> lines)
+    public static async Task<InwardJob> SubmitInspectionAsync(int id, List<InspectionLineInput> lines, List<UnplannedReceiptLineInput>? unplannedLines = null)
     {
         var request = NewRequest(HttpMethod.Post, $"api/inward/{id}/inspection");
-        request.Content = JsonContent.Create(new { lines });
+        request.Content = JsonContent.Create(new { lines, unplannedLines = unplannedLines ?? new List<UnplannedReceiptLineInput>() });
         return await SendAsync<InwardJob>(request);
+    }
+
+    public static async Task<List<SkuMasterItem>> SearchSkuMasterAsync(string? search = null)
+    {
+        var url = "api/inward/sku-master" + (string.IsNullOrWhiteSpace(search) ? "" : $"?search={Uri.EscapeDataString(search)}");
+        return await SendAsync<List<SkuMasterItem>>(NewRequest(HttpMethod.Get, url));
     }
 
     public static async Task<InwardJob> CompleteAsync(int id) =>
@@ -379,7 +400,7 @@ public static class ApiClient
     public static async Task<OutwardJob> StartLoadingAsync(int id) =>
         await SendAsync<OutwardJob>(NewRequest(HttpMethod.Post, $"api/outward/{id}/start"));
 
-    public static async Task<OutwardJob> UploadOutwardPhotoAsync(int id, string type, string filePath)
+    public static async Task<OutwardJob> UploadOutwardPhotoAsync(int id, string type, string filePath, int? dispatchOrderLineId = null)
     {
         var request = NewRequest(HttpMethod.Post, $"api/outward/{id}/photos");
 
@@ -388,6 +409,10 @@ public static class ApiClient
         {
             { new StringContent(type), "type" }
         };
+        if (dispatchOrderLineId is int lineId)
+        {
+            content.Add(new StringContent(lineId.ToString()), "dispatchOrderLineId");
+        }
         var fileContent = new ByteArrayContent(fileBytes);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
         content.Add(fileContent, "file", Path.GetFileName(filePath));
@@ -400,6 +425,15 @@ public static class ApiClient
     {
         var request = NewRequest(HttpMethod.Post, $"api/outward/{id}/load-lines");
         request.Content = JsonContent.Create(new { lines });
+        return await SendAsync<OutwardJob>(request);
+    }
+
+    // Adds a SKU beyond the original pick list - lets a Supervisor use up remaining vehicle space
+    // discovered while planning the load (see LoadPlanEditorPage's "Add SKU" card).
+    public static async Task<OutwardJob> AddOutwardDispatchLineAsync(int id, int productId, decimal quantity)
+    {
+        var request = NewRequest(HttpMethod.Post, $"api/outward/{id}/lines");
+        request.Content = JsonContent.Create(new { productId, quantity });
         return await SendAsync<OutwardJob>(request);
     }
 

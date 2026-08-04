@@ -113,21 +113,24 @@ public class OutwardService
     }
 
     // Bridges the Logistics Manager's Dispatch Plan upload into the real Outward workflow: finds
-    // the matching VehicleLogisticsRecord group (this vehicle, From = the caller's own warehouse,
-    // still InTransit), synthesizes a DispatchOrder + lines from it (Product-matched by SkuCode -
-    // required, since the 3D load planner hard-requires a linked Product for placement dimensions),
+    // the matching VehicleLogisticsRecord group (this PO, From = the caller's own warehouse, still
+    // InTransit - PO Number, not Vehicle Number, since a vehicle isn't known this early; Security
+    // supplies one independently at gate-in and Office links it afterward via LinkVehicleAsync),
+    // synthesizes a DispatchOrder + lines from it (Product-matched by SkuCode - a match isn't
+    // required for placement any more, see ResolveProductsForDispatchPlanRowsAsync below, but is
+    // still attempted here so linked lines get real master dimensions instead of the placeholder),
     // then hands off to GeneratePickListAsync unchanged.
-    public async Task<OutwardJobDto> GeneratePickListFromDispatchPlanAsync(string vehicleNumber, int officeWarehouseId, string officeUserId)
+    public async Task<OutwardJobDto> GeneratePickListFromDispatchPlanAsync(string poNumber, int officeWarehouseId, string officeUserId)
     {
         var matched = await _db.VehicleLogisticsRecords
             .Include(r => r.ToWarehouse)
-            .Where(r => r.VehicleNumber == vehicleNumber && r.FromWarehouseId == officeWarehouseId
+            .Where(r => r.PoNumber == poNumber && r.FromWarehouseId == officeWarehouseId
                 && r.Status == VehicleLogisticsStatus.InTransit)
             .ToListAsync();
 
         if (matched.Count == 0)
         {
-            throw new InvalidOperationException($"No pending Dispatch Plan rows found for vehicle '{vehicleNumber}'.");
+            throw new InvalidOperationException($"No pending Dispatch Plan rows found for PO '{poNumber}'.");
         }
 
         // Office's own PickListQuantity override (if set) wins over the Logistics Manager's
@@ -154,7 +157,7 @@ public class OutwardService
         if (claimedCount != matchedIds.Count)
         {
             throw new InvalidOperationException(
-                $"Dispatch Plan rows for vehicle '{vehicleNumber}' are already being processed by another request.");
+                $"Dispatch Plan rows for PO '{poNumber}' are already being processed by another request.");
         }
 
         // Lets the Logistics Manager's own Dispatch Plan list and Office's pending panels drop this
@@ -164,7 +167,7 @@ public class OutwardService
         var toWarehouseName = matched[0].ToWarehouse!.Name;
         var dispatchOrder = new DispatchOrder
         {
-            DispatchOrderNumber = $"DP-{DateTime.UtcNow:yyyyMMdd}-{vehicleNumber}-{DateTime.UtcNow.Ticks % 10000}",
+            DispatchOrderNumber = $"DP-{DateTime.UtcNow:yyyyMMdd}-{poNumber}-{DateTime.UtcNow.Ticks % 10000}",
             CustomerName = toWarehouseName,
             RequestedDate = matched.Any(r => r.EtaDateTime.HasValue)
                 ? matched.Where(r => r.EtaDateTime.HasValue).Min(r => r.EtaDateTime!.Value)
@@ -174,7 +177,7 @@ public class OutwardService
                 ProductName = r.Sku,
                 OrderedQty = r.PickListQuantity ?? r.BoxQuantity,
                 UnitOfMeasure = "PCS",
-                ProductId = productByRowId[r.Id].Id,
+                ProductId = productByRowId.TryGetValue(r.Id, out var product) ? product.Id : null,
                 DeliveryLocation = toWarehouseName
             }).ToList()
         };
@@ -192,19 +195,26 @@ public class OutwardService
         var createdTransaction = await _db.OutwardTransactions.FirstAsync(t => t.Id == dto.Id);
         createdTransaction.WarehouseId = officeWarehouseId;
 
-        // Same reasoning as WarehouseId above: vehicle number, driver and transporter are already
-        // known from the Dispatch Plan the Logistics Manager entered - no reason to leave the job
-        // list showing "-" for all of them until a physical gate check-in re-types the same info.
-        var vehicle = await _db.Vehicles.FirstOrDefaultAsync(v => v.Number == vehicleNumber);
-        if (vehicle is null)
+        // Same reasoning as WarehouseId above: if the Dispatch Plan rows already carry a vehicle
+        // number (legacy/manual-entry rows - no longer required upstream), driver and transporter are
+        // already known too - no reason to leave the job list showing "-" for all of them until a
+        // physical gate check-in re-types the same info. The normal case now is no vehicle number yet
+        // at all - the job stays unassigned until Office's Link Vehicle action (LinkVehicleAsync)
+        // attaches a Security gate arrival to it.
+        var vehicleNumber = matched.Select(r => r.VehicleNumber).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+        if (vehicleNumber is not null)
         {
-            vehicle = new Vehicle { Number = vehicleNumber };
-            _db.Vehicles.Add(vehicle);
+            var vehicle = await _db.Vehicles.FirstOrDefaultAsync(v => v.Number == vehicleNumber);
+            if (vehicle is null)
+            {
+                vehicle = new Vehicle { Number = vehicleNumber };
+                _db.Vehicles.Add(vehicle);
+            }
+            createdTransaction.Vehicle = vehicle;
+            createdTransaction.DriverName = matched.Select(r => r.DriverName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+            createdTransaction.DriverMobile = matched.Select(r => r.DriverPhone).FirstOrDefault(p => !string.IsNullOrWhiteSpace(p));
+            createdTransaction.TransporterName = matched.Select(r => r.TransporterName).FirstOrDefault(t => !string.IsNullOrWhiteSpace(t));
         }
-        createdTransaction.Vehicle = vehicle;
-        createdTransaction.DriverName = matched.Select(r => r.DriverName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
-        createdTransaction.DriverMobile = matched.Select(r => r.DriverPhone).FirstOrDefault(p => !string.IsNullOrWhiteSpace(p));
-        createdTransaction.TransporterName = matched.Select(r => r.TransporterName).FirstOrDefault(t => !string.IsNullOrWhiteSpace(t));
 
         foreach (var row in matched)
         {
@@ -216,15 +226,16 @@ public class OutwardService
     }
 
     // Matches each row's SkuCode against the Product master (trimmed, case-insensitive - Excel-
-    // imported codes can carry incidental whitespace/casing differences). Blocks with a full,
-    // itemized list rather than letting generation proceed with unplaceable lines - 3D placement
-    // hard-requires a linked Product with real dimensions.
+    // imported codes can carry incidental whitespace/casing differences). No longer blocks pick-list
+    // generation on a miss (Office generating the pick list shouldn't be held hostage to Admin
+    // having registered every SKU yet) - a row with no unique match just gets ProductId == null on
+    // its DispatchOrderLine. The 3D load planner tolerates that too (OutwardLoadPlanService.
+    // BuildUnitProduct falls back to a 1cm placeholder per missing dimension) so placement isn't
+    // blocked, it just renders/stacks as a nominal 1x1x1cm cube until the SKU gets Product-linked
+    // with real master dimensions.
     private async Task<Dictionary<int, Product>> ResolveProductsForDispatchPlanRowsAsync(List<VehicleLogisticsRecord> rows)
     {
         var products = await _db.Products.ToListAsync();
-        var blankSkuCode = new List<string>();
-        var unmatched = new List<string>();
-        var ambiguous = new List<string>();
         var productByRowId = new Dictionary<int, Product>();
 
         foreach (var row in rows)
@@ -232,33 +243,14 @@ public class OutwardService
             var skuCode = row.SkuCode?.Trim();
             if (string.IsNullOrEmpty(skuCode))
             {
-                blankSkuCode.Add(row.Sku);
                 continue;
             }
 
             var candidates = products.Where(p => string.Equals(p.SkuCode?.Trim(), skuCode, StringComparison.OrdinalIgnoreCase)).ToList();
-            if (candidates.Count == 0)
-            {
-                unmatched.Add($"{row.Sku} ({skuCode})");
-            }
-            else if (candidates.Count > 1)
-            {
-                ambiguous.Add($"{row.Sku} ({skuCode})");
-            }
-            else
+            if (candidates.Count == 1)
             {
                 productByRowId[row.Id] = candidates[0];
             }
-        }
-
-        if (blankSkuCode.Count > 0 || unmatched.Count > 0 || ambiguous.Count > 0)
-        {
-            var parts = new List<string>();
-            if (blankSkuCode.Count > 0) parts.Add($"no SKU code set: {string.Join(", ", blankSkuCode)}");
-            if (unmatched.Count > 0) parts.Add($"no matching Product: {string.Join(", ", unmatched)}");
-            if (ambiguous.Count > 0) parts.Add($"matches more than one Product: {string.Join(", ", ambiguous)}");
-            throw new InvalidOperationException(
-                $"Cannot generate pick list - register these SKUs in Admin > Products first ({string.Join("; ", parts)}).");
         }
 
         return productByRowId;
@@ -343,18 +335,16 @@ public class OutwardService
         var transaction = await GetOwnedTransactionAsync(id, supervisorUserId);
         var vehicle = transaction.Vehicle;
 
-        if (vehicle?.MaxWeightKg is null || vehicle.LengthCm is null || vehicle.WidthCm is null || vehicle.HeightCm is null)
-        {
-            return null;
-        }
-
+        // No real capacity ceiling is enforced here - this is a convenience simulation for where
+        // cartons would physically sit, not a hard loading rule (mirrors
+        // OutwardLoadPlanService.GetVehicleProfile's identical fallback for the 3D workspace).
         var vehicleProfile = new VehicleProfile
         {
-            Name = vehicle.Number,
-            Length = (double)vehicle.LengthCm.Value,
-            Width = (double)vehicle.WidthCm.Value,
-            Height = (double)vehicle.HeightCm.Value,
-            MaxPayload = (double)vehicle.MaxWeightKg.Value,
+            Name = vehicle?.Number ?? "Unknown",
+            Length = (double?)vehicle?.LengthCm ?? 2000,
+            Width = (double?)vehicle?.WidthCm ?? 300,
+            Height = (double?)vehicle?.HeightCm ?? 300,
+            MaxPayload = (double?)vehicle?.MaxWeightKg ?? 100000,
             FrontAxleLimit = double.MaxValue,
             RearAxleLimit = double.MaxValue,
             EmptyWeight = 0
@@ -525,13 +515,36 @@ public class OutwardService
         return await BroadcastAndReturn(transaction.Id);
     }
 
-    public async Task<OutwardJobDto> AddPhotoAsync(int id, string supervisorUserId, OutwardPhotoType type, string fileName, Stream content)
+    private const int MaxSkuPhotosPerLine = 2;
+    private const int MaxSkuPhotosPerJob = 10;
+
+    public async Task<OutwardJobDto> AddPhotoAsync(int id, string supervisorUserId, OutwardPhotoType type, string fileName, Stream content, int? dispatchOrderLineId = null)
     {
         var transaction = await GetOwnedTransactionAsync(id, supervisorUserId);
 
         if (transaction.Status is not (OutwardStatus.Docked or OutwardStatus.Loading))
         {
             throw new InvalidOperationException("Photos can only be added after dock-in and before completion.");
+        }
+
+        if (dispatchOrderLineId is int lineId)
+        {
+            if (transaction.DispatchOrder!.Lines.All(l => l.Id != lineId))
+            {
+                throw new InvalidOperationException("This dispatch order line is invalid for this transaction.");
+            }
+
+            var existingForLine = transaction.Photos.Count(p => p.Type == OutwardPhotoType.SkuLoaded && p.DispatchOrderLineId == lineId);
+            if (existingForLine >= MaxSkuPhotosPerLine)
+            {
+                throw new InvalidOperationException($"Only {MaxSkuPhotosPerLine} photos are allowed per SKU.");
+            }
+
+            var existingForJob = transaction.Photos.Count(p => p.Type == OutwardPhotoType.SkuLoaded);
+            if (existingForJob >= MaxSkuPhotosPerJob)
+            {
+                throw new InvalidOperationException($"Only {MaxSkuPhotosPerJob} SKU photos are allowed per job.");
+            }
         }
 
         var filePath = await _photoStorage.SaveAsync($"outward-{id}", fileName, content);
@@ -541,7 +554,8 @@ public class OutwardService
             OutwardTransactionId = id,
             Type = type,
             FilePath = filePath,
-            CapturedAt = DateTime.UtcNow
+            CapturedAt = DateTime.UtcNow,
+            DispatchOrderLineId = dispatchOrderLineId
         });
         await _db.SaveChangesAsync();
 
@@ -583,6 +597,50 @@ public class OutwardService
 
         await _audit.LogAsync("OutwardTransaction", id, AuditAction.Updated,
             $"Load lines recorded for vehicle '{transaction.Vehicle?.Number}' - {request.Lines.Count} line(s).", supervisorUserId);
+
+        return await BroadcastAndReturn(id);
+    }
+
+    // Lets a Supervisor load extra stock beyond the original pick list, once Plan & Load shows
+    // there's still spare vehicle space - adds a new DispatchOrderLine (Product-linked, matching
+    // GeneratePickListFromDispatchPlanAsync's own lines, so the 3D engine can place it) that the
+    // workspace picks up on its next refresh, same as any originally-planned SKU.
+    public async Task<OutwardJobDto> AddDispatchOrderLineAsync(int id, string supervisorUserId, AddDispatchOrderLineRequest request)
+    {
+        if (request.Quantity <= 0)
+        {
+            throw new InvalidOperationException("Quantity must be greater than zero.");
+        }
+
+        var transaction = await GetOwnedTransactionAsync(id, supervisorUserId);
+
+        if (transaction.Status is not (OutwardStatus.Docked or OutwardStatus.Loading))
+        {
+            throw new InvalidOperationException("SKUs can only be added after dock-in and before completion.");
+        }
+
+        var product = await _db.Products.FindAsync(request.ProductId)
+            ?? throw new InvalidOperationException("Product not found.");
+
+        var deliveryLocation = transaction.DispatchOrder!.Lines
+            .Select(l => l.DeliveryLocation)
+            .FirstOrDefault(l => !string.IsNullOrWhiteSpace(l)) ?? string.Empty;
+
+        var line = new DispatchOrderLine
+        {
+            DispatchOrderId = transaction.DispatchOrderId,
+            ProductId = product.Id,
+            ProductName = product.Name,
+            OrderedQty = request.Quantity,
+            UnitOfMeasure = "PCS",
+            DeliveryLocation = deliveryLocation
+        };
+        _db.DispatchOrderLines.Add(line);
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync("OutwardTransaction", transaction.Id, AuditAction.Updated,
+            $"SKU '{product.Name}' ({request.Quantity} {line.UnitOfMeasure}) added to dispatch order '{transaction.DispatchOrder.DispatchOrderNumber}' by Supervisor.",
+            supervisorUserId);
 
         return await BroadcastAndReturn(id);
     }
@@ -658,10 +716,35 @@ public class OutwardService
             throw new InvalidOperationException("All load plan groups must be confirmed (loaded, mismatch, short-load, or skipped) before completing.");
         }
 
+        transaction.DockOutTime = DateTime.UtcNow;
+        transaction.Status = OutwardStatus.PendingOfficeVerification;
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync("OutwardTransaction", id, AuditAction.Updated,
+            $"Loading completed for vehicle '{transaction.Vehicle?.Number}' - pending Office verification.",
+            supervisorUserId);
+
+        return await BroadcastAndReturn(id);
+    }
+
+    // Office's completion gate: reviews Ordered/Pick List/Loaded quantities (the web
+    // OutwardJobDetail page's own DO Lines table) and confirms - only then is the
+    // OutwardDispatchNote generated and the job actually finalized. Mirrors
+    // InwardService.VerifyAndGenerateGrnAsync exactly (Query(), not GetOwnedTransactionAsync -
+    // Office isn't the assigned supervisor).
+    public async Task<OutwardJobDto> VerifyAndCompleteAsync(int id, string officeUserId)
+    {
+        var transaction = await Query().FirstOrDefaultAsync(t => t.Id == id)
+            ?? throw new KeyNotFoundException("Job not found.");
+
+        if (transaction.Status != OutwardStatus.PendingOfficeVerification)
+        {
+            throw new InvalidOperationException("Job must be pending Office verification before it can be completed.");
+        }
+
         var isPartial = transaction.LoadLines.Any(l => l.LoadedQty < l.DispatchOrderLine!.OrderedQty);
         var dispatchNoteNumber = $"DN-{DateTime.UtcNow:yyyyMMdd}-{id:D4}";
 
-        transaction.DockOutTime = DateTime.UtcNow;
         transaction.Status = OutwardStatus.Completed;
 
         _db.OutwardDispatchNotes.Add(new OutwardDispatchNote
@@ -675,8 +758,8 @@ public class OutwardService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("OutwardTransaction", id, AuditAction.Updated,
-            $"Outward completed for vehicle '{transaction.Vehicle?.Number}' - {dispatchNoteNumber}{(isPartial ? " (partial load)" : "")}.",
-            supervisorUserId);
+            $"Outward verified and completed by Office for vehicle '{transaction.Vehicle?.Number}' - {dispatchNoteNumber}{(isPartial ? " (partial load)" : "")}.",
+            officeUserId);
 
         // Deliberately NOT calling _vehicleLogisticsSync.MarkCompletedAsync here - "Completed"
         // here just means loading finished at the source warehouse (the truck hasn't even
@@ -752,17 +835,11 @@ public class OutwardService
         return await BroadcastAndReturn(id);
     }
 
-    public async Task<OutwardJobDto> OutwardCheckInAsync(OutwardGateCheckInRequest request, string securityUserId)
+    // Security's outward gate-in, independent of any pick list (mirrors InwardService.CheckInAsync):
+    // always creates a new OutwardGateArrival, no matching against an existing OutwardTransaction/
+    // DispatchOrder. Office links it to a real pick list afterward (see LinkVehicleAsync below).
+    public async Task<OutwardGateArrivalDto> CreateGateArrivalAsync(OutwardGateArrivalCheckInRequest request, string securityUserId)
     {
-        var transaction = await Query().FirstOrDefaultAsync(t =>
-            t.DispatchOrder!.DispatchOrderNumber == request.DispatchOrderNumber && t.Status != OutwardStatus.Completed)
-            ?? throw new InvalidOperationException($"Dispatch order '{request.DispatchOrderNumber}' was not found or is already completed.");
-
-        if (transaction.GateInTime is not null)
-        {
-            throw new InvalidOperationException("This dispatch order has already been checked in at the gate.");
-        }
-
         var vehicle = await _db.Vehicles.FirstOrDefaultAsync(v => v.Number == request.VehicleNumber);
         if (vehicle is null)
         {
@@ -771,59 +848,211 @@ public class OutwardService
         }
         await BackfillVehicleCapacityAsync(vehicle);
 
-        // Attributes the transaction to a warehouse purely from the checking-in Security user's own
+        // Attributes the arrival to a warehouse purely from the checking-in Security user's own
         // WarehouseId - no mobile app change needed, the gate-in form never asks for a warehouse.
-        transaction.WarehouseId = await _db.Users
+        var warehouseId = await _db.Users
             .Where(u => u.Id == securityUserId)
             .Select(u => u.WarehouseId)
             .FirstOrDefaultAsync();
 
-        transaction.Vehicle = vehicle;
-        transaction.GateInTime = DateTime.UtcNow;
-        transaction.GateInBySecurityUserId = securityUserId;
-        transaction.DriverName = request.DriverName;
-        transaction.DriverMobile = request.DriverMobile;
-        transaction.TransporterName = request.TransporterName;
-        transaction.GateName = request.GateName;
-        transaction.GpsLatitude = request.GpsLatitude;
-        transaction.GpsLongitude = request.GpsLongitude;
+        var arrival = new OutwardGateArrival
+        {
+            Vehicle = vehicle,
+            WarehouseId = warehouseId,
+            GateInTime = DateTime.UtcNow,
+            GateInBySecurityUserId = securityUserId,
+            DriverName = request.DriverName,
+            DriverMobile = request.DriverMobile,
+            TransporterName = request.TransporterName,
+            GateName = request.GateName,
+            GpsLatitude = request.GpsLatitude,
+            GpsLongitude = request.GpsLongitude,
+            SecurityEnteredDispatchOrderNumber = string.IsNullOrWhiteSpace(request.DispatchOrderNumber) ? null : request.DispatchOrderNumber.Trim()
+        };
+        _db.OutwardGateArrivals.Add(arrival);
         await _db.SaveChangesAsync();
 
-        await _audit.LogAsync("OutwardTransaction", transaction.Id, AuditAction.Updated,
-            $"Vehicle '{request.VehicleNumber}' gate-checked-in for dispatch order '{request.DispatchOrderNumber}'{(string.IsNullOrWhiteSpace(request.GateName) ? "" : $" at {request.GateName}")}.",
+        await _audit.LogAsync("OutwardGateArrival", arrival.Id, AuditAction.Created,
+            $"Vehicle '{request.VehicleNumber}' gate-checked-in for outward" +
+            (string.IsNullOrWhiteSpace(request.DispatchOrderNumber) ? "" : $" (DO noted: '{request.DispatchOrderNumber}')") +
+            (string.IsNullOrWhiteSpace(request.GateName) ? "" : $" at {request.GateName}") +
+            " - not yet linked to a pick list.",
             securityUserId);
 
-        return await BroadcastAndReturn(transaction.Id);
+        await _hub.Clients.Groups(InwardHub.OfficeGroup, InwardHub.AdminsGroup).SendAsync("OutwardGateArrivalChanged");
+        return await GetGateArrivalDtoAsync(arrival.Id);
     }
 
-    public async Task<OutwardJobDto> AddGatePhotoAsync(int id, string securityUserId, OutwardPhotoType type, string fileName, Stream content)
+    // Per-category caps: VehicleAtGate allows up to 5, Driver/VehicleRc/DrivingLicense are id
+    // documents so capped tighter - all other OutwardPhotoType values are unrelated to gate
+    // arrivals (loading/exit evidence) and stay unlimited here.
+    private static int MaxGateArrivalPhotos(OutwardPhotoType type) => type switch
     {
-        var transaction = await Query().FirstOrDefaultAsync(t => t.Id == id)
-            ?? throw new KeyNotFoundException("Job not found.");
+        OutwardPhotoType.VehicleAtGate => 5,
+        OutwardPhotoType.Driver => 3,
+        OutwardPhotoType.VehicleRc => 2,
+        OutwardPhotoType.DrivingLicense => 2,
+        _ => int.MaxValue
+    };
 
-        if (transaction.GateInBySecurityUserId != securityUserId)
+    public async Task<OutwardGateArrivalDto> AddGateArrivalPhotoAsync(int arrivalId, string securityUserId, OutwardPhotoType type, string fileName, Stream content)
+    {
+        var arrival = await _db.OutwardGateArrivals.Include(a => a.Photos)
+            .FirstOrDefaultAsync(a => a.Id == arrivalId)
+            ?? throw new KeyNotFoundException("Gate arrival not found.");
+
+        if (arrival.GateInBySecurityUserId != securityUserId)
         {
             throw new UnauthorizedAccessException("This vehicle was not checked in by you.");
         }
 
-        if (transaction.GateOutTime is not null)
+        if (arrival.LinkedOutwardTransactionId is not null)
         {
-            throw new InvalidOperationException("Gate photos can only be added while the vehicle is on-site.");
+            throw new InvalidOperationException("This vehicle has already been linked to a dispatch order - photos can no longer be added here.");
         }
 
-        var filePath = await _photoStorage.SaveAsync($"outward-{id}", fileName, content);
-
-        _db.OutwardPhotoEvidences.Add(new OutwardPhotoEvidence
+        var max = MaxGateArrivalPhotos(type);
+        if (arrival.Photos.Count(p => p.Type == type) >= max)
         {
-            OutwardTransactionId = id,
+            throw new InvalidOperationException($"A maximum of {max} '{type}' photo(s) can be captured.");
+        }
+
+        var filePath = await _photoStorage.SaveAsync($"outward-gate-arrival-{arrivalId}", fileName, content);
+
+        _db.OutwardGateArrivalPhotos.Add(new OutwardGateArrivalPhoto
+        {
+            OutwardGateArrivalId = arrivalId,
             Type = type,
             FilePath = filePath,
             CapturedAt = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
 
-        return await BroadcastAndReturn(id);
+        await _hub.Clients.Groups(InwardHub.OfficeGroup, InwardHub.AdminsGroup).SendAsync("OutwardGateArrivalChanged");
+        return await GetGateArrivalDtoAsync(arrivalId);
     }
+
+    // Office's "Link Vehicle" action: attaches an already-gated-in (Security-created) outward
+    // arrival to a pick list Office already generated, picked from the Outward Jobs list - mirrors
+    // InwardService.LinkVehicleAsync. The arrival's vehicle/driver/photos move onto the transaction;
+    // the arrival itself is kept, just stamped as linked (audit trail, same as VehicleLogisticsRecord's
+    // ConsumedBy* columns). Also doubles as "Reassign Vehicle" - callable again on a job that already
+    // has a vehicle (e.g. the wrong one was linked, or it needs swapping to one with known capacity
+    // for the load-plan simulation) - the previously linked arrival is freed back up in that case.
+    public async Task<OutwardJobDto> LinkVehicleAsync(LinkOutwardVehicleRequest request, string officeUserId)
+    {
+        var warehouseId = await _db.Users
+            .Where(u => u.Id == officeUserId)
+            .Select(u => u.WarehouseId)
+            .FirstOrDefaultAsync();
+        if (warehouseId is null)
+        {
+            throw new InvalidOperationException("Your account is not assigned to a warehouse.");
+        }
+
+        var transaction = await Query().FirstOrDefaultAsync(t => t.Id == request.OutwardTransactionId)
+            ?? throw new KeyNotFoundException("Job not found.");
+
+        if (transaction.WarehouseId != warehouseId)
+        {
+            throw new UnauthorizedAccessException("This job is not in your warehouse.");
+        }
+
+        if (transaction.Status == OutwardStatus.Completed)
+        {
+            throw new InvalidOperationException("This job is already completed - its vehicle can no longer be changed.");
+        }
+
+        var arrival = await _db.OutwardGateArrivals.Include(a => a.Vehicle).Include(a => a.Photos)
+            .FirstOrDefaultAsync(a => a.Id == request.OutwardGateArrivalId)
+            ?? throw new KeyNotFoundException("Gate arrival not found.");
+
+        if (arrival.WarehouseId != warehouseId)
+        {
+            throw new UnauthorizedAccessException("This gate arrival is not in your warehouse.");
+        }
+
+        if (arrival.LinkedOutwardTransactionId is not null)
+        {
+            throw new InvalidOperationException("This vehicle is already linked to a dispatch order.");
+        }
+
+        // Reassignment (job already had a vehicle) - free up whichever arrival it was previously
+        // linked to, so that vehicle becomes available to link elsewhere again. Nothing to do if the
+        // previous vehicle came straight from the Dispatch Plan at pick-list time instead of a real
+        // gate arrival (no arrival row exists for it).
+        if (transaction.VehicleId is not null)
+        {
+            var previousArrival = await _db.OutwardGateArrivals
+                .FirstOrDefaultAsync(a => a.LinkedOutwardTransactionId == transaction.Id);
+            if (previousArrival is not null)
+            {
+                previousArrival.LinkedOutwardTransactionId = null;
+                previousArrival.LinkedAtUtc = null;
+                previousArrival.LinkedByOfficeUserId = null;
+            }
+        }
+
+        transaction.Vehicle = arrival.Vehicle;
+        transaction.GateInTime = arrival.GateInTime;
+        transaction.GateInBySecurityUserId = arrival.GateInBySecurityUserId;
+        transaction.DriverName = arrival.DriverName;
+        transaction.DriverMobile = arrival.DriverMobile;
+        transaction.TransporterName = arrival.TransporterName;
+        transaction.GateName = arrival.GateName;
+        transaction.GpsLatitude = arrival.GpsLatitude;
+        transaction.GpsLongitude = arrival.GpsLongitude;
+
+        foreach (var photo in arrival.Photos)
+        {
+            _db.OutwardPhotoEvidences.Add(new OutwardPhotoEvidence
+            {
+                OutwardTransactionId = transaction.Id,
+                Type = photo.Type,
+                FilePath = photo.FilePath,
+                CapturedAt = photo.CapturedAt
+            });
+        }
+
+        arrival.LinkedOutwardTransactionId = transaction.Id;
+        arrival.LinkedAtUtc = DateTime.UtcNow;
+        arrival.LinkedByOfficeUserId = officeUserId;
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync("OutwardTransaction", transaction.Id, AuditAction.Updated,
+            $"Vehicle '{arrival.Vehicle!.Number}' linked/reassigned by Office to dispatch order '{transaction.DispatchOrder?.DispatchOrderNumber}'.", officeUserId);
+
+        return await BroadcastAndReturn(transaction.Id);
+    }
+
+    // Backs the vehicle dropdown on Office's Link Vehicle dialog - outward arrivals Security has
+    // already gated in at this warehouse but that aren't linked to any pick list yet.
+    public async Task<List<OutwardGateArrivalDto>> GetUnlinkedArrivalsAsync(int warehouseId)
+    {
+        var arrivals = await _db.OutwardGateArrivals
+            .Include(a => a.Vehicle)
+            .Include(a => a.Photos)
+            .Where(a => a.WarehouseId == warehouseId && a.LinkedOutwardTransactionId == null)
+            .OrderByDescending(a => a.GateInTime)
+            .ToListAsync();
+
+        return arrivals.Select(ToGateArrivalDto).ToList();
+    }
+
+    private async Task<OutwardGateArrivalDto> GetGateArrivalDtoAsync(int id)
+    {
+        var arrival = await _db.OutwardGateArrivals
+            .Include(a => a.Vehicle)
+            .Include(a => a.Photos)
+            .FirstAsync(a => a.Id == id);
+        return ToGateArrivalDto(arrival);
+    }
+
+    private static OutwardGateArrivalDto ToGateArrivalDto(OutwardGateArrival a) => new(
+        a.Id, a.Vehicle!.Number, a.DriverName, a.DriverMobile, a.TransporterName, a.GateName,
+        a.GpsLatitude, a.GpsLongitude, a.GateInTime, a.SecurityEnteredDispatchOrderNumber,
+        a.LinkedOutwardTransactionId is not null,
+        a.Photos.Select(p => new OutwardGateArrivalPhotoDto(p.Id, p.Type.ToString(), p.FilePath, p.CapturedAt)).ToList());
 
     // Warehouse-scoped, matching InwardService.GetForSecurityAsync's convention.
     public async Task<List<OutwardJobDto>> GetForSecurityAsync(int? warehouseId, bool activeOnly, string? vehicleNumber, string? dispatchOrderNumber, DateTime? date)
@@ -909,10 +1138,17 @@ public class OutwardService
         return await BroadcastAndReturn(id);
     }
 
-    // Vehicle Master is now a type/category profile. Transactional vehicles keep their own plate
-    // and capacity values; seeded demo plates are backfilled by SeedData.
+    // Vehicle Master is now a type/category profile, not a per-plate capacity source - a plate
+    // auto-created at Security's Outward gate-in/Supervisor's Dock-In just gets Vehicle's own
+    // generic defaults for whichever fields are still missing (mirrors
+    // InwardService.CheckInAsync's identical backfill on the Inward side), so it never sits
+    // blocked at "Missing" capacity in the Vehicle Registry by accident.
     private async Task BackfillVehicleCapacityAsync(Vehicle vehicle)
     {
+        vehicle.MaxWeightKg ??= Vehicle.DefaultMaxWeightKg;
+        vehicle.LengthCm ??= Vehicle.DefaultLengthCm;
+        vehicle.WidthCm ??= Vehicle.DefaultWidthCm;
+        vehicle.HeightCm ??= Vehicle.DefaultHeightCm;
         await Task.CompletedTask;
     }
 
@@ -982,7 +1218,7 @@ public class OutwardService
             l.Id, l.ProductName, l.OrderedQty, l.UnitOfMeasure,
             l.Product?.WeightKg, l.Product?.LengthCm, l.Product?.WidthCm, l.Product?.HeightCm,
             l.Product?.SkuCode, l.Product?.ColorHex, l.DeliveryLocation)).ToList(),
-        t.Photos.Select(p => new OutwardPhotoDto(p.Id, p.Type.ToString(), p.FilePath, p.CapturedAt)).ToList(),
+        t.Photos.Select(p => new OutwardPhotoDto(p.Id, p.Type.ToString(), p.FilePath, p.CapturedAt, p.DispatchOrderLineId)).ToList(),
         t.LoadLines.Select(l => new LoadLineDto(
             l.Id, l.DispatchOrderLineId, l.DispatchOrderLine!.ProductName, l.DispatchOrderLine.OrderedQty,
             l.LoadedQty, l.LoadSequence, l.Notes)).ToList(),

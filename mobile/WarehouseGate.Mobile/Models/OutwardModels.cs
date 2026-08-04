@@ -1,5 +1,13 @@
 namespace WarehouseGate.Mobile.Models;
 
+// Minimal projection of the Admin Vehicle Registry (api/gate/vehicle-registry) - only the plate
+// number is needed to back the Outward gate-in picker; manual entry still works for any vehicle
+// not yet in the registry (CreateGateArrivalAsync creates one on the fly).
+public class VehicleRegistryEntry
+{
+    public string Number { get; set; } = string.Empty;
+}
+
 public class DispatchOrderLine
 {
     public int Id { get; set; }
@@ -21,6 +29,7 @@ public class OutwardPhoto
     public string Type { get; set; } = string.Empty;
     public string FilePath { get; set; } = string.Empty;
     public DateTime CapturedAt { get; set; }
+    public int? DispatchOrderLineId { get; set; }
 }
 
 public class LoadLine
@@ -134,9 +143,11 @@ public class LoadLineInput
     public string? Notes { get; set; }
 }
 
+// No longer requires a matching pick list to exist - Security just logs the physical arrival
+// (mirrors GateCheckInInput's PONumber hint for Inward). DispatchOrderNumber is now purely an
+// optional, unvalidated hint for Office when it later links this arrival to a pending pick list.
 public class OutwardGateCheckInInput
 {
-    public string DispatchOrderNumber { get; set; } = string.Empty;
     public string VehicleNumber { get; set; } = string.Empty;
     public string? DriverName { get; set; }
     public string? DriverMobile { get; set; }
@@ -144,4 +155,31 @@ public class OutwardGateCheckInInput
     public string? GateName { get; set; }
     public double? GpsLatitude { get; set; }
     public double? GpsLongitude { get; set; }
+    public string? DispatchOrderNumber { get; set; }
+}
+
+public class OutwardGateArrivalPhoto
+{
+    public int Id { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public string FilePath { get; set; } = string.Empty;
+    public DateTime CapturedAt { get; set; }
+}
+
+// Response shape of the Outward gate check-in - a standalone arrival record, not yet linked to any
+// dispatch order/pick list (Office links it afterward from the portal).
+public class OutwardGateArrival
+{
+    public int Id { get; set; }
+    public string VehicleNumber { get; set; } = string.Empty;
+    public string? DriverName { get; set; }
+    public string? DriverMobile { get; set; }
+    public string? TransporterName { get; set; }
+    public string? GateName { get; set; }
+    public double? GpsLatitude { get; set; }
+    public double? GpsLongitude { get; set; }
+    public DateTime GateInTime { get; set; }
+    public string? SecurityEnteredDispatchOrderNumber { get; set; }
+    public bool IsLinked { get; set; }
+    public List<OutwardGateArrivalPhoto> Photos { get; set; } = new();
 }

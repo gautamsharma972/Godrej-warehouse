@@ -520,9 +520,10 @@ public class AdminController : ControllerBase
         v.MaxWeightKg, v.LengthCm, v.WidthCm, v.HeightCm);
 
     // ============================ VEHICLES (REGISTRY) ============================
-    // Individual plates created lazily at Gate-In/Dock-In with no capacity. Unlike Vehicle Masters
-    // above (a type/category catalog), this is the registry of real vehicle numbers - lets
-    // SuperAdmin set/fix a specific plate's capacity so Plan & Load stops rejecting it.
+    // Individual plates created lazily at Gate-In/Dock-In - also backfilled with Vehicle's own
+    // default capacity there now (see InwardService.CheckInAsync/OutwardService.
+    // BackfillVehicleCapacity), so this screen mainly lets SuperAdmin fix a specific plate's
+    // capacity to something more accurate than the generic default.
 
     [HttpGet("vehicles")]
     public async Task<ActionResult<List<VehicleDto>>> GetVehicles() =>
@@ -545,10 +546,10 @@ public class AdminController : ControllerBase
         var vehicle = new Vehicle
         {
             Number = number,
-            MaxWeightKg = request.MaxWeightKg,
-            LengthCm = request.LengthCm,
-            WidthCm = request.WidthCm,
-            HeightCm = request.HeightCm
+            MaxWeightKg = request.MaxWeightKg ?? Vehicle.DefaultMaxWeightKg,
+            LengthCm = request.LengthCm ?? Vehicle.DefaultLengthCm,
+            WidthCm = request.WidthCm ?? Vehicle.DefaultWidthCm,
+            HeightCm = request.HeightCm ?? Vehicle.DefaultHeightCm
         };
         _db.Vehicles.Add(vehicle);
         await _db.SaveChangesAsync();
@@ -578,10 +579,10 @@ public class AdminController : ControllerBase
         }
 
         vehicle.Number = number;
-        vehicle.MaxWeightKg = request.MaxWeightKg;
-        vehicle.LengthCm = request.LengthCm;
-        vehicle.WidthCm = request.WidthCm;
-        vehicle.HeightCm = request.HeightCm;
+        vehicle.MaxWeightKg = request.MaxWeightKg ?? Vehicle.DefaultMaxWeightKg;
+        vehicle.LengthCm = request.LengthCm ?? Vehicle.DefaultLengthCm;
+        vehicle.WidthCm = request.WidthCm ?? Vehicle.DefaultWidthCm;
+        vehicle.HeightCm = request.HeightCm ?? Vehicle.DefaultHeightCm;
         await _db.SaveChangesAsync();
         await _audit.LogAsync("Vehicle", vehicle.Id, AuditAction.Updated, $"Vehicle '{vehicle.Number}' capacity updated.", CurrentUserId, CurrentUserName);
 

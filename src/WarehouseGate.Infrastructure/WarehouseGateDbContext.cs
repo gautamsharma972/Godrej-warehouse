@@ -27,6 +27,7 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PhotoEvidence> PhotoEvidences => Set<PhotoEvidence>();
     public DbSet<InwardDocument> InwardDocuments => Set<InwardDocument>();
     public DbSet<InspectionLine> InspectionLines => Set<InspectionLine>();
+    public DbSet<UnplannedReceiptLine> UnplannedReceiptLines => Set<UnplannedReceiptLine>();
     public DbSet<GoodsReceiptNote> GoodsReceiptNotes => Set<GoodsReceiptNote>();
 
     public DbSet<DispatchOrder> DispatchOrders => Set<DispatchOrder>();
@@ -34,6 +35,8 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Product> Products => Set<Product>();
     public DbSet<OutwardTransaction> OutwardTransactions => Set<OutwardTransaction>();
     public DbSet<OutwardPhotoEvidence> OutwardPhotoEvidences => Set<OutwardPhotoEvidence>();
+    public DbSet<OutwardGateArrival> OutwardGateArrivals => Set<OutwardGateArrival>();
+    public DbSet<OutwardGateArrivalPhoto> OutwardGateArrivalPhotos => Set<OutwardGateArrivalPhoto>();
     public DbSet<OutwardLoadLine> OutwardLoadLines => Set<OutwardLoadLine>();
     public DbSet<OutwardDispatchNote> OutwardDispatchNotes => Set<OutwardDispatchNote>();
     public DbSet<OutwardLoadPlanOption> OutwardLoadPlanOptions => Set<OutwardLoadPlanOption>();
@@ -132,6 +135,28 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .Property(l => l.ReceivedQty)
             .HasPrecision(18, 2);
 
+        builder.Entity<PhotoEvidence>()
+            .HasOne(p => p.PurchaseOrderLine)
+            .WithMany()
+            .HasForeignKey(p => p.PurchaseOrderLineId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // InwardTransaction <-> UnplannedReceiptLine is left to convention (matching
+        // InwardTransaction.UnplannedLines / UnplannedReceiptLine.InwardTransaction, same as
+        // Photos/Documents/InspectionLines above) - an explicit HasOne/WithMany() here without
+        // naming the collection nav created a second, conflicting relationship (EF fell back to a
+        // shadow "InwardTransactionId1" FK instead of reusing the real InwardTransactionId column).
+
+        builder.Entity<UnplannedReceiptLine>()
+            .HasOne(l => l.Product)
+            .WithMany()
+            .HasForeignKey(l => l.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<UnplannedReceiptLine>()
+            .Property(l => l.Quantity)
+            .HasPrecision(18, 2);
+
         builder.Entity<DispatchOrder>()
             .HasIndex(d => new { d.OrganizationId, d.DispatchOrderNumber })
             .IsUnique();
@@ -166,6 +191,22 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .HasConversion<string>();
 
         builder.Entity<OutwardPhotoEvidence>()
+            .Property(p => p.Type)
+            .HasConversion<string>();
+
+        builder.Entity<OutwardGateArrival>()
+            .HasOne(a => a.Vehicle)
+            .WithMany()
+            .HasForeignKey(a => a.VehicleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<OutwardGateArrival>()
+            .HasOne(a => a.LinkedOutwardTransaction)
+            .WithMany()
+            .HasForeignKey(a => a.LinkedOutwardTransactionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<OutwardGateArrivalPhoto>()
             .Property(p => p.Type)
             .HasConversion<string>();
 
@@ -204,6 +245,12 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .WithMany(g => g.Photos)
             .HasForeignKey(p => p.OutwardLoadPlanGroupId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<OutwardPhotoEvidence>()
+            .HasOne(p => p.DispatchOrderLine)
+            .WithMany()
+            .HasForeignKey(p => p.DispatchOrderLineId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<OutwardLoadPlanGroup>()
             .Property(g => g.ZoneLength)

@@ -3,8 +3,12 @@
         <div class="admin-drawer">
             <div class="admin-drawer-header">
                 <div>
-                    <h2 class="admin-drawer-title">@(IsNew ? "Add Vehicle Dispatch" : "Edit Vehicle Dispatch")</h2>
-                    <p class="admin-drawer-subtitle">Maintain vehicle, shipment, route, and warehouse movement information.</p>
+                    <h2 class="admin-drawer-title">@(IsNew ? "Add Vehicle Dispatch" : IsReadOnly ? "View Vehicle Dispatch" : "Edit Vehicle Dispatch")</h2>
+                    <p class="admin-drawer-subtitle">
+                        @(IsReadOnly
+                            ? "This dispatch has already been picked/loaded and can no longer be edited."
+                            : "Maintain vehicle, shipment, route, and warehouse movement information.")
+                    </p>
                 </div>
                 <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
             </div>
@@ -12,36 +16,36 @@
             <div class="admin-drawer-body">
                 <div class="admin-form-grid">
                     <div class="admin-form-field">
-                        <label>Vehicle Number</label>
-                        <input class="admin-form-control" @bind="VehicleNumber" @bind:event="oninput" />
+                        <label>Vehicle Number (optional)</label>
+                        <input class="admin-form-control" @bind="VehicleNumber" @bind:event="oninput" disabled="@IsReadOnly" />
                     </div>
                     <div class="admin-form-field">
                         <label>Inward Transaction Id</label>
-                        <input class="admin-form-control" @bind="InwardTransactionId" @bind:event="oninput" />
+                        <input class="admin-form-control" @bind="InwardTransactionId" @bind:event="oninput" disabled="@IsReadOnly" />
                     </div>
                     <div class="admin-form-field">
                         <label>Transporter Name</label>
-                        <input class="admin-form-control" @bind="TransporterName" @bind:event="oninput" />
+                        <input class="admin-form-control" @bind="TransporterName" @bind:event="oninput" disabled="@IsReadOnly" />
                     </div>
                     <div class="admin-form-field">
                         <label>Driver Name</label>
-                        <input class="admin-form-control" @bind="DriverName" @bind:event="oninput" />
+                        <input class="admin-form-control" @bind="DriverName" @bind:event="oninput" disabled="@IsReadOnly" />
                     </div>
                     <div class="admin-form-field">
                         <label>Driver Phone</label>
-                        <input class="admin-form-control" @bind="DriverPhone" @bind:event="oninput" />
+                        <input class="admin-form-control" @bind="DriverPhone" @bind:event="oninput" disabled="@IsReadOnly" />
                     </div>
                     <div class="admin-form-field">
                         <label>Vehicle Type</label>
-                        <input class="admin-form-control" @bind="VehicleType" @bind:event="oninput" />
+                        <input class="admin-form-control" @bind="VehicleType" @bind:event="oninput" disabled="@IsReadOnly" />
                     </div>
                     <div class="admin-form-field">
-                        <label>Departure Date</label>
-                        <input class="admin-form-control" type="date" @bind="DepartureDate" />
+                        <label>Departure Date (required)</label>
+                        <input class="admin-form-control" type="date" @bind="DepartureDate" disabled="@IsReadOnly" />
                     </div>
                     <div class="admin-form-field">
                         <label>From Warehouse</label>
-                        <select class="admin-form-select" @bind="FromWarehouseId">
+                        <select class="admin-form-select" @bind="FromWarehouseId" disabled="@IsReadOnly">
                             <option value="0">Select warehouse</option>
                             @foreach (var warehouse in Warehouses)
                             {
@@ -51,7 +55,7 @@
                     </div>
                     <div class="admin-form-field">
                         <label>To Warehouse</label>
-                        <select class="admin-form-select" @bind="ToWarehouseId">
+                        <select class="admin-form-select" @bind="ToWarehouseId" disabled="@IsReadOnly">
                             <option value="0">Select warehouse</option>
                             @foreach (var warehouse in Warehouses)
                             {
@@ -72,11 +76,11 @@
                     <table class="admin-table compact">
                         <thead>
                             <tr>
-                                <th>SKU</th>
-                                <th>SKU Code</th>
+                                <th>SKU (or SKU Code)</th>
+                                <th>SKU Code (or SKU)</th>
                                 <th>PO</th>
-                                <th>Boxes</th>
-                                <th>ETA</th>
+                                <th>Boxes (required)</th>
+                                <th>ETA (required)</th>
                                 @if (!IsNew)
                                 {
                                     <th>Status</th>
@@ -88,15 +92,15 @@
                             @foreach (var row in _rows)
                             {
                                 <tr>
-                                    <td><input class="admin-form-control" @bind="row.Sku" @bind:event="oninput" /></td>
-                                    <td><input class="admin-form-control" @bind="row.SkuCode" @bind:event="oninput" /></td>
-                                    <td><input class="admin-form-control" @bind="row.PoNumber" @bind:event="oninput" /></td>
-                                    <td><input class="admin-form-control" type="number" min="0" @bind="row.BoxQuantity" /></td>
-                                    <td><input class="admin-form-control" type="datetime-local" @bind="row.EtaDateTime" /></td>
+                                    <td><input class="admin-form-control" @bind="row.Sku" @bind:event="oninput" disabled="@IsReadOnly" /></td>
+                                    <td><input class="admin-form-control" @bind="row.SkuCode" @bind:event="oninput" disabled="@IsReadOnly" /></td>
+                                    <td><input class="admin-form-control" @bind="row.PoNumber" @bind:event="oninput" disabled="@IsReadOnly" /></td>
+                                    <td><input class="admin-form-control" type="number" min="0" @bind="row.BoxQuantity" disabled="@IsReadOnly" /></td>
+                                    <td><input class="admin-form-control" type="date" @bind="row.EtaDateTime" disabled="@IsReadOnly" /></td>
                                     @if (!IsNew)
                                     {
                                         <td>
-                                            <select class="admin-form-select" @bind="row.Status">
+                                            <select class="admin-form-select" @bind="row.Status" disabled="@IsReadOnly">
                                                 <option value="InTransit">In-Transit</option>
                                                 <option value="InProgress">In Progress</option>
                                                 <option value="Inactive">Inactive</option>
@@ -106,21 +110,34 @@
                                         </td>
                                     }
                                     <td class="admin-actions-cell">
-                                        <button class="admin-icon-btn delete" type="button" title="Remove row" disabled="@(_rows.Count == 1)" @onclick="() => RemoveRow(row)"><i class="bx bx-trash"></i></button>
+                                        @if (!row.Id.HasValue && !IsReadOnly)
+                                        {
+                                            <button class="admin-icon-btn delete" type="button" title="Remove row" disabled="@(_rows.Count == 1)" @onclick="() => RemoveRow(row)"><i class="bx bx-trash"></i></button>
+                                        }
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
                 </div>
-                <button class="admin-secondary-btn vehicle-sku-add-btn" type="button" @onclick="AddRow"><i class="bx bx-plus"></i>Add SKU</button>
+                @if (!IsReadOnly)
+                {
+                    <button class="admin-secondary-btn vehicle-sku-add-btn" type="button" @onclick="AddRow"><i class="bx bx-plus"></i>Add SKU</button>
+                }
             </div>
 
             <div class="admin-drawer-actions">
-                <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
-                <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(!CanSave)">
-                    Save
-                </button>
+                @if (IsReadOnly)
+                {
+                    <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Close</button>
+                }
+                else
+                {
+                    <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+                    <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(!CanSave)">
+                        Save
+                    </button>
+                }
             </div>
         </div>
     </DialogContent>
@@ -131,6 +148,7 @@
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public bool IsNew { get; set; }
+    [Parameter] public bool IsReadOnly { get; set; }
     [Parameter] public string VehicleNumber { get; set; } = string.Empty;
     [Parameter] public string? InwardTransactionId { get; set; }
     [Parameter] public string? TransporterName { get; set; }
@@ -177,13 +195,21 @@
         }
     }
 
+    // Vehicle Number is intentionally not required here - it's normally supplied later by Office's
+    // "Tag Vehicle" action. Everything else matches the Excel upload's own required fields (see
+    // VehicleLogisticsExcelParser): PO Number, either SKU or SKU Code, Box Quantity, Departure
+    // Date, and ETA are all mandatory per row (Departure Date is a single group-level field here).
     private bool CanSave =>
-        !string.IsNullOrWhiteSpace(VehicleNumber) &&
         FromWarehouseId != 0 &&
         ToWarehouseId != 0 &&
         FromWarehouseId != ToWarehouseId &&
+        DepartureDate.HasValue &&
         _rows.Count > 0 &&
-        _rows.All(r => !string.IsNullOrWhiteSpace(r.Sku));
+        _rows.All(r =>
+            (!string.IsNullOrWhiteSpace(r.Sku) || !string.IsNullOrWhiteSpace(r.SkuCode)) &&
+            !string.IsNullOrWhiteSpace(r.PoNumber) &&
+            r.BoxQuantity > 0 &&
+            r.EtaDateTime.HasValue);
 
     private void Submit()
     {
@@ -197,7 +223,9 @@
             _rows.Select(r => new VehicleSkuRowModel
             {
                 Id = r.Id,
-                Sku = r.Sku.Trim(),
+                // SKU is the identifier used everywhere downstream - fall back to SKU Code when
+                // only that was given, mirroring VehicleLogisticsExcelParser's same fallback.
+                Sku = string.IsNullOrWhiteSpace(r.Sku) ? r.SkuCode!.Trim() : r.Sku.Trim(),
                 SkuCode = Clean(r.SkuCode),
                 PoNumber = Clean(r.PoNumber),
                 BoxQuantity = r.BoxQuantity,

@@ -49,10 +49,22 @@ public class GateController : ControllerBase
         return master is null ? NotFound() : Ok(master);
     }
 
-    // Backs the mobile app's Outward gate-in vehicle picker - Outward jobs Office has already
-    // generated a pick list for (so vehicle number/driver/transporter are already known from the
-    // Dispatch Plan, see OutwardService.GeneratePickListFromDispatchPlanAsync) but that haven't
-    // been gated in at THIS warehouse yet.
+    // Backs the mobile app's Outward gate-in vehicle picker - the real Admin Vehicle Registry
+    // (api/admin/vehicles is SuperAdmin-only), exposed read-only to Security so it can search/select
+    // a known plate; free-text entry still works for a vehicle not in the registry yet
+    // (CreateGateArrivalAsync creates one on the fly).
+    [HttpGet("vehicle-registry")]
+    public async Task<ActionResult<List<VehicleDto>>> GetVehicleRegistry() =>
+        Ok(await _db.Vehicles.OrderBy(v => v.Number)
+            .Select(v => new VehicleDto(v.Id, v.Number, v.MaxWeightKg, v.LengthCm, v.WidthCm, v.HeightCm))
+            .ToListAsync());
+
+    // Backs the Supervisor's Dock-In vehicle picker on OutwardJobDetailPage - Outward jobs Office
+    // has already generated a pick list for (so vehicle number/driver/transporter are already known
+    // from the Dispatch Plan or a completed Link Vehicle, see OutwardService.GeneratePickListFromDispatchPlanAsync/
+    // LinkVehicleAsync) but that haven't been gated in at THIS warehouse yet. Unrelated to Security's
+    // own gate-in picker above (see GetVehicleRegistry) - left as-is, this app iteration doesn't
+    // change Supervisor-facing Outward behavior.
     [HttpGet("vehicle-masters")]
     public async Task<ActionResult<List<VehicleMasterDto>>> GetVehicleMasters()
     {
@@ -92,9 +104,15 @@ public class GateController : ControllerBase
         // (Status flips InTransit -> InProgress at that point, see VehicleLogisticsStatus) - the
         // shipment is physically in transit toward here, exactly when Security needs to be able
         // to pick it for gate check-in. Only drops off once actually checked in here.
+        // VehicleNumber is usually null now (no longer required in the Dispatch Plan Excel, and
+        // Office no longer pre-tags a vehicle before arrival - see InwardService.LinkVehicleAsync,
+        // which links AFTER Security's Gate Check-in instead). Rows with no vehicle number yet
+        // aren't pickable here at all, only legacy rows that already had one set directly
+        // (Excel/manual entry, still possible, just no longer required).
         var records = await _db.VehicleLogisticsRecords
             .Include(r => r.FromWarehouse).Include(r => r.ToWarehouse)
             .Where(r => r.ToWarehouseId == warehouseId
+                && r.VehicleNumber != null
                 && r.ConsumedByInwardTransactionId == null
                 && (r.Status == VehicleLogisticsStatus.InTransit
                     || (r.Status == VehicleLogisticsStatus.InProgress && r.ConsumedByOutwardTransactionId != null)))
@@ -104,9 +122,26 @@ public class GateController : ControllerBase
         return Ok(records.Select(r => new VehicleLogisticsRecordDto(
             r.Id, r.VehicleNumber, r.PoNumber, r.InwardTransactionId, r.TransporterName, r.DriverName, r.DriverPhone,
             r.VehicleType, r.Sku, r.SkuCode, r.BoxQuantity,
+            // Not surfaced on this picker (Security just needs to pick a vehicle to check in) -
+            // see LogisticsController.ResolveLiveDispatchDataAsync for where these are actually resolved.
+            null, null, null,
             r.DepartureDate, r.EtaDateTime,
             r.FromWarehouseId, r.FromWarehouse!.Name, r.ToWarehouseId, r.ToWarehouse!.Name,
             r.Status.ToString(), r.CreatedAtUtc)).ToList());
+    }
+
+    // Real Transporter master data for Security's Transporter picker - api/admin/transporters is
+    // SuperAdmin-only, so this exposes a read-only, active-only subset to the Security role instead
+    // of the mobile app falling back to a hardcoded list.
+    [HttpGet("transporters")]
+    public async Task<ActionResult<List<string>>> GetTransporters()
+    {
+        var names = await _db.Transporters
+            .Where(t => t.IsActive)
+            .OrderBy(t => t.Name)
+            .Select(t => t.Name)
+            .ToListAsync();
+        return Ok(names);
     }
 
     [HttpGet("transactions")]

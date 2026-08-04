@@ -1,0 +1,56 @@
+<MudDialog>
+    <DialogContent>
+        <div class="admin-drawer">
+            <div class="admin-drawer-header">
+                <div>
+                    <h2 class="admin-drawer-title">@(IsReassign ? "Reassign Vehicle" : "Link Vehicle")</h2>
+                    <p class="admin-drawer-subtitle">Pick which already-arrived vehicle (gate-checked-in by Security but not yet linked to any dispatch order) this is - job '@DispatchOrderNumber' picks up that vehicle's driver and gate photos@(IsReassign ? ", replacing the one currently assigned" : "").</p>
+                </div>
+                <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="admin-drawer-body">
+                @if (UnlinkedArrivals.Count == 0)
+                {
+                    <div class="admin-empty"><i class="bx bx-time-five"></i><span>No unlinked arrivals yet - ask Security to gate-check-in this vehicle first.</span></div>
+                }
+                else
+                {
+                    <div class="admin-form-grid">
+                        <div class="admin-form-field full">
+                            <label>Vehicle</label>
+                            <select class="admin-form-select" @bind="SelectedOutwardGateArrivalId">
+                                <option value="0">Select an unlinked arrival</option>
+                                @foreach (var arrival in UnlinkedArrivals)
+                                {
+                                    <option value="@arrival.Id">
+                                        @arrival.VehicleNumber - @(arrival.DriverName ?? "no driver noted") - gated in @arrival.GateInTime.ToString("yyyy-MM-dd HH:mm")@(string.IsNullOrWhiteSpace(arrival.SecurityEnteredDispatchOrderNumber) ? "" : $" (DO noted: {arrival.SecurityEnteredDispatchOrderNumber})")
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="admin-drawer-actions">
+                <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+                <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(SelectedOutwardGateArrivalId == 0)">@(IsReassign ? "Reassign Vehicle" : "Link Vehicle")</button>
+            </div>
+        </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public int OutwardTransactionId { get; set; }
+    [Parameter] public string DispatchOrderNumber { get; set; } = string.Empty;
+    [Parameter] public bool IsReassign { get; set; }
+    [Parameter] public List<OutwardGateArrivalDto> UnlinkedArrivals { get; set; } = new();
+
+    private int SelectedOutwardGateArrivalId { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(new LinkOutwardVehicleRequest(OutwardTransactionId, SelectedOutwardGateArrivalId)));
+
+    private void Cancel() => MudDialog.Cancel();
+}

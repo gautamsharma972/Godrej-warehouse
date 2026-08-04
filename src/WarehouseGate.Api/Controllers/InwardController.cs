@@ -80,7 +80,7 @@ public class InwardController : ControllerBase
     [HttpPost("{id:int}/photos")]
     [Authorize(Roles = "Supervisor")]
     [RequestSizeLimit(20_000_000)]
-    public async Task<ActionResult<InwardJobDto>> AddPhoto(int id, [FromForm] PhotoType type, IFormFile file)
+    public async Task<ActionResult<InwardJobDto>> AddPhoto(int id, [FromForm] PhotoType type, IFormFile file, [FromForm] int? purchaseOrderLineId = null)
     {
         if (file.Length == 0)
         {
@@ -88,8 +88,15 @@ public class InwardController : ControllerBase
         }
 
         await using var stream = file.OpenReadStream();
-        return await Handle(() => _inwardService.AddPhotoAsync(id, CurrentUserId, type, file.FileName, stream));
+        return await Handle(() => _inwardService.AddPhotoAsync(id, CurrentUserId, type, file.FileName, stream, purchaseOrderLineId));
     }
+
+    // Office also needs this to power the SKU picker when correcting Mismatch SKU Details rows
+    // during pre-GRN verification (see OfficeController.UpdateInspection).
+    [HttpGet("sku-master")]
+    [Authorize(Roles = "Supervisor,Office")]
+    public async Task<ActionResult<List<SkuMasterItemDto>>> SearchSkuMaster([FromQuery] string? search) =>
+        Ok(await _inwardService.SearchSkuMasterAsync(search));
 
     [HttpPost("{id:int}/inspection")]
     [Authorize(Roles = "Supervisor")]

@@ -7,8 +7,12 @@ using WarehouseGate.Domain;
 namespace WarehouseGate.Api.Tests;
 
 // Covers the two places a completion path turns a log-warning into a real, visible Office
-// to-do (see InwardService.CompleteAsync's hasExceptions branch and OutwardService.CompleteAsync's
-// isPartial branch) - both create a FollowUpTask row that the Office Follow-ups page reads.
+// to-do (see InwardService.VerifyAndGenerateGrnAsync's hasExceptions branch and
+// OutwardService.VerifyAndCompleteAsync's isPartial branch) - both create a FollowUpTask row
+// that the Office Follow-ups page reads. Both sides are now two steps: Supervisor's
+// CompleteAsync only reaches PendingOfficeVerification (no GRN/DispatchNote/FollowUpTask yet);
+// Office's VerifyAndGenerateGrnAsync/VerifyAndCompleteAsync is what actually finalizes the job
+// and, on exceptions/partial loads, creates the FollowUpTask.
 public class FollowUpCreationTests : IClassFixture<SqliteDbFixture>
 {
     private readonly SqliteDbFixture _fixture;
@@ -48,7 +52,11 @@ public class FollowUpCreationTests : IClassFixture<SqliteDbFixture>
             new VehicleLogisticsSyncService(db), new OutwardLoadPlanService(db, new FakePhotoStorageService(), new FakeHubContext()),
             new AuditService(db));
 
-        var dto = await service.CompleteAsync(txn.Id, supervisor.Id);
+        var completed = await service.CompleteAsync(txn.Id, supervisor.Id);
+        Assert.Equal("PendingOfficeVerification", completed.Status);
+        Assert.False(await db.FollowUpTasks.AnyAsync(f => f.EntityId == txn.Id && f.EntityName == "InwardTransaction"));
+
+        var dto = await service.VerifyAndGenerateGrnAsync(txn.Id, "office-1");
 
         Assert.Equal("Completed", dto.Status);
         var followUp = await db.FollowUpTasks.SingleAsync(f => f.EntityId == txn.Id && f.EntityName == "InwardTransaction");
@@ -90,7 +98,11 @@ public class FollowUpCreationTests : IClassFixture<SqliteDbFixture>
             new WarehouseGate.LoadPlanning.LoadPlanningEngine(), loadPlanService,
             new VehicleLogisticsSyncService(db), new AuditService(db));
 
-        var dto = await service.CompleteAsync(txn.Id, supervisor.Id);
+        var completed = await service.CompleteAsync(txn.Id, supervisor.Id);
+        Assert.Equal("PendingOfficeVerification", completed.Status);
+        Assert.False(await db.FollowUpTasks.AnyAsync(f => f.EntityId == txn.Id && f.EntityName == "OutwardTransaction"));
+
+        var dto = await service.VerifyAndCompleteAsync(txn.Id, "office-2");
 
         Assert.Equal("Completed", dto.Status);
         var followUp = await db.FollowUpTasks.SingleAsync(f => f.EntityId == txn.Id && f.EntityName == "OutwardTransaction");

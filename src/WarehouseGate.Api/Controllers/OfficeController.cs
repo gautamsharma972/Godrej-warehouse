@@ -54,8 +54,8 @@ public class OfficeController : ControllerBase
         return Ok(await GetPendingGroupsAsync(fromWarehouseId: warehouseId.Value, toWarehouseId: null));
     }
 
-    [HttpPost("dispatch-plan/outward/{vehicleNumber}/generate-picklist")]
-    public async Task<ActionResult<OutwardJobDto>> GeneratePickListFromDispatchPlan(string vehicleNumber)
+    [HttpPost("dispatch-plan/outward/{poNumber}/generate-picklist")]
+    public async Task<ActionResult<OutwardJobDto>> GeneratePickListFromDispatchPlan(string poNumber)
     {
         var warehouseId = await GetCallerWarehouseIdAsync();
         if (warehouseId is null)
@@ -65,9 +65,9 @@ public class OfficeController : ControllerBase
 
         try
         {
-            var job = await _outwardService.GeneratePickListFromDispatchPlanAsync(vehicleNumber, warehouseId.Value, CurrentUserId);
+            var job = await _outwardService.GeneratePickListFromDispatchPlanAsync(poNumber, warehouseId.Value, CurrentUserId);
             await _audit.LogAsync("OutwardTransaction", job.Id, AuditAction.Created,
-                $"Pick list generated for vehicle '{vehicleNumber}' from Dispatch Plan data.", CurrentUserId, CurrentUserName);
+                $"Pick list generated for PO '{poNumber}' from Dispatch Plan data.", CurrentUserId, CurrentUserName);
             return Ok(job);
         }
         catch (InvalidOperationException ex)
@@ -131,6 +131,89 @@ public class OfficeController : ControllerBase
         return Ok(await GetPendingGroupsAsync(fromWarehouseId: null, toWarehouseId: warehouseId.Value));
     }
 
+    // Attaches an already-gated-in (Security-created) Inward Job to a real Dispatch Plan entry,
+    // picked from the Expected tab - moves it from "unlinked" into a real, inspectable job. See
+    // InwardService.LinkVehicleAsync for the full flow.
+    [HttpPost("dispatch-plan/inward/link-vehicle")]
+    public async Task<ActionResult<InwardJobDto>> LinkVehicle(LinkVehicleRequest request)
+    {
+        try
+        {
+            return Ok(await _inwardService.LinkVehicleAsync(request, CurrentUserId));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // Backs the vehicle dropdown on the Link Vehicle dialog - Inward Jobs Security has already
+    // gated in at this warehouse but that aren't linked to any Dispatch Plan entry yet.
+    [HttpGet("dispatch-plan/inward/unlinked-arrivals")]
+    public async Task<ActionResult<List<UnlinkedArrivalDto>>> GetUnlinkedArrivals()
+    {
+        var warehouseId = await GetCallerWarehouseIdAsync();
+        if (warehouseId is null)
+        {
+            return Ok(new List<UnlinkedArrivalDto>());
+        }
+
+        var arrivals = await _db.InwardTransactions
+            .Include(t => t.Vehicle)
+            .Where(t => t.WarehouseId == warehouseId && t.PurchaseOrderId == null)
+            .OrderByDescending(t => t.GateInTime)
+            .ToListAsync();
+
+        return Ok(arrivals.Select(t => new UnlinkedArrivalDto(
+            t.Id, t.Vehicle!.Number, t.DriverName, t.DriverMobile, t.TransporterName, t.SecurityEnteredPoNumber, t.GateInTime)).ToList());
+    }
+
+    // Attaches an already-gated-in (Security-created) outward arrival to a pick list Office already
+    // generated, picked from the Outward Jobs list - moves it from "not yet assigned" into a real
+    // job with vehicle/driver/photos. See OutwardService.LinkVehicleAsync for the full flow.
+    [HttpPost("dispatch-plan/outward/link-vehicle")]
+    public async Task<ActionResult<OutwardJobDto>> LinkOutwardVehicle(LinkOutwardVehicleRequest request)
+    {
+        try
+        {
+            return Ok(await _outwardService.LinkVehicleAsync(request, CurrentUserId));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // Backs the vehicle dropdown on the Link Vehicle dialog - outward arrivals Security has already
+    // gated in at this warehouse but that aren't linked to any pick list yet.
+    [HttpGet("dispatch-plan/outward/unlinked-arrivals")]
+    public async Task<ActionResult<List<OutwardGateArrivalDto>>> GetUnlinkedOutwardArrivals()
+    {
+        var warehouseId = await GetCallerWarehouseIdAsync();
+        if (warehouseId is null)
+        {
+            return Ok(new List<OutwardGateArrivalDto>());
+        }
+
+        return Ok(await _outwardService.GetUnlinkedArrivalsAsync(warehouseId.Value));
+    }
+
     private async Task<List<PendingDispatchPlanGroupDto>> GetPendingGroupsAsync(int? fromWarehouseId, int? toWarehouseId)
     {
         var query = _db.VehicleLogisticsRecords
@@ -155,11 +238,31 @@ public class OfficeController : ControllerBase
 
         var rows = await query.ToListAsync();
 
+        // Both Outward (source-side pick-list generation) and Inward ("Expected, not yet arrived")
+        // group by PO Number - vehicle number is normally unknown this early (Security supplies it
+        // independently at gate-in and Office links it afterward, see OutwardService.LinkVehicleAsync
+        // and InwardService.LinkVehicleAsync), so PO Number is the only identity guaranteed present
+        // before that happens.
+        if (fromWarehouseId is not null)
+        {
+            return rows
+                .GroupBy(r => r.PoNumber ?? $"__no_po_{r.Id}")
+                .Select(g => new PendingDispatchPlanGroupDto(
+                    g.First().VehicleNumber,
+                    g.First().PoNumber,
+                    g.First().ToWarehouse!.Name,
+                    g.Where(r => r.EtaDateTime.HasValue).Select(r => r.EtaDateTime).OrderBy(d => d).FirstOrDefault(),
+                    g.Select(r => new PendingDispatchPlanLineDto(r.Id, r.Sku, r.SkuCode, r.BoxQuantity, r.PickListQuantity, r.PoNumber)).ToList()))
+                .OrderBy(g => g.EtaDateTime)
+                .ToList();
+        }
+
         return rows
-            .GroupBy(r => r.VehicleNumber)
+            .GroupBy(r => r.PoNumber ?? $"__nopo_{r.Id}")
             .Select(g => new PendingDispatchPlanGroupDto(
+                g.First().VehicleNumber,
                 g.Key,
-                fromWarehouseId is not null ? g.First().ToWarehouse!.Name : g.First().FromWarehouse!.Name,
+                g.First().FromWarehouse!.Name,
                 g.Where(r => r.EtaDateTime.HasValue).Select(r => r.EtaDateTime).OrderBy(d => d).FirstOrDefault(),
                 g.Select(r => new PendingDispatchPlanLineDto(r.Id, r.Sku, r.SkuCode, r.BoxQuantity, r.PickListQuantity, r.PoNumber)).ToList()))
             .OrderBy(g => g.EtaDateTime)
@@ -312,6 +415,49 @@ public class OfficeController : ControllerBase
         }
     }
 
+    // Lets Office correct the Supervisor's recorded quantities and Mismatch SKU Details rows
+    // before confirming - reuses the exact same request shape and validation as Supervisor's
+    // original submission (InwardService.SubmitInspectionAsync), just callable while
+    // PendingOfficeVerification instead of Docked/Inspecting. See InwardService.UpdateInspectionAsync.
+    [HttpPut("inward-jobs/{id:int}/inspection")]
+    public async Task<ActionResult<InwardJobDto>> UpdateInspection(int id, SubmitInspectionRequest request)
+    {
+        try
+        {
+            var job = await _inwardService.UpdateInspectionAsync(id, CurrentUserId, request);
+            return Ok(job);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // Office's final confirmation before a GRN exists - Supervisor's "Complete Unloading" (see
+    // InwardService.CompleteAsync) only gets a job to PendingOfficeVerification; this is what
+    // actually generates the GoodsReceiptNote (InwardService.VerifyAndGenerateGrnAsync).
+    [HttpPost("inward-jobs/{id:int}/verify-and-generate-grn")]
+    public async Task<ActionResult<InwardJobDto>> VerifyAndGenerateGrn(int id)
+    {
+        try
+        {
+            var job = await _inwardService.VerifyAndGenerateGrnAsync(id, CurrentUserId);
+            return Ok(job);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPut("inward-jobs/{id:int}")]
     public async Task<ActionResult<InwardJobDto>> UpdateInwardJob(int id, UpdateInwardOfficeFieldsRequest request)
     {
@@ -393,6 +539,27 @@ public class OfficeController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // Office's completion gate - reviews Ordered/Pick List/Loaded quantities (already surfaced on
+    // the web job detail page) and confirms, finalizing the job and generating its dispatch note.
+    // Mirrors VerifyAndGenerateGrn below exactly.
+    [HttpPost("outward-jobs/{id:int}/verify-and-complete")]
+    public async Task<ActionResult<OutwardJobDto>> VerifyAndCompleteOutwardJob(int id)
+    {
+        try
+        {
+            var job = await _outwardService.VerifyAndCompleteAsync(id, CurrentUserId);
+            return Ok(job);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
         }
         catch (InvalidOperationException ex)
         {

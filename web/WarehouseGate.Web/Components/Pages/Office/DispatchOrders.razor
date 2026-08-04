@@ -54,14 +54,14 @@
         <div class="dispatch-accordion-list">
             @foreach (var group in _view)
             {
-                <details class="dispatch-card" @key="group.VehicleNumber">
+                <details class="dispatch-card" @key="group.PoNumber ?? group.VehicleNumber">
                     <summary>
                         <div class="dispatch-card-summary office-dispatch-summary">
                             <div class="dispatch-card-vehicle">
                                 <span class="admin-row-icon"><i class="bx bxs-truck"></i></span>
                                 <div>
                                     <span>Vehicle</span>
-                                    <strong>@group.VehicleNumber</strong>
+                                    <strong>@(group.VehicleNumber ?? "Not yet assigned")</strong>
                                 </div>
                             </div>
                             <div>
@@ -78,9 +78,11 @@
                                 <em>@group.Lines.Sum(EffectiveQty) total qty</em>
                             </div>
                             <div class="dispatch-card-actions">
-                                <button class="admin-primary-btn" type="button" disabled="@(_generatingVehicle is not null)"
+                                <button class="admin-primary-btn" type="button"
+                                        disabled="@(_generatingPoNumber is not null || group.PoNumber is null)"
+                                        title="@(group.PoNumber is null ? "This dispatch row has no PO Number - fix it in Logistics before generating a pick list." : null)"
                                         @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => GeneratePickListAsync(group)">
-                                    @if (_generatingVehicle == group.VehicleNumber)
+                                    @if (_generatingPoNumber == group.PoNumber)
                                     {
                                         <i class="bx bx-loader-alt admin-spin"></i>
                                     }
@@ -143,7 +145,7 @@
 
 @code {
     private List<PendingDispatchPlanGroupDto>? _groups;
-    private string? _generatingVehicle;
+    private string? _generatingPoNumber;
     private int? _savingLineId;
     private string _search = string.Empty;
     private string? _warehouseFilter;
@@ -156,7 +158,8 @@
 
     private IEnumerable<PendingDispatchPlanGroupDto> Filtered => (_groups ?? [])
         .Where(g => string.IsNullOrWhiteSpace(_search) ||
-            g.VehicleNumber.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+            (g.VehicleNumber?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (g.PoNumber?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false) ||
             g.CounterpartWarehouseName.Contains(_search, StringComparison.OrdinalIgnoreCase))
         .Where(g => _warehouseFilter is null || g.CounterpartWarehouseName == _warehouseFilter);
 
@@ -221,11 +224,12 @@
 
     private async Task GeneratePickListAsync(PendingDispatchPlanGroupDto group)
     {
-        _generatingVehicle = group.VehicleNumber;
+        var poNumber = group.PoNumber!;
+        _generatingPoNumber = poNumber;
         try
         {
-            var job = await Api.PostAsync<OutwardJobDto>($"api/office/dispatch-plan/outward/{group.VehicleNumber}/generate-picklist", new { });
-            Snackbar.Add($"Pick list generated for {group.VehicleNumber}.", Severity.Success);
+            var job = await Api.PostAsync<OutwardJobDto>($"api/office/dispatch-plan/outward/{poNumber}/generate-picklist", new { });
+            Snackbar.Add($"Pick list generated for PO {poNumber}.", Severity.Success);
             Navigation.NavigateTo($"/office/outward-jobs/{job.Id}");
         }
         catch (ApiException ex)
@@ -234,7 +238,7 @@
         }
         finally
         {
-            _generatingVehicle = null;
+            _generatingPoNumber = null;
         }
     }
 

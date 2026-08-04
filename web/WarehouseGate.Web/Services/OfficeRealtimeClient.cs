@@ -23,6 +23,7 @@ public class OfficeRealtimeClient : IAsyncDisposable
     public event Action? SupervisorsChanged;
     public event Action? VehicleLogisticsRecordChanged;
     public event Action? FollowUpsChanged;
+    public event Action? OutwardGateArrivalChanged;
 
     // Carries the outward transaction id (unlike the other events above) so a detail page can
     // ignore pushes for a different job than the one it's currently showing.
@@ -65,6 +66,7 @@ public class OfficeRealtimeClient : IAsyncDisposable
         _connection.On("SupervisorsChanged", () => SupervisorsChanged?.Invoke());
         _connection.On("VehicleLogisticsRecordChanged", () => VehicleLogisticsRecordChanged?.Invoke());
         _connection.On("FollowUpsChanged", () => FollowUpsChanged?.Invoke());
+        _connection.On("OutwardGateArrivalChanged", () => OutwardGateArrivalChanged?.Invoke());
         _connection.On<int>("LoadPlanChanged", id => LoadPlanChanged?.Invoke(id));
 
         try

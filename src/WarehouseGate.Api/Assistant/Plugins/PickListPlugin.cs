@@ -41,7 +41,7 @@ public class PickListPlugin
     private readonly int? _officeWarehouseId;
     private readonly string _currentUserId;
 
-    public record GeneratePendingEntry(string VehicleNumber, string Summary, string CreatedByUserId);
+    public record GeneratePendingEntry(string PoNumber, string Summary, string CreatedByUserId);
     public record UpdateQuantityPendingEntry(int LineId, int Quantity, string Summary, string CreatedByUserId);
 
     public (Guid Token, string Summary)? LastPreview { get; private set; }
@@ -66,15 +66,15 @@ public class PickListPlugin
     [KernelFunction("request_generate_picklist_form")]
     [Description(
         "Call this the moment the user wants to generate a pick list from a pending Dispatch Plan " +
-        "vehicle - do NOT ask which vehicle in chat text. This shows the user a form with a dropdown of " +
-        "vehicles still waiting on a pick list. You must actually call this function before replying - " +
+        "PO - do NOT ask which PO in chat text. This shows the user a form with a dropdown of " +
+        "PO Numbers still waiting on a pick list. You must actually call this function before replying - " +
         "never just describe a form appearing without calling it, even if you described one earlier in " +
         "this conversation. After calling this, just tell them briefly that a form has appeared.")]
     public string RequestGeneratePickListForm()
     {
         RequestedFormType = GeneratePickListActionType;
         return "A Generate Pick List form is now shown to the user. [Assistant note: tell them briefly " +
-               "to pick a vehicle and submit, do not list the vehicles yourself, and never repeat this " +
+               "to pick a PO and submit, do not list the POs yourself, and never repeat this " +
                "bracketed note itself in your reply.]";
     }
 
@@ -95,8 +95,8 @@ public class PickListPlugin
     }
 
     // Called directly by AssistantController's form-submit endpoint - no model involved, the
-    // dropdown value is already the real vehicle number from the caller's own pending rows.
-    public async Task<string> PreviewGeneratePickListAsync(string vehicleNumber)
+    // dropdown value is already a real PO Number from the caller's own pending rows.
+    public async Task<string> PreviewGeneratePickListAsync(string poNumber)
     {
         if (_officeWarehouseId is null)
         {
@@ -104,25 +104,25 @@ public class PickListPlugin
         }
 
         var rows = await _db.VehicleLogisticsRecords
-            .Where(r => r.VehicleNumber == vehicleNumber && r.FromWarehouseId == _officeWarehouseId
+            .Where(r => r.PoNumber == poNumber && r.FromWarehouseId == _officeWarehouseId
                 && r.Status == VehicleLogisticsStatus.InTransit)
             .ToListAsync();
 
         if (rows.Count == 0)
         {
-            return "That vehicle no longer has any pending Dispatch Plan rows - it may have already had a pick list generated.";
+            return "That PO no longer has any pending Dispatch Plan rows - it may have already had a pick list generated.";
         }
 
         var zeroQtyRows = rows.Where(r => (r.PickListQuantity ?? r.BoxQuantity) <= 0).Select(r => r.Sku).ToList();
         if (zeroQtyRows.Count > 0)
         {
-            return $"SKU(s) {string.Join(", ", zeroQtyRows)} on this vehicle have no box quantity set - fix them before generating a pick list.";
+            return $"SKU(s) {string.Join(", ", zeroQtyRows)} on this PO have no box quantity set - fix them before generating a pick list.";
         }
 
         var lineSummaries = rows.Select(r => $"{r.PickListQuantity ?? r.BoxQuantity} of {r.Sku}");
-        var summary = $"Generate a pick list for vehicle {vehicleNumber}: {string.Join(", ", lineSummaries)}";
+        var summary = $"Generate a pick list for PO {poNumber}: {string.Join(", ", lineSummaries)}";
 
-        var payload = new GeneratePendingEntry(vehicleNumber, summary, _currentUserId);
+        var payload = new GeneratePendingEntry(poNumber, summary, _currentUserId);
         var token = _pendingActions.Store(payload, TimeSpan.FromMinutes(10));
         LastPreview = (token, summary);
         return $"Here's what I'll do: {summary}. Click Confirm to proceed.";
@@ -179,10 +179,10 @@ public class PickListPlugin
 
         try
         {
-            var job = await _outwardService.GeneratePickListFromDispatchPlanAsync(payload.VehicleNumber, _officeWarehouseId.Value, currentUserId);
+            var job = await _outwardService.GeneratePickListFromDispatchPlanAsync(payload.PoNumber, _officeWarehouseId.Value, currentUserId);
             await _audit.LogAsync("OutwardTransaction", job.Id, AuditAction.Created,
-                $"Pick list generated for vehicle '{payload.VehicleNumber}' from Dispatch Plan data (via Assistant).", currentUserId, currentUserName);
-            return $"Pick list generated: order {job.DispatchOrderNumber} for vehicle {payload.VehicleNumber}.";
+                $"Pick list generated for PO '{payload.PoNumber}' from Dispatch Plan data (via Assistant).", currentUserId, currentUserName);
+            return $"Pick list generated: order {job.DispatchOrderNumber} for PO {payload.PoNumber}.";
         }
         catch (InvalidOperationException ex)
         {

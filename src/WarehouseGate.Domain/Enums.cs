@@ -2,10 +2,16 @@ namespace WarehouseGate.Domain;
 
 public enum InwardStatus
 {
+    // Security's Gate Check-in creates the job directly at this status, whether or not it's linked
+    // to a Dispatch Plan PO yet (see InwardService.CheckInAsync/LinkVehicleAsync) - a job can sit
+    // here with PurchaseOrderId == null until Office links it from the Expected tab.
     GateIn,
     Assigned,
     Docked,
     Inspecting,
+    // Unloading is done and inspection was recorded, but Office hasn't reviewed/confirmed it yet -
+    // no GRN exists until VerifyAndGenerateGrnAsync runs (see InwardService).
+    PendingOfficeVerification,
     Completed
 }
 
@@ -21,7 +27,9 @@ public enum PhotoType
     VehicleRight,
     VehicleSeal,
     VehicleDamage,
-    VehicleAtExit
+    VehicleAtExit,
+    // Per-SKU Receiving Inspection photo (up to 2 per PO line) - see PhotoEvidence.PurchaseOrderLineId.
+    SkuCondition
 }
 
 public enum DocumentType
@@ -72,6 +80,10 @@ public enum OutwardStatus
     Assigned,
     Docked,
     Loading,
+    // Supervisor has finished loading and tapped "Complete Loading", but Office hasn't reviewed/
+    // confirmed it yet - no OutwardDispatchNote exists until VerifyAndCompleteAsync runs (see
+    // OutwardService). Mirrors InwardStatus.PendingOfficeVerification.
+    PendingOfficeVerification,
     Completed
 }
 
@@ -98,9 +110,18 @@ public enum OutwardPhotoType
     MaterialLoaded,
     ExceptionProof,
     Seal,
+    // Gate-arrival evidence (see OutwardGateArrivalPhoto) - VehicleAtGate now allows up to 5 photos
+    // instead of 1; Driver/VehicleRc/DrivingLicense are capped at 3/2/2 respectively (see
+    // OutwardService.AddGateArrivalPhotoAsync).
     VehicleAtGate,
+    Driver,
+    VehicleRc,
+    DrivingLicense,
     VehicleAtExit,
-    LoadGroupConfirmation
+    LoadGroupConfirmation,
+    // Per-SKU Load Confirmation evidence (see OutwardPhotoEvidence.DispatchOrderLineId) - capped at
+    // 2 per line and 10 per job overall (OutwardService.AddPhotoAsync). Mirrors PhotoType.SkuCondition.
+    SkuLoaded
 }
 
 public enum OutwardExceptionReason

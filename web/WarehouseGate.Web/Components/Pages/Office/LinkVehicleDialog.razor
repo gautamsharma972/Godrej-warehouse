@@ -1,0 +1,54 @@
+<MudDialog>
+    <DialogContent>
+        <div class="admin-drawer">
+            <div class="admin-drawer-header">
+                <div>
+                    <h2 class="admin-drawer-title">Link Vehicle</h2>
+                    <p class="admin-drawer-subtitle">Pick which already-arrived vehicle (gate-checked-in by Security but not yet linked to any PO) this is - PO '@PoNumber' moves into Inward Jobs carrying that vehicle's driver, photos, and documents.</p>
+                </div>
+                <button class="admin-drawer-close" type="button" @onclick="Cancel"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="admin-drawer-body">
+                @if (UnlinkedArrivals.Count == 0)
+                {
+                    <div class="admin-empty"><i class="bx bx-time-five"></i><span>No unlinked arrivals yet - ask Security to gate-check-in this vehicle first.</span></div>
+                }
+                else
+                {
+                    <div class="admin-form-grid">
+                        <div class="admin-form-field full">
+                            <label>Vehicle</label>
+                            <select class="admin-form-select" @bind="SelectedInwardTransactionId">
+                                <option value="0">Select an unlinked arrival</option>
+                                @foreach (var arrival in UnlinkedArrivals)
+                                {
+                                    <option value="@arrival.InwardTransactionId">
+                                        @arrival.VehicleNumber - @(arrival.DriverName ?? "no driver noted") - gated in @arrival.GateInTime.ToString("yyyy-MM-dd HH:mm")@(string.IsNullOrWhiteSpace(arrival.SecurityEnteredPoNumber) ? "" : $" (PO noted: {arrival.SecurityEnteredPoNumber})")
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="admin-drawer-actions">
+                <button class="admin-drawer-btn secondary" type="button" @onclick="Cancel">Cancel</button>
+                <button class="admin-drawer-btn primary" type="button" @onclick="Submit" disabled="@(SelectedInwardTransactionId == 0)">Link Vehicle</button>
+            </div>
+        </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string PoNumber { get; set; } = string.Empty;
+    [Parameter] public List<UnlinkedArrivalDto> UnlinkedArrivals { get; set; } = new();
+
+    private int SelectedInwardTransactionId { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(new LinkVehicleRequest(SelectedInwardTransactionId, PoNumber)));
+
+    private void Cancel() => MudDialog.Cancel();
+}

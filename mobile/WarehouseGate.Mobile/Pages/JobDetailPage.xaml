@@ -249,18 +249,21 @@
                     </Grid>
 
                     <VerticalStackLayout Padding="18" Spacing="0">
-                        <Grid IsVisible="False" HeightRequest="0">
-                            <Button x:Name="CaptureVehiclePhotoButton" Text="Vehicle" Clicked="OnCaptureVehiclePhotoClicked">
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" Margin="0,0,0,14">
+                            <Button Grid.Column="0" x:Name="CaptureVehiclePhotoButton" Text="Vehicle" Clicked="OnCaptureVehiclePhotoClicked"
+                                    Style="{StaticResource IconTextButton}">
                                 <Button.ImageSource>
                                     <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Truck}" Color="{StaticResource Primary}" Size="13" />
                                 </Button.ImageSource>
                             </Button>
-                            <Button x:Name="CaptureMaterialPhotoButton" Text="Material" Clicked="OnCaptureMaterialPhotoClicked">
+                            <Button Grid.Column="1" x:Name="CaptureMaterialPhotoButton" Text="Material" Clicked="OnCaptureMaterialPhotoClicked"
+                                    Style="{StaticResource IconTextButton}">
                                 <Button.ImageSource>
                                     <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.BoxesStacked}" Color="{StaticResource Primary}" Size="13" />
                                 </Button.ImageSource>
                             </Button>
-                            <Button x:Name="CaptureExceptionPhotoButton" Text="Exception" Clicked="OnCaptureExceptionPhotoClicked">
+                            <Button Grid.Column="2" x:Name="CaptureExceptionPhotoButton" Text="Exception" Clicked="OnCaptureExceptionPhotoClicked"
+                                    Style="{StaticResource IconTextButton}">
                                 <Button.ImageSource>
                                     <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.TriangleExclamation}" Color="{StaticResource Primary}" Size="13" />
                                 </Button.ImageSource>
@@ -276,6 +279,53 @@
                             </HorizontalStackLayout>
 
                             <CollectionView x:Name="PhotoCarousel" HeightRequest="162" HorizontalScrollBarVisibility="Never">
+                                <CollectionView.ItemsLayout>
+                                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                                </CollectionView.ItemsLayout>
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PhotoDisplayItem">
+                                        <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" Padding="0"
+                                                BackgroundColor="{StaticResource CardLight}"
+                                                StrokeShape="RoundRectangle 18" WidthRequest="220" HeightRequest="150">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnPhotoTapped" />
+                                            </Border.GestureRecognizers>
+                                            <Grid RowDefinitions="100,Auto">
+                                                <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceLight}">
+                                                    <Image Source="{Binding Source}" Aspect="AspectFill" IsVisible="{Binding HasLocalImage}" />
+                                                    <VerticalStackLayout IsVisible="{Binding IsPlaceholder}" VerticalOptions="Center" Spacing="6">
+                                                        <Label Text="{x:Static services:IconGlyphs.Camera}" FontFamily="FaSolid" FontSize="22"
+                                                               TextColor="{StaticResource Primary}" HorizontalOptions="Center" />
+                                                        <Label Text="{Binding FriendlyType}" FontSize="12" HorizontalOptions="Center" />
+                                                    </VerticalStackLayout>
+                                                </Grid>
+                                                <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="10,9">
+                                                    <BoxView WidthRequest="7" HeightRequest="7" CornerRadius="4" Color="{StaticResource Primary}" VerticalOptions="Center" />
+                                                    <Label Grid.Column="1" Text="{Binding Description}" FontSize="10" TextColor="{StaticResource TextPrimaryLight}"
+                                                           LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,16,0,10">
+                            <Label Text="Gate documents" FontFamily="PoppinsSemiBold" FontSize="13" TextColor="#172033" VerticalOptions="Center" />
+                            <Label Grid.Column="1" x:Name="DocumentCountLabel" Text="0 documents" FontSize="11"
+                                   TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                        </Grid>
+
+                        <Grid Padding="0,2">
+                            <HorizontalStackLayout x:Name="NoDocumentsLabel" Spacing="8" HorizontalOptions="Center"
+                                                   VerticalOptions="Center" IsVisible="False">
+                                <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
+                                       FontSize="14" TextColor="{StaticResource TextSecondaryLight}" />
+                                <Label Text="No documents uploaded at the gate." Style="{StaticResource EmptyStateLabel}" Margin="0" />
+                            </HorizontalStackLayout>
+
+                            <CollectionView x:Name="DocumentsCarousel" HeightRequest="162" HorizontalScrollBarVisibility="Never">
                                 <CollectionView.ItemsLayout>
                                     <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
                                 </CollectionView.ItemsLayout>
@@ -396,6 +446,25 @@
                         </Border>
                     </Grid>
                     <VerticalStackLayout x:Name="InspectionLinesContainer" Spacing="16" Padding="18,18,18,0" />
+
+                    <VerticalStackLayout Spacing="10" Padding="18,20,18,0">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="Mismatch SKU details" FontFamily="PoppinsSemiBold" FontSize="14"
+                                       TextColor="{StaticResource TextPrimaryLight}" />
+                                <Label Text="Select any SKU from the SKU Master and enter the quantity actually received in its place. The total across all rows here must match the total Mismatch quantity entered above."
+                                       Style="{StaticResource MetaLabel}" FontSize="11" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" x:Name="AddUnplannedLineButton" Text="Add SKU" Clicked="OnAddUnplannedLineClicked"
+                                    Style="{StaticResource IconTextButton}" VerticalOptions="Center">
+                                <Button.ImageSource>
+                                    <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ListCheck}" Color="{StaticResource Primary}" Size="12" />
+                                </Button.ImageSource>
+                            </Button>
+                        </Grid>
+                        <VerticalStackLayout x:Name="UnplannedLinesContainer" Spacing="10" />
+                    </VerticalStackLayout>
+
                     <Grid x:Name="InspectionFooterGrid" ColumnDefinitions="*,Auto" ColumnSpacing="14" RowSpacing="12" Padding="18" BackgroundColor="{StaticResource CardLight}">
                         <Border Grid.Column="0" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}"
                                 StrokeShape="RoundRectangle 18" Padding="14,11">

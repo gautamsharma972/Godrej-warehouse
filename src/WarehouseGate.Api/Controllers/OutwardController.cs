@@ -85,7 +85,7 @@ public class OutwardController : ControllerBase
     [HttpPost("{id:int}/photos")]
     [Authorize(Roles = "Supervisor")]
     [RequestSizeLimit(20_000_000)]
-    public async Task<ActionResult<OutwardJobDto>> AddPhoto(int id, [FromForm] OutwardPhotoType type, IFormFile file)
+    public async Task<ActionResult<OutwardJobDto>> AddPhoto(int id, [FromForm] OutwardPhotoType type, IFormFile file, [FromForm] int? dispatchOrderLineId = null)
     {
         if (file.Length == 0)
         {
@@ -93,13 +93,18 @@ public class OutwardController : ControllerBase
         }
 
         await using var stream = file.OpenReadStream();
-        return await Handle(() => _outwardService.AddPhotoAsync(id, CurrentUserId, type, file.FileName, stream));
+        return await Handle(() => _outwardService.AddPhotoAsync(id, CurrentUserId, type, file.FileName, stream, dispatchOrderLineId));
     }
 
     [HttpPost("{id:int}/load-lines")]
     [Authorize(Roles = "Supervisor")]
     public async Task<ActionResult<OutwardJobDto>> SubmitLoadLines(int id, SubmitLoadLinesRequest request) =>
         await Handle(() => _outwardService.SubmitLoadLinesAsync(id, CurrentUserId, request));
+
+    [HttpPost("{id:int}/lines")]
+    [Authorize(Roles = "Supervisor")]
+    public async Task<ActionResult<OutwardJobDto>> AddLine(int id, AddDispatchOrderLineRequest request) =>
+        await Handle(() => _outwardService.AddDispatchOrderLineAsync(id, CurrentUserId, request));
 
     [HttpPost("{id:int}/exception")]
     [Authorize(Roles = "Supervisor")]

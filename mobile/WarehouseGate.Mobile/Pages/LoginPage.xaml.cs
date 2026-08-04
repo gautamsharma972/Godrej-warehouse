@@ -125,10 +125,17 @@ public partial class LoginPage : ContentPage
     // you're typing in them or not. Matches the Material outlined-text-field pattern: a thin neutral
     // border at rest, a thicker brand-colored one while editing.
     private void OnFieldFocused(object? sender, FocusEventArgs e) =>
-        UiHelpers.SetFieldFocus(sender == UserNameEntry ? UserNameFieldBorder : PasswordFieldBorder, true);
+        UiHelpers.SetFieldFocus(FieldBorderFor(sender), true);
 
     private void OnFieldUnfocused(object? sender, FocusEventArgs e) =>
-        UiHelpers.SetFieldFocus(sender == UserNameEntry ? UserNameFieldBorder : PasswordFieldBorder, false);
+        UiHelpers.SetFieldFocus(FieldBorderFor(sender), false);
+
+    private Border FieldBorderFor(object? entry) => entry switch
+    {
+        var e when e == OrgCodeEntry => OrgCodeFieldBorder,
+        var e when e == UserNameEntry => UserNameFieldBorder,
+        _ => PasswordFieldBorder
+    };
 
     private void OnTogglePasswordVisibility(object? sender, TappedEventArgs e)
     {
@@ -160,7 +167,7 @@ public partial class LoginPage : ContentPage
 
         try
         {
-            var result = await ApiClient.LoginAsync(UserNameEntry.Text.Trim(), PasswordEntry.Text);
+            var result = await ApiClient.LoginAsync(UserNameEntry.Text.Trim(), PasswordEntry.Text, OrgCodeEntry.Text?.Trim());
             Session.Token = result.Token;
             Session.Role = result.Role;
             Session.DisplayName = result.DisplayName;

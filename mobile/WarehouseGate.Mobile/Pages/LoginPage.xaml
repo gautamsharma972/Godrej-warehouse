@@ -154,6 +154,23 @@
 
                             <VerticalStackLayout x:Name="FormStack" Spacing="14">
                                 <VerticalStackLayout Spacing="8">
+                                    <Label Text="Organization Code" FontSize="14" FontFamily="PoppinsRegular"
+                                           TextColor="#263238" />
+                                    <Border x:Name="OrgCodeFieldBorder" Stroke="#CFDAD6" StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 6" Padding="15,0" HeightRequest="54"
+                                            BackgroundColor="#FBFDFC">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                            <Label Grid.Column="0" Text="{x:Static services:IconGlyphs.Building}" Style="{StaticResource IconLabel}"
+                                                   FontSize="16" TextColor="#6C7A80" VerticalOptions="Center" />
+                                            <Entry Grid.Column="1" x:Name="OrgCodeEntry" Placeholder="e.g. GCPL"
+                                                   ClearButtonVisibility="WhileEditing"
+                                                   VerticalOptions="Center"
+                                                   Focused="OnFieldFocused" Unfocused="OnFieldUnfocused" />
+                                        </Grid>
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Spacing="8">
                                     <Label Text="Username" FontSize="14" FontFamily="PoppinsRegular"
                                            TextColor="#263238" />
                                     <Border x:Name="UserNameFieldBorder" Stroke="#CFDAD6" StrokeThickness="1"

@@ -88,9 +88,10 @@ public record AuditLogDto(
 public record VehicleLogisticsRecordDto(
     int Id, string VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,
     string? DriverName, string? DriverPhone, string? VehicleType, string Sku, string? SkuCode, int BoxQuantity,
+    decimal? PickListQty, decimal? LoadedQty, decimal? PhysicalQty,
     DateTime? DepartureDate, DateTime? EtaDateTime,
     int FromWarehouseId, string FromWarehouseName, int ToWarehouseId, string ToWarehouseName,
-    string Status, DateTime CreatedAtUtc);
+    string Status, DateTime CreatedAtUtc, bool IsExtra = false);
 
 public record UpsertVehicleLogisticsRecordRequest(
     string VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,
@@ -115,7 +116,7 @@ public record VehicleGroupSaveResult(
     List<VehicleSkuRowModel> Rows, List<int> RemovedRecordIds);
 
 public record VehicleLogisticsUploadRowErrorDto(int RowNumber, string Reason);
-public record VehicleLogisticsUploadResultDto(int ImportedCount, List<VehicleLogisticsUploadRowErrorDto> Errors);
+public record VehicleLogisticsUploadResultDto(int InsertedCount, int UpdatedCount, List<VehicleLogisticsUploadRowErrorDto> Errors);
 
 public record VehicleMasterFullDto(
     int Id, int VehicleTypeId, string VehicleTypeName, int VehicleCategoryId, string VehicleCategoryName,
@@ -134,20 +135,29 @@ public record UpsertVehicleCategoryRequest(string Name);
 public record VehicleDto(int Id, string Number, decimal? MaxWeightKg, decimal? LengthCm, decimal? WidthCm, decimal? HeightCm);
 public record UpsertVehicleRequest(string Number, decimal? MaxWeightKg, decimal? LengthCm, decimal? WidthCm, decimal? HeightCm);
 
-public record PoLineDto(int Id, string ProductName, decimal ExpectedQty, decimal? PickListQty, decimal? LoadedQty, string UnitOfMeasure);
-public record PhotoDto(int Id, string Type, string FilePath, DateTime CapturedAt);
+public record PoLineDto(int Id, string ProductName, decimal ExpectedQty, decimal? PickListQty, decimal? LoadedQty, string UnitOfMeasure, bool IsExtra = false);
+public record PhotoDto(int Id, string Type, string FilePath, DateTime CapturedAt, int? PurchaseOrderLineId);
 public record DocumentDto(int Id, string Type, string FilePath, DateTime UploadedAt);
 public record InspectionLineDto(int Id, int PurchaseOrderLineId, string ProductName, decimal ExpectedQty, decimal ReceivedQty, string Condition, string? Notes);
+public record UnplannedReceiptLineDto(int Id, int ProductId, string ProductName, string? SkuCode, decimal Quantity, string? Notes);
 public record GrnDto(string GrnNumber, DateTime GeneratedAt, bool HasExceptions);
 
+public record SkuMasterItemDto(int Id, string Name, string SkuCode);
+
+// Mirrors the API's SubmitInspectionRequest/InspectionLineRequest/UnplannedReceiptLineRequest -
+// backs Office's "Save Changes" on the Inward Verification screen (InwardJobDetail.razor).
+public record UpdateInspectionLineRequest(int PurchaseOrderLineId, decimal ReceivedQty, string Condition, string? Notes);
+public record UpdateUnplannedReceiptLineRequest(int ProductId, decimal Quantity, string? Notes);
+public record UpdateInspectionRequest(List<UpdateInspectionLineRequest> Lines, List<UpdateUnplannedReceiptLineRequest>? UnplannedLines = null);
+
 public record InwardJobDto(
-    int Id, string VehicleNumber, string InwardTxnNumber, string PONumber, string SupplierName,
+    int Id, string VehicleNumber, string InwardTxnNumber, string? PONumber, string? SecurityEnteredPoNumber, string? SupplierName,
     string Status, DateTime GateInTime, string? DriverName, string? DriverMobile, string? TransporterName,
     string? GateName, double? GpsLatitude, double? GpsLongitude, bool IsNewVehicle, bool HasDeliveryDateMismatch,
     string? AssignedSupervisorUserId, DateTime? AssignedTime, string? BayName, DateTime? DockInTime,
     DateTime? UnloadingStartTime, DateTime? DockOutTime, List<PoLineDto> Lines, List<PhotoDto> Photos,
-    List<DocumentDto> Documents, List<InspectionLineDto> InspectionLines, GrnDto? Grn, string? Remarks,
-    DateTime? GateOutTime, string? GatePassToken);
+    List<DocumentDto> Documents, List<InspectionLineDto> InspectionLines, List<UnplannedReceiptLineDto> UnplannedLines,
+    GrnDto? Grn, string? Remarks, DateTime? GateOutTime, string? GatePassToken);
 
 public record OutwardLineDto(int Id, string ProductName, decimal OrderedQty, string UnitOfMeasure);
 
@@ -224,7 +234,7 @@ public record DispatchPlanFormSubmitRequest(
     string? DepartureDate, string? EtaDateTime);
 public record ResolveFollowUpFormSubmitRequest(int FollowUpId, string? Notes);
 public record AssignSupervisorFormSubmitRequest(string JobType, int JobId, string SupervisorUserId);
-public record GeneratePickListFormSubmitRequest(string VehicleNumber);
+public record GeneratePickListFormSubmitRequest(string PoNumber);
 public record UpdatePickListQuantityFormSubmitRequest(int LineId, int Quantity);
 public record UpdateInwardOfficeFieldsRequest(string? DriverName, string? DriverMobile, string? TransporterName, string? Remarks);
 
@@ -233,7 +243,22 @@ public record PendingDispatchPlanLineDto(int Id, string Sku, string? SkuCode, in
 public record UpdatePickListQuantityRequest(int? Quantity);
 
 public record PendingDispatchPlanGroupDto(
-    string VehicleNumber, string CounterpartWarehouseName, DateTime? EtaDateTime, List<PendingDispatchPlanLineDto> Lines);
+    string? VehicleNumber, string? PoNumber, string CounterpartWarehouseName, DateTime? EtaDateTime, List<PendingDispatchPlanLineDto> Lines);
+
+public record LinkVehicleRequest(int InwardTransactionId, string PoNumber);
+
+public record UnlinkedArrivalDto(
+    int InwardTransactionId, string VehicleNumber, string? DriverName, string? DriverMobile,
+    string? TransporterName, string? SecurityEnteredPoNumber, DateTime GateInTime);
+
+public record LinkOutwardVehicleRequest(int OutwardTransactionId, int OutwardGateArrivalId);
+
+public record OutwardGateArrivalPhotoDto(int Id, string Type, string FilePath, DateTime CapturedAt);
+
+public record OutwardGateArrivalDto(
+    int Id, string VehicleNumber, string? DriverName, string? DriverMobile, string? TransporterName,
+    string? GateName, double? GpsLatitude, double? GpsLongitude, DateTime GateInTime,
+    string? SecurityEnteredDispatchOrderNumber, bool IsLinked, List<OutwardGateArrivalPhotoDto> Photos);
 
 public record OfficeAuditLogDto(int Id, string EntityName, int EntityId, string Action, string ChangedByName, DateTime ChangedAtUtc, string Summary);
 

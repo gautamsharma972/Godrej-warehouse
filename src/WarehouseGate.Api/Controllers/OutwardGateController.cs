@@ -29,12 +29,12 @@ public class OutwardGateController : ControllerBase
         await _db.Users.Where(u => u.Id == CurrentUserId).Select(u => u.WarehouseId).FirstOrDefaultAsync();
 
     [HttpPost("checkin")]
-    public async Task<ActionResult<OutwardJobDto>> CheckIn(OutwardGateCheckInRequest request)
+    public async Task<ActionResult<OutwardGateArrivalDto>> CheckIn(OutwardGateArrivalCheckInRequest request)
     {
         try
         {
-            var job = await _outwardService.OutwardCheckInAsync(request, CurrentUserId);
-            return Ok(job);
+            var arrival = await _outwardService.CreateGateArrivalAsync(request, CurrentUserId);
+            return Ok(arrival);
         }
         catch (InvalidOperationException ex)
         {
@@ -55,7 +55,7 @@ public class OutwardGateController : ControllerBase
 
     [HttpPost("{id:int}/photos")]
     [RequestSizeLimit(20_000_000)]
-    public async Task<ActionResult<OutwardJobDto>> AddPhoto(int id, [FromForm] OutwardPhotoType type, IFormFile file)
+    public async Task<ActionResult<OutwardGateArrivalDto>> AddPhoto(int id, [FromForm] OutwardPhotoType type, IFormFile file)
     {
         if (file.Length == 0)
         {
@@ -63,7 +63,7 @@ public class OutwardGateController : ControllerBase
         }
 
         await using var stream = file.OpenReadStream();
-        return await Handle(() => _outwardService.AddGatePhotoAsync(id, CurrentUserId, type, file.FileName, stream));
+        return await Handle(() => _outwardService.AddGateArrivalPhotoAsync(id, CurrentUserId, type, file.FileName, stream));
     }
 
     [HttpGet("transactions/pending-exit")]
@@ -87,7 +87,7 @@ public class OutwardGateController : ControllerBase
         return await Handle(() => _outwardService.RecordExitAsync(id, CurrentUserId, warehouseId, file.FileName, stream));
     }
 
-    private async Task<ActionResult<OutwardJobDto>> Handle(Func<Task<OutwardJobDto>> action)
+    private async Task<ActionResult<T>> Handle<T>(Func<Task<T>> action)
     {
         try
         {

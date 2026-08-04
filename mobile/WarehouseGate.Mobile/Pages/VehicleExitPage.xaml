@@ -102,7 +102,7 @@
                                     </VerticalStackLayout>
 
                                     <VerticalStackLayout Spacing="6">
-                                        <Label Text="DISPATCH ORDER NUMBER" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
+                                        <Label Text="DISPATCH ORDER NUMBER (OPTIONAL)" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
                                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
                                             <Border x:Name="DispatchOrderNumberBorder" Grid.Column="0" Stroke="{StaticResource CardBorderLight}"
                                                     StrokeThickness="1.3" StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="50">
@@ -237,8 +237,8 @@
                                                HorizontalOptions="Center" VerticalOptions="Center" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                        <Label Text="Vehicle at gate photo" Style="{StaticResource CardTitleLabel}" FontSize="18" />
-                                        <Label Text="Optional evidence before outbound processing." Style="{StaticResource MetaLabel}" />
+                                        <Label Text="Gate photos" Style="{StaticResource CardTitleLabel}" FontSize="18" />
+                                        <Label Text="Vehicle, driver, vehicle RC, and driving licence - all optional." Style="{StaticResource MetaLabel}" />
                                     </VerticalStackLayout>
                                     <Border Grid.Column="2" BackgroundColor="{StaticResource CardTint}" Stroke="Transparent"
                                             StrokeShape="RoundRectangle 16" Padding="11,6" VerticalOptions="Start">
@@ -249,40 +249,7 @@
 
                                 <BoxView HeightRequest="1" Color="{StaticResource CardBorderLight}" />
 
-                                <VerticalStackLayout Padding="20" Spacing="14">
-                                    <Border StrokeThickness="0" BackgroundColor="{StaticResource SurfaceLight}"
-                                            StrokeShape="RoundRectangle 18" Padding="12" MinimumHeightRequest="220">
-                                        <Grid>
-                                            <Image x:Name="OutwardGatePhotoImage" Aspect="AspectFill"
-                                                   HeightRequest="198" IsVisible="False" />
-                                            <VerticalStackLayout x:Name="OutwardGatePhotoPlaceholder"
-                                                                 Spacing="12" VerticalOptions="Center"
-                                                                 HorizontalOptions="Center">
-                                                <Border WidthRequest="64" HeightRequest="64" StrokeThickness="0"
-                                                        StrokeShape="RoundRectangle 22" BackgroundColor="{StaticResource CardLight}">
-                                                    <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
-                                                           FontSize="22" TextColor="{StaticResource TextSecondaryLight}"
-                                                           HorizontalOptions="Center" VerticalOptions="Center" />
-                                                </Border>
-                                                <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
-                                                    <Label Text="No photo captured" FontSize="14" FontFamily="PoppinsSemiBold"
-                                                           TextColor="{StaticResource TextPrimaryLight}" HorizontalOptions="Center" />
-                                                    <Label Text="Capture vehicle, seal, or gate view if needed."
-                                                           FontSize="12" TextColor="{StaticResource TextSecondaryLight}"
-                                                           HorizontalTextAlignment="Center" HorizontalOptions="Center" />
-                                                </VerticalStackLayout>
-                                            </VerticalStackLayout>
-                                        </Grid>
-                                    </Border>
-
-                                    <Button x:Name="OutwardGatePhotoButton" Text="Capture Photo"
-                                            Clicked="OnOutwardGatePhotoTapped"
-                                            Style="{StaticResource IconTextButton}" CornerRadius="16" HeightRequest="50">
-                                        <Button.ImageSource>
-                                            <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Camera}" Color="{StaticResource Primary}" Size="13" />
-                                        </Button.ImageSource>
-                                    </Button>
-                                </VerticalStackLayout>
+                                <VerticalStackLayout x:Name="ArrivalPhotoCategoriesContainer" Padding="20" Spacing="18" />
                             </VerticalStackLayout>
                         </Border>
                     </Grid>

@@ -13,8 +13,16 @@ public class InwardTransaction : ITenantScoped
 
     public string InwardTxnNumber { get; set; } = string.Empty;
 
-    public int PurchaseOrderId { get; set; }
+    // Null from Security's Gate Check-in until Office links this arrival to a real Dispatch Plan
+    // entry (see InwardService.LinkVehicleAsync) - Security no longer needs a matching PO to exist
+    // before recording an arrival at all.
+    public int? PurchaseOrderId { get; set; }
     public PurchaseOrder? PurchaseOrder { get; set; }
+
+    // Whatever PO Number Security typed on the Gate Check-in form - purely informational (not
+    // validated against Dispatch Plan data), kept as a hint for Office when picking which Dispatch
+    // Plan entry to link this arrival to.
+    public string? SecurityEnteredPoNumber { get; set; }
 
     public InwardStatus Status { get; set; } = InwardStatus.GateIn;
 
@@ -47,5 +55,6 @@ public class InwardTransaction : ITenantScoped
     public List<PhotoEvidence> Photos { get; set; } = new();
     public List<InwardDocument> Documents { get; set; } = new();
     public List<InspectionLine> InspectionLines { get; set; } = new();
+    public List<UnplannedReceiptLine> UnplannedLines { get; set; } = new();
     public GoodsReceiptNote? Grn { get; set; }
 }

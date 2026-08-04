@@ -468,7 +468,8 @@ public partial class OutwardJobDetailPage : ContentPage
             // assignment push, dock-in on this page, or a back-navigation). "../" REPLACES this
             // page in the Shell stack so the editor's own back button goes to the previous page
             // (home), never bouncing back here into a redirect loop. Security keeps seeing this
-            // page (they can't use the editor), and Completed jobs still open here for review.
+            // page (they can't use the editor), and Completed/PendingOfficeVerification jobs still
+            // open here for review (read-only - see the readOnly flag in RenderJob below).
             if (Session.IsSupervisor && _job.Status is "Docked" or "Loading")
             {
                 await Shell.Current.GoToAsync($"../{nameof(LoadPlanEditorPage)}?id={_jobId}");
@@ -482,7 +483,7 @@ public partial class OutwardJobDetailPage : ContentPage
             // placeholder until the user manually clicks it - this only runs once per page open
             // (OnHubOutwardJobUpdated's live-push path calls RenderJob directly, not LoadAsync,
             // so it won't re-trigger this on every realtime update).
-            if (_job.Status is "Loading" or "Completed")
+            if (_job.Status is "Loading" or "Completed" or "PendingOfficeVerification")
             {
                 await CalculateLoadingPlanAsync();
             }
@@ -581,10 +582,10 @@ public partial class OutwardJobDetailPage : ContentPage
             ? job.DockOutTime.Value.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt", CultureInfo.InvariantCulture)
             : StatusLabel.Text;
 
-        var showPhotosAndLoadLines = job.Status is "Loading" or "Completed";
+        var showPhotosAndLoadLines = job.Status is "Loading" or "Completed" or "PendingOfficeVerification";
         PhotoSection.IsVisible = showPhotosAndLoadLines;
 
-        var readOnly = job.Status == "Completed";
+        var readOnly = job.Status is "Completed" or "PendingOfficeVerification";
         var photoLimitReached = job.Photos.Count >= MaxPhotosPerJob;
         PhotoCountLabel.Text = $"{job.Photos.Count} / {MaxPhotosPerJob} photos";
         CapturePhotoButton.IsVisible = job.Status == "Loading";
@@ -1058,7 +1059,7 @@ public partial class OutwardJobDetailPage : ContentPage
         Spinner.IsRunning = true;
         try
         {
-            if (_job?.Status == "Completed")
+            if (_job?.Status is "Completed" or "PendingOfficeVerification")
             {
                 await CalculateCompletedLoadPlanAsync();
                 return;

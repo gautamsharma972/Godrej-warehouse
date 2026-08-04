@@ -48,54 +48,23 @@ public class InwardService
             .Include(t => t.Photos)
             .Include(t => t.Documents)
             .Include(t => t.InspectionLines).ThenInclude(l => l.PurchaseOrderLine)
+            .Include(t => t.UnplannedLines).ThenInclude(l => l.Product)
             .Include(t => t.Grn);
 
     public async Task<InwardJobDto> CheckInAsync(GateCheckInRequest request, string securityUserId)
     {
         // Attributes the transaction to a warehouse purely from the checking-in Security user's own
         // WarehouseId - no mobile app change needed, the gate-in form never asks for a warehouse.
-        // Computed up front (moved from later in the method) since the dispatch-plan fallback below
-        // also needs it, to match Dispatch Plan rows addressed to this specific warehouse.
         var warehouseId = await _db.Users
             .Where(u => u.Id == securityUserId)
             .Select(u => u.WarehouseId)
             .FirstOrDefaultAsync();
-
-        var po = await _db.PurchaseOrders.Include(p => p.Lines)
-            .FirstOrDefaultAsync(p => p.PONumber == request.PONumber);
-
-        List<VehicleLogisticsRecord>? claimedDispatchPlanRows = null;
-
-        if (po is null)
-        {
-            var claim = await TryClaimDispatchPlanForInwardAsync(request.VehicleNumber, request.PONumber, warehouseId);
-            if (claim is null)
-            {
-                throw new InvalidOperationException($"PO number '{request.PONumber}' was not found.");
-            }
-            (po, claimedDispatchPlanRows) = claim.Value;
-        }
 
         var alreadyUsed = await _db.InwardTransactions
             .AnyAsync(t => t.InwardTxnNumber == request.InwardTxnNumber);
         if (alreadyUsed)
         {
             throw new InvalidOperationException($"Inward transaction number '{request.InwardTxnNumber}' has already been used.");
-        }
-
-        // Scoped to (vehicle + PO), not vehicle alone - a single vehicle can be delivering against
-        // several POs at once (see the multi-PO check-in flow on the Security app), which means
-        // several concurrently-active transactions for the same vehicle are expected and fine, as
-        // long as none of them share a PO.
-        var vehicleAlreadyActiveForPo = await _db.InwardTransactions
-            .Include(t => t.Vehicle)
-            .Include(t => t.PurchaseOrder)
-            .AnyAsync(t => t.Vehicle!.Number == request.VehicleNumber && t.PurchaseOrder!.PONumber == po.PONumber
-                && t.Status != InwardStatus.Completed);
-        if (vehicleAlreadyActiveForPo)
-        {
-            throw new InvalidOperationException(
-                $"Vehicle '{request.VehicleNumber}' already has an active inward transaction for PO '{request.PONumber}' in progress.");
         }
 
         var vehicle = await _db.Vehicles.FirstOrDefaultAsync(v => v.Number == request.VehicleNumber);
@@ -106,15 +75,28 @@ public class InwardService
             _db.Vehicles.Add(vehicle);
         }
 
-        var hasDeliveryDateMismatch = po.ExpectedDeliveryDate.HasValue
-            && Math.Abs((DateTime.UtcNow.Date - po.ExpectedDeliveryDate.Value.Date).TotalDays) > DeliveryDateToleranceDays;
+        // A plate auto-created (or still missing capacity from an earlier gate-in) gets Vehicle's
+        // own generic defaults for whichever fields are blank - mirrors
+        // OutwardService.BackfillVehicleCapacityAsync's identical backfill on the Outward side, so
+        // it never sits blocked at "Missing" capacity in the Vehicle Registry by accident.
+        vehicle.MaxWeightKg ??= Vehicle.DefaultMaxWeightKg;
+        vehicle.LengthCm ??= Vehicle.DefaultLengthCm;
+        vehicle.WidthCm ??= Vehicle.DefaultWidthCm;
+        vehicle.HeightCm ??= Vehicle.DefaultHeightCm;
 
+        // Security's job at the gate is to log the physical arrival - Vehicle Number, driver,
+        // photos, documents - not to match it against a Dispatch Plan PO. The PO Number Security
+        // types is kept purely as a hint (SecurityEnteredPoNumber, not validated); the job is
+        // created with no PurchaseOrder link at all. Office links it to a real Dispatch Plan entry
+        // afterward from the Expected tab (see LinkVehicleAsync below) - only then does it have PO
+        // lines a Supervisor can actually inspect against.
         var transaction = new InwardTransaction
         {
             Vehicle = vehicle,
             WarehouseId = warehouseId,
             InwardTxnNumber = request.InwardTxnNumber,
-            PurchaseOrderId = po.Id,
+            PurchaseOrderId = null,
+            SecurityEnteredPoNumber = NullIfEmpty(request.PONumber),
             Status = InwardStatus.GateIn,
             GateInTime = DateTime.UtcNow,
             GateInBySecurityUserId = securityUserId,
@@ -125,24 +107,17 @@ public class InwardService
             GpsLatitude = request.GpsLatitude,
             GpsLongitude = request.GpsLongitude,
             IsNewVehicle = isNewVehicle,
-            HasDeliveryDateMismatch = hasDeliveryDateMismatch,
             Remarks = request.Remarks
         };
 
         _db.InwardTransactions.Add(transaction);
         await _db.SaveChangesAsync();
 
-        if (claimedDispatchPlanRows is not null)
-        {
-            foreach (var row in claimedDispatchPlanRows)
-            {
-                row.ConsumedByInwardTransactionId = transaction.Id;
-            }
-            await _db.SaveChangesAsync();
-        }
-
         await _audit.LogAsync("InwardTransaction", transaction.Id, AuditAction.Created,
-            $"Vehicle '{request.VehicleNumber}' gate-checked-in against PO '{request.PONumber}'{(string.IsNullOrWhiteSpace(request.GateName) ? "" : $" at {request.GateName}")}.",
+            $"Vehicle '{request.VehicleNumber}' gate-checked-in" +
+            (string.IsNullOrWhiteSpace(request.PONumber) ? "" : $" (PO noted: '{request.PONumber}')") +
+            (string.IsNullOrWhiteSpace(request.GateName) ? "" : $" at {request.GateName}") +
+            " - not yet linked to a Dispatch Plan entry.",
             securityUserId);
 
         var dto = await GetByIdAsync(transaction.Id) ?? throw new InvalidOperationException("Failed to load created transaction.");
@@ -150,33 +125,79 @@ public class InwardService
         return dto;
     }
 
-    // Fallback used only when no PurchaseOrder already exists with the requested PONumber -
-    // synthesizes one from the matching Dispatch Plan (VehicleLogisticsRecord) group so gate
-    // check-in works for real Logistics Manager uploads, not just pre-seeded POs. Returns null if
-    // no matching Dispatch Plan rows exist either (caller then throws its usual "PO not found").
-    // The claim (flipping Status InTransit -> InProgress) is its own short, immediately-committed
-    // transaction - deliberately NOT wrapped around the rest of CheckInAsync, so that method's own
-    // realtime broadcast still fires at its normal point instead of being delayed behind a
-    // longer-lived ambient transaction. If something fails between the claim committing and the
-    // InwardTransaction being created, the claimed rows are left at InProgress with no link - a
-    // recoverable, manually-correctable state (Logistics Manager can reset the status), which is a
-    // smaller risk than delaying/misordering the broadcast that every other caller already relies on.
-    private async Task<(PurchaseOrder Po, List<VehicleLogisticsRecord> ClaimedRows)?> TryClaimDispatchPlanForInwardAsync(
-        string vehicleNumber, string poNumber, int? warehouseId)
+    // Office's "Link Vehicle" action: attaches an already-gated-in (Security-created) Inward Job to
+    // a real Dispatch Plan entry, picked from the Expected tab. This is the only place a
+    // PurchaseOrder ever gets attached to a job created by CheckInAsync above - the job keeps its
+    // existing driver/photos/documents/etc. (it's the SAME transaction, just no longer missing a PO).
+    public async Task<InwardJobDto> LinkVehicleAsync(LinkVehicleRequest request, string officeUserId)
     {
+        var warehouseId = await _db.Users
+            .Where(u => u.Id == officeUserId)
+            .Select(u => u.WarehouseId)
+            .FirstOrDefaultAsync();
         if (warehouseId is null)
         {
-            return null;
+            throw new InvalidOperationException("Your account is not assigned to a warehouse.");
         }
 
-        // A row is fair game for the Inward claim in two cases: it's still untouched (InTransit -
-        // no one has generated an Outward pick list from it yet, e.g. this warehouse is receiving
-        // ahead of an Outward-side claim), or it's already InProgress because Outward claimed and
-        // dispatched it first (the normal real-world sequence - the vehicle then physically arrives
-        // here). Either way it must not have been Inward-claimed already.
+        var transaction = await Query().FirstOrDefaultAsync(t => t.Id == request.InwardTransactionId)
+            ?? throw new KeyNotFoundException("Job not found.");
+
+        if (transaction.WarehouseId != warehouseId)
+        {
+            throw new UnauthorizedAccessException("This job is not in your warehouse.");
+        }
+
+        if (transaction.PurchaseOrderId is not null)
+        {
+            throw new InvalidOperationException("This vehicle is already linked to a Dispatch Plan entry.");
+        }
+
+        var poNumber = request.PoNumber.Trim();
+        var vehicleNumber = transaction.Vehicle!.Number;
+
+        var claim = await TryClaimDispatchPlanForLinkingAsync(
+            poNumber, warehouseId.Value, vehicleNumber,
+            transaction.TransporterName, transaction.DriverName, transaction.DriverMobile, null);
+        if (claim is null)
+        {
+            throw new InvalidOperationException($"No untagged Dispatch Plan rows found for PO '{poNumber}' addressed to your warehouse.");
+        }
+        var (po, claimedDispatchPlanRows) = claim.Value;
+
+        transaction.PurchaseOrderId = po.Id;
+        transaction.HasDeliveryDateMismatch = po.ExpectedDeliveryDate.HasValue
+            && Math.Abs((DateTime.UtcNow.Date - po.ExpectedDeliveryDate.Value.Date).TotalDays) > DeliveryDateToleranceDays;
+        await _db.SaveChangesAsync();
+
+        foreach (var row in claimedDispatchPlanRows)
+        {
+            row.ConsumedByInwardTransactionId = transaction.Id;
+        }
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync("InwardTransaction", transaction.Id, AuditAction.Updated,
+            $"Vehicle '{vehicleNumber}' linked by Office to PO '{poNumber}'.", officeUserId);
+
+        return await BroadcastAndReturn(transaction.Id);
+    }
+
+    private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    // Claims untagged Dispatch Plan rows for a PO Number + warehouse, setting VehicleNumber/
+    // TransporterName/DriverName/DriverPhone/VehicleType on them as part of the same atomic claim -
+    // used by LinkVehicleAsync above to attach an already-arrived vehicle's known details onto the
+    // Dispatch Plan rows it's being linked to. Only matches rows that haven't already been linked
+    // (VehicleNumber == null) - rows a Logistics Manager already gave a vehicle number to directly
+    // in the Excel (still possible, just no longer required) aren't matched here since there's no
+    // Security-side flow left that looks them up by vehicle number anymore.
+    private async Task<(PurchaseOrder Po, List<VehicleLogisticsRecord> ClaimedRows)?> TryClaimDispatchPlanForLinkingAsync(
+        string poNumber, int warehouseId, string vehicleNumber,
+        string? transporterName, string? driverName, string? driverPhone, string? vehicleType)
+    {
         var matched = await _db.VehicleLogisticsRecords
             .Include(r => r.FromWarehouse)
-            .Where(r => r.VehicleNumber == vehicleNumber && r.PoNumber == poNumber
+            .Where(r => r.VehicleNumber == null && r.PoNumber == poNumber
                 && r.ToWarehouseId == warehouseId
                 && r.ConsumedByInwardTransactionId == null
                 && r.InwardClaimStartedAtUtc == null
@@ -189,41 +210,56 @@ public class InwardService
             return null;
         }
 
+        ValidateBoxQuantities(matched);
+        var matchedIds = matched.Select(r => r.Id).ToList();
+
+        var claimedCount = await _db.VehicleLogisticsRecords
+            .Where(r => matchedIds.Contains(r.Id) && r.InwardClaimStartedAtUtc == null)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.InwardClaimStartedAtUtc, DateTime.UtcNow)
+                .SetProperty(r => r.Status, VehicleLogisticsStatus.InProgress)
+                .SetProperty(r => r.VehicleNumber, vehicleNumber)
+                .SetProperty(r => r.TransporterName, transporterName)
+                .SetProperty(r => r.DriverName, driverName)
+                .SetProperty(r => r.DriverPhone, driverPhone)
+                .SetProperty(r => r.VehicleType, vehicleType));
+
+        if (claimedCount != matchedIds.Count)
+        {
+            throw new InvalidOperationException(
+                $"Dispatch Plan rows for PO '{poNumber}' are already being tagged by another request.");
+        }
+
+        await _hub.Clients.Groups(InwardHub.LogisticsGroup, InwardHub.OfficeGroup, InwardHub.AdminsGroup).SendAsync("VehicleLogisticsRecordChanged");
+
+        // ExecuteUpdateAsync bypasses change tracking, so the in-memory rows still show their old
+        // (null) VehicleNumber - patch locally so PO synthesis below reflects the tag.
+        foreach (var row in matched)
+        {
+            row.VehicleNumber = vehicleNumber;
+        }
+
+        var po = await SynthesizePurchaseOrderFromDispatchRowsAsync(matched, poNumber, vehicleNumber);
+        return (po, matched);
+    }
+
+    private static void ValidateBoxQuantities(List<VehicleLogisticsRecord> matched)
+    {
         var zeroQtyRows = matched.Where(r => r.BoxQuantity <= 0).Select(r => r.Sku).ToList();
         if (zeroQtyRows.Count > 0)
         {
             throw new InvalidOperationException(
                 $"Dispatch Plan row(s) for SKU(s) {string.Join(", ", zeroQtyRows)} have no box quantity set - fix them before checking in.");
         }
+    }
 
-        var matchedIds = matched.Select(r => r.Id).ToList();
-
-        // Atomic claim: an UPDATE ... WHERE InwardClaimStartedAtUtc IS NULL that only succeeds for
-        // rows not yet Inward-claimed at the moment it runs - see the field's own doc comment for why
-        // Status alone can't serve as this guard here (it may already be InProgress from an earlier
-        // Outward claim). If a concurrent request (double-click, two tabs) already claimed some of
-        // these rows first, RowsAffected comes back short and we bail out instead of proceeding to
-        // synthesize a duplicate PurchaseOrder/InwardTransaction for the same shipment.
-        var claimedCount = await _db.VehicleLogisticsRecords
-            .Where(r => matchedIds.Contains(r.Id) && r.InwardClaimStartedAtUtc == null)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(r => r.InwardClaimStartedAtUtc, DateTime.UtcNow)
-                .SetProperty(r => r.Status, VehicleLogisticsStatus.InProgress));
-
-        if (claimedCount != matchedIds.Count)
-        {
-            throw new InvalidOperationException(
-                $"Dispatch Plan rows for vehicle '{vehicleNumber}' / PO '{poNumber}' are already being checked in by another request.");
-        }
-
-        // Lets the Logistics Manager's own Dispatch Plan list and Office's pending panels drop this
-        // group live the moment it's claimed, instead of waiting for their next unrelated refresh.
-        await _hub.Clients.Groups(InwardHub.LogisticsGroup, InwardHub.OfficeGroup, InwardHub.AdminsGroup).SendAsync("VehicleLogisticsRecordChanged");
-
-        // Suffixed with the vehicle number - PONumber has a unique index, and the same real-world PO
-        // number can legitimately appear across multiple vehicles (split shipments), so the raw
-        // PONumber can't be reused as the synthesized PO's own number without risking a collision.
-        var dispatchQtyByRowId = await ResolveDispatchQuantitiesAsync(matched);
+    // Suffixed with the vehicle number - PONumber has a unique index, and the same real-world PO
+    // number can legitimately appear across multiple vehicles (split shipments), so the raw
+    // PONumber can't be reused as the synthesized PO's own number without risking a collision.
+    private async Task<PurchaseOrder> SynthesizePurchaseOrderFromDispatchRowsAsync(
+        List<VehicleLogisticsRecord> matched, string poNumber, string vehicleNumber)
+    {
+        var (dispatchQtyByRowId, extraLines) = await ResolveDispatchQuantitiesAsync(matched);
         var po = new PurchaseOrder
         {
             PONumber = $"{poNumber}-{vehicleNumber}",
@@ -247,15 +283,93 @@ public class InwardService
                     LoadedQty = qty?.LoadedQty,
                     UnitOfMeasure = "PCS"
                 };
-            }).ToList()
+            }).Concat(extraLines.Select(l => new PurchaseOrderLine
+            {
+                ProductName = l.ProductName,
+                // No Dispatch Plan row exists for this SKU at all - the source warehouse's
+                // supervisor added it during loading (3D Load Plan Workspace "Add SKU"), beyond
+                // what Logistics/Office originally planned - so there's no planned quantity to
+                // fall back to, only what was actually loaded (or the pick-list qty if loading
+                // hasn't happened yet).
+                ExpectedQty = l.LoadedQty ?? l.OrderedQty,
+                PickListQty = l.OrderedQty,
+                LoadedQty = l.LoadedQty,
+                UnitOfMeasure = "PCS",
+                IsExtra = true
+            })).ToList()
         };
         _db.PurchaseOrders.Add(po);
         await _db.SaveChangesAsync();
 
-        return (po, matched);
+        return po;
+    }
+
+    // Self-healing backfill for a job whose PurchaseOrder was already synthesized (Office already
+    // linked the vehicle) before the source supervisor added a SKU that has no Dispatch Plan row -
+    // SynthesizePurchaseOrderFromDispatchRowsAsync only ever runs once, at link time, so without
+    // this an extra SKU added afterward (or one added before this fix existed) would never surface
+    // here. Called on every single-job fetch (GetByIdAsync/GetByIdForOfficeAsync) rather than only
+    // at link time, so it also catches SKUs added after the fact without needing a re-link.
+    private async Task SyncExtraLinesAsync(InwardTransaction transaction)
+    {
+        if (transaction.PurchaseOrder is null)
+        {
+            return;
+        }
+
+        var outwardTransactionId = await _db.VehicleLogisticsRecords
+            .Where(r => r.ConsumedByInwardTransactionId == transaction.Id && r.ConsumedByOutwardTransactionId != null)
+            .Select(r => r.ConsumedByOutwardTransactionId!.Value)
+            .Distinct()
+            .FirstOrDefaultAsync();
+
+        if (outwardTransactionId == 0)
+        {
+            return;
+        }
+
+        var existingProductNames = transaction.PurchaseOrder.Lines
+            .Select(l => l.ProductName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var dispatchLines = await _db.OutwardTransactions
+            .Where(t => t.Id == outwardTransactionId)
+            .SelectMany(t => t.DispatchOrder!.Lines)
+            .ToListAsync();
+
+        var missingLines = dispatchLines.Where(l => !existingProductNames.Contains(l.ProductName)).ToList();
+        if (missingLines.Count == 0)
+        {
+            return;
+        }
+
+        var loadLines = await _db.OutwardLoadLines
+            .Include(l => l.DispatchOrderLine)
+            .Where(l => l.OutwardTransactionId == outwardTransactionId)
+            .ToListAsync();
+
+        foreach (var line in missingLines)
+        {
+            var loadedQty = loadLines.FirstOrDefault(l => l.DispatchOrderLine!.ProductName == line.ProductName)?.LoadedQty;
+            transaction.PurchaseOrder.Lines.Add(new PurchaseOrderLine
+            {
+                ProductName = line.ProductName,
+                ExpectedQty = loadedQty ?? line.OrderedQty,
+                PickListQty = line.OrderedQty,
+                LoadedQty = loadedQty,
+                UnitOfMeasure = "PCS",
+                IsExtra = true
+            });
+        }
+
+        await _db.SaveChangesAsync();
     }
 
     private sealed record DispatchQuantities(decimal? PickListQty, decimal? LoadedQty);
+
+    // A DispatchOrderLine the source warehouse's supervisor added during loading (OutwardService.
+    // AddDispatchOrderLineAsync) that has no matching Dispatch Plan row - see ResolveDispatchQuantitiesAsync.
+    private sealed record ExtraDispatchLine(string ProductName, decimal OrderedQty, decimal? LoadedQty);
 
     // "Expected material" at Inward shows three distinct numbers side by side, each reflecting a
     // later stage of the same shipment's journey at the source warehouse's Outward job (if one
@@ -266,7 +380,12 @@ public class InwardService
     // supervisor actually loaded onto the truck (LoadedQty - only exists once load lines are
     // submitted). Both are null for a row that was never claimed by an Outward job, or hasn't
     // reached that stage yet - the UI shows a dash rather than fabricating a value.
-    private async Task<Dictionary<int, DispatchQuantities>> ResolveDispatchQuantitiesAsync(List<VehicleLogisticsRecord> rows)
+    //
+    // Also returns any DispatchOrderLine on those same Outward transactions whose ProductName
+    // matches none of the passed-in rows' Sku - these are SKUs the supervisor added during
+    // loading that were never part of the Dispatch Plan, so they'd otherwise never reach the
+    // destination's Expected material list at all (see SynthesizePurchaseOrderFromDispatchRowsAsync).
+    private async Task<(Dictionary<int, DispatchQuantities> ByRowId, List<ExtraDispatchLine> ExtraLines)> ResolveDispatchQuantitiesAsync(List<VehicleLogisticsRecord> rows)
     {
         var outwardTransactionIds = rows
             .Where(r => r.ConsumedByOutwardTransactionId.HasValue)
@@ -276,7 +395,7 @@ public class InwardService
 
         if (outwardTransactionIds.Count == 0)
         {
-            return new Dictionary<int, DispatchQuantities>();
+            return (new Dictionary<int, DispatchQuantities>(), new List<ExtraDispatchLine>());
         }
 
         var pickListLines = await _db.OutwardTransactions
@@ -305,7 +424,15 @@ public class InwardService
             result[row.Id] = new DispatchQuantities(pickListQty, loadedQty);
         }
 
-        return result;
+        var matchedSkus = rows.Select(r => r.Sku).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var extraLines = pickListLines
+            .Where(l => !matchedSkus.Contains(l.ProductName))
+            .Select(l => new ExtraDispatchLine(
+                l.ProductName, l.OrderedQty,
+                loadLines.FirstOrDefault(ll => ll.OutwardTransactionId == l.Id && ll.DispatchOrderLine!.ProductName == l.ProductName)?.LoadedQty))
+            .ToList();
+
+        return (result, extraLines);
     }
 
     // Best-effort convenience auto-fill for Security's gate forms (both Inward and Outward): once
@@ -421,7 +548,7 @@ public class InwardService
         }
         if (!string.IsNullOrWhiteSpace(poNumber))
         {
-            query = query.Where(t => t.PurchaseOrder!.PONumber.Contains(poNumber));
+            query = query.Where(t => t.PurchaseOrder != null && t.PurchaseOrder.PONumber.Contains(poNumber));
             isFiltered = true;
         }
         if (date.HasValue)
@@ -453,7 +580,7 @@ public class InwardService
         }
         if (!string.IsNullOrWhiteSpace(poNumber))
         {
-            query = query.Where(t => t.PurchaseOrder!.PONumber.Contains(poNumber));
+            query = query.Where(t => t.PurchaseOrder != null && t.PurchaseOrder.PONumber.Contains(poNumber));
             isFiltered = true;
         }
         if (date.HasValue)
@@ -492,13 +619,23 @@ public class InwardService
     public async Task<InwardJobDto?> GetByIdForOfficeAsync(int id, int warehouseId)
     {
         var transaction = await Query().FirstOrDefaultAsync(t => t.Id == id && t.WarehouseId == warehouseId);
-        return transaction is null ? null : MapToDto(transaction);
+        if (transaction is null)
+        {
+            return null;
+        }
+        await SyncExtraLinesAsync(transaction);
+        return MapToDto(transaction);
     }
 
     public async Task<InwardJobDto?> GetByIdAsync(int id)
     {
         var transaction = await Query().FirstOrDefaultAsync(t => t.Id == id);
-        return transaction is null ? null : MapToDto(transaction);
+        if (transaction is null)
+        {
+            return null;
+        }
+        await SyncExtraLinesAsync(transaction);
+        return MapToDto(transaction);
     }
 
     public async Task<InwardJobDto> ClaimAsync(int id, string supervisorUserId)
@@ -540,6 +677,11 @@ public class InwardService
         if (transaction.Status == InwardStatus.Completed)
         {
             throw new InvalidOperationException("This job is already completed - the supervisor can no longer be changed.");
+        }
+
+        if (transaction.PurchaseOrderId is null)
+        {
+            throw new InvalidOperationException("This vehicle isn't linked to a Dispatch Plan entry yet - Office needs to link it from the Expected tab before a supervisor can be assigned.");
         }
 
         var supervisor = await _db.Users.FirstOrDefaultAsync(u => u.Id == supervisorUserId)
@@ -627,13 +769,47 @@ public class InwardService
         return await BroadcastAndReturn(transaction.Id);
     }
 
-    public async Task<InwardJobDto> AddPhotoAsync(int id, string supervisorUserId, PhotoType type, string fileName, Stream content)
+    // Backs the Supervisor-facing SKU search on the Mismatch SKU Details section - api/admin/products
+    // is SuperAdmin-only, so this exposes a read-only subset (org-scoped automatically via the
+    // ITenantScoped query filter on Product) to the Supervisor role instead.
+    public async Task<List<SkuMasterItemDto>> SearchSkuMasterAsync(string? search)
+    {
+        var query = _db.Products.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(p => p.Name.Contains(search) || p.SkuCode.Contains(search));
+        }
+
+        return await query
+            .OrderBy(p => p.Name)
+            .Take(50)
+            .Select(p => new SkuMasterItemDto(p.Id, p.Name, p.SkuCode))
+            .ToListAsync();
+    }
+
+    private const int MaxPhotosPerSkuLine = 2;
+
+    public async Task<InwardJobDto> AddPhotoAsync(int id, string supervisorUserId, PhotoType type, string fileName, Stream content, int? purchaseOrderLineId = null)
     {
         var transaction = await GetOwnedTransactionAsync(id, supervisorUserId);
 
         if (transaction.Status is not (InwardStatus.Docked or InwardStatus.Inspecting))
         {
             throw new InvalidOperationException("Photos can only be added after dock-in and before completion.");
+        }
+
+        if (purchaseOrderLineId is int lineId)
+        {
+            if (transaction.PurchaseOrder!.Lines.All(l => l.Id != lineId))
+            {
+                throw new InvalidOperationException("This PO line is invalid for this transaction.");
+            }
+
+            var existingForLine = transaction.Photos.Count(p => p.Type == PhotoType.SkuCondition && p.PurchaseOrderLineId == lineId);
+            if (existingForLine >= MaxPhotosPerSkuLine)
+            {
+                throw new InvalidOperationException($"Only {MaxPhotosPerSkuLine} photos are allowed per SKU.");
+            }
         }
 
         var filePath = await _photoStorage.SaveAsync($"inward-{id}", fileName, content);
@@ -643,7 +819,8 @@ public class InwardService
             InwardTransactionId = id,
             Type = type,
             FilePath = filePath,
-            CapturedAt = DateTime.UtcNow
+            CapturedAt = DateTime.UtcNow,
+            PurchaseOrderLineId = purchaseOrderLineId
         });
         await _db.SaveChangesAsync();
 
@@ -746,10 +923,80 @@ public class InwardService
             throw new InvalidOperationException("Job must be docked before inspection can be recorded.");
         }
 
+        await ReplaceInspectionDataAsync(transaction, request);
+        transaction.Status = InwardStatus.Inspecting;
+        await _db.SaveChangesAsync();
+
+        var exceptionLines = request.Lines.Count(l => l.Condition != MaterialCondition.Ok);
+        await _audit.LogAsync("InwardTransaction", id, AuditAction.Updated,
+            $"Inspection recorded for vehicle '{transaction.Vehicle?.Number}' - {request.Lines.Count} line(s){(exceptionLines > 0 ? $", {exceptionLines} with exceptions" : "")}.",
+            supervisorUserId);
+
+        return await BroadcastAndReturn(id);
+    }
+
+    // Lets Office correct the Supervisor's recorded quantities/Mismatch SKUs before generating the
+    // GRN - same request shape and validation as SubmitInspectionAsync above, just usable while
+    // PendingOfficeVerification instead of Docked/Inspecting, and without the assigned-supervisor
+    // ownership check (Office reviewing a job isn't the assigned Supervisor).
+    public async Task<InwardJobDto> UpdateInspectionAsync(int id, string officeUserId, SubmitInspectionRequest request)
+    {
+        var transaction = await Query().FirstOrDefaultAsync(t => t.Id == id)
+            ?? throw new KeyNotFoundException("Job not found.");
+
+        if (transaction.Status != InwardStatus.PendingOfficeVerification)
+        {
+            throw new InvalidOperationException("Inspection details can only be corrected while pending Office verification.");
+        }
+
+        await ReplaceInspectionDataAsync(transaction, request);
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync("InwardTransaction", id, AuditAction.Updated,
+            $"Inspection details corrected by Office for vehicle '{transaction.Vehicle?.Number}' prior to GRN generation.",
+            officeUserId);
+
+        return await BroadcastAndReturn(id);
+    }
+
+    // Shared by Supervisor's original submission and Office's pre-GRN correction - validates PO
+    // line ids, Mismatch SKU Details SKUs, and the Mismatch-vs-Mismatch-SKU-Details total match,
+    // then full-replaces both InspectionLines and UnplannedReceiptLines for the transaction. Does
+    // not save or touch Status - callers own both.
+    private async Task ReplaceInspectionDataAsync(InwardTransaction transaction, SubmitInspectionRequest request)
+    {
+        var id = transaction.Id;
+
         var validLineIds = transaction.PurchaseOrder!.Lines.Select(l => l.Id).ToHashSet();
         if (request.Lines.Count == 0 || request.Lines.Any(l => !validLineIds.Contains(l.PurchaseOrderLineId)))
         {
             throw new InvalidOperationException("One or more PO lines are invalid for this transaction.");
+        }
+
+        var unplannedLines = request.UnplannedLines ?? new List<UnplannedReceiptLineRequest>();
+        var productNames = unplannedLines.Count == 0
+            ? new Dictionary<int, string>()
+            : await _db.Products
+                .Where(p => unplannedLines.Select(l => l.ProductId).Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.Name);
+        if (unplannedLines.Any(l => !productNames.ContainsKey(l.ProductId)))
+        {
+            throw new InvalidOperationException("One or more Mismatch SKU Details SKUs were not found in the SKU Master.");
+        }
+
+        // Mismatch SKU Details doesn't have to name the same SKU as the PO line it's
+        // corroborating (any SKU from the Master may be picked) - only the totals need to agree:
+        // everything entered as Mismatch anywhere in the inspection breakdown must be accounted
+        // for, in aggregate, by the Mismatch SKU Details rows.
+        var totalMismatchQty = request.Lines
+            .Where(l => l.Condition == MaterialCondition.Mismatch)
+            .Sum(l => l.ReceivedQty);
+        var totalDetailQty = unplannedLines.Sum(l => l.Quantity);
+
+        if (totalDetailQty != totalMismatchQty)
+        {
+            throw new InvalidOperationException(
+                $"Mismatch SKU Details totals {totalDetailQty:0.##}, but {totalMismatchQty:0.##} was entered as Mismatch in the inspection breakdown - they must match.");
         }
 
         var existing = await _db.InspectionLines.Where(l => l.InwardTransactionId == id).ToListAsync();
@@ -767,17 +1014,24 @@ public class InwardService
             });
         }
 
-        transaction.Status = InwardStatus.Inspecting;
-        await _db.SaveChangesAsync();
+        var existingUnplanned = await _db.UnplannedReceiptLines.Where(l => l.InwardTransactionId == id).ToListAsync();
+        _db.UnplannedReceiptLines.RemoveRange(existingUnplanned);
 
-        var exceptionLines = request.Lines.Count(l => l.Condition != MaterialCondition.Ok);
-        await _audit.LogAsync("InwardTransaction", id, AuditAction.Updated,
-            $"Inspection recorded for vehicle '{transaction.Vehicle?.Number}' - {request.Lines.Count} line(s){(exceptionLines > 0 ? $", {exceptionLines} with exceptions" : "")}.",
-            supervisorUserId);
-
-        return await BroadcastAndReturn(id);
+        foreach (var line in unplannedLines)
+        {
+            _db.UnplannedReceiptLines.Add(new UnplannedReceiptLine
+            {
+                InwardTransactionId = id,
+                ProductId = line.ProductId,
+                Quantity = line.Quantity,
+                Notes = line.Notes
+            });
+        }
     }
 
+    // Supervisor's "Complete Unloading" action - records that unloading/inspection is done, but no
+    // longer generates the GRN itself (moved to Office's VerifyAndGenerateGrnAsync below). The job
+    // sits at PendingOfficeVerification until Office reviews and confirms it.
     public async Task<InwardJobDto> CompleteAsync(int id, string supervisorUserId)
     {
         var transaction = await GetOwnedTransactionAsync(id, supervisorUserId);
@@ -797,10 +1051,34 @@ public class InwardService
             throw new InvalidOperationException("Inspection must be recorded before completing.");
         }
 
+        transaction.DockOutTime = DateTime.UtcNow;
+        transaction.Status = InwardStatus.PendingOfficeVerification;
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync("InwardTransaction", id, AuditAction.Updated,
+            $"Unloading completed for vehicle '{transaction.Vehicle?.Number}' - pending Office verification.",
+            supervisorUserId);
+
+        return await BroadcastAndReturn(id);
+    }
+
+    // Office's confirmation step: reviews the inspection + Mismatch SKU Details Supervisor
+    // recorded, then generates the GRN - this is the only place a GoodsReceiptNote gets created now
+    // (moved out of Supervisor's CompleteAsync above, per the requirement that unloading completion
+    // alone must not produce a GRN).
+    public async Task<InwardJobDto> VerifyAndGenerateGrnAsync(int id, string officeUserId)
+    {
+        var transaction = await Query().FirstOrDefaultAsync(t => t.Id == id)
+            ?? throw new KeyNotFoundException("Job not found.");
+
+        if (transaction.Status != InwardStatus.PendingOfficeVerification)
+        {
+            throw new InvalidOperationException("Job must be pending Office verification before a GRN can be generated.");
+        }
+
         var hasExceptions = transaction.InspectionLines.Any(l => l.Condition != MaterialCondition.Ok);
         var grnNumber = $"GRN-{DateTime.UtcNow:yyyyMMdd}-{id:D4}";
 
-        transaction.DockOutTime = DateTime.UtcNow;
         transaction.Status = InwardStatus.Completed;
 
         _db.GoodsReceiptNotes.Add(new GoodsReceiptNote
@@ -815,8 +1093,8 @@ public class InwardService
         await _vehicleLogisticsSync.MarkCompletedAsync(transaction.Vehicle?.Number, transaction.WarehouseId);
 
         await _audit.LogAsync("InwardTransaction", id, AuditAction.Updated,
-            $"Inward completed for vehicle '{transaction.Vehicle?.Number}' - {grnNumber}{(hasExceptions ? " (exceptions flagged)" : "")}.",
-            supervisorUserId);
+            $"Inward verified and GRN generated by Office for vehicle '{transaction.Vehicle?.Number}' - {grnNumber}{(hasExceptions ? " (exceptions flagged)" : "")}.",
+            officeUserId);
 
         if (hasExceptions)
         {
@@ -888,8 +1166,9 @@ public class InwardService
         t.Id,
         t.Vehicle!.Number,
         t.InwardTxnNumber,
-        t.PurchaseOrder!.PONumber,
-        t.PurchaseOrder.SupplierName,
+        t.PurchaseOrder?.PONumber,
+        t.SecurityEnteredPoNumber,
+        t.PurchaseOrder?.SupplierName,
         t.Status.ToString(),
         t.GateInTime,
         t.DriverName,
@@ -906,12 +1185,13 @@ public class InwardService
         t.DockInTime,
         t.UnloadingStartTime,
         t.DockOutTime,
-        t.PurchaseOrder.Lines.Select(l => new PoLineDto(l.Id, l.ProductName, l.ExpectedQty, l.PickListQty, l.LoadedQty, l.UnitOfMeasure)).ToList(),
-        t.Photos.Select(p => new PhotoDto(p.Id, p.Type.ToString(), p.FilePath, p.CapturedAt)).ToList(),
+        t.PurchaseOrder?.Lines.Select(l => new PoLineDto(l.Id, l.ProductName, l.ExpectedQty, l.PickListQty, l.LoadedQty, l.UnitOfMeasure, l.IsExtra)).ToList() ?? new List<PoLineDto>(),
+        t.Photos.Select(p => new PhotoDto(p.Id, p.Type.ToString(), p.FilePath, p.CapturedAt, p.PurchaseOrderLineId)).ToList(),
         t.Documents.Select(d => new DocumentDto(d.Id, d.Type.ToString(), d.FilePath, d.UploadedAt)).ToList(),
         t.InspectionLines.Select(l => new InspectionLineDto(
             l.Id, l.PurchaseOrderLineId, l.PurchaseOrderLine!.ProductName, l.PurchaseOrderLine.ExpectedQty,
             l.ReceivedQty, l.Condition.ToString(), l.Notes)).ToList(),
+        t.UnplannedLines.Select(l => new UnplannedReceiptLineDto(l.Id, l.ProductId, l.Product!.Name, l.Product.SkuCode, l.Quantity, l.Notes)).ToList(),
         t.Grn is null ? null : new GrnDto(t.Grn.GrnNumber, t.Grn.GeneratedAt, t.Grn.HasExceptions),
         t.Remarks,
         t.GateOutTime,

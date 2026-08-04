@@ -26,11 +26,18 @@
             <div class="admin-page-actions">
                 <span class="admin-count-pill"><i class="bx bx-barcode"></i>@_job.OutwardTxnNumber</span>
                 <span class="admin-badge info">@_job.Status</span>
-                @if (_job.Status != "Completed")
+                @if (_job.Status is not ("Completed" or "PendingOfficeVerification"))
                 {
                     <button class="admin-secondary-btn" type="button" @onclick="OpenAssignDialog">
                         <i class="bx bx-user-check"></i>
                         @(_job.AssignedSupervisorUserId is null ? "Assign Supervisor" : "Reassign Supervisor")
+                    </button>
+                }
+                @if (_job.Status == "PendingOfficeVerification")
+                {
+                    <button class="admin-primary-btn" type="button" disabled="@_verifying" @onclick="VerifyAndCompleteAsync">
+                        <i class="bx bx-check-double"></i>
+                        @(_verifying ? "Completing..." : "Confirm & Complete Dispatch")
                     </button>
                 }
             </div>
@@ -120,6 +127,7 @@
 
     private OutwardJobDto? _job;
     private List<SupervisorOptionDto> _supervisors = new();
+    private bool _verifying;
 
     protected override async Task OnInitializedAsync()
     {
@@ -210,6 +218,25 @@
         catch (ApiException ex)
         {
             Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task VerifyAndCompleteAsync()
+    {
+        _verifying = true;
+        try
+        {
+            await Api.PostAsync<OutwardJobDto>($"api/office/outward-jobs/{Id}/verify-and-complete", new { });
+            Snackbar.Add("Dispatch completed.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _verifying = false;
         }
     }
 

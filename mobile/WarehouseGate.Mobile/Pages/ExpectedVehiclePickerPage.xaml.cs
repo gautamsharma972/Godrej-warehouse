@@ -8,6 +8,7 @@ public partial class ExpectedVehiclePickerPage : ContentPage
     private readonly Action<string?> _onResult;
     private bool _resultSent;
     private bool _opened;
+    private string _currentQuery = string.Empty;
 
     public ExpectedVehiclePickerPage(List<VehicleOption> options, Action<string?> onResult)
     {
@@ -35,12 +36,36 @@ public partial class ExpectedVehiclePickerPage : ContentPage
 
     private void ApplyFilter(string query)
     {
-        var results = string.IsNullOrWhiteSpace(query)
+        _currentQuery = (query ?? string.Empty).Trim();
+
+        var results = _currentQuery.Length == 0
             ? _allOptions
-            : _allOptions.Where(o => o.VehicleNumber.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+            : _allOptions.Where(o => o.VehicleNumber.Contains(_currentQuery, StringComparison.OrdinalIgnoreCase)).ToList();
 
         ResultsCollectionView.ItemsSource = results;
         NoResultsLabel.IsVisible = results.Count == 0;
+
+        // Lets a genuinely new vehicle (not yet in the registry/expected list) still be used - the
+        // search box was otherwise a dead end once nothing matched, with no way back to free-text
+        // entry (the underlying Entry stays hidden while this picker is open).
+        var hasExactMatch = results.Any(o => string.Equals(o.VehicleNumber, _currentQuery, StringComparison.OrdinalIgnoreCase));
+        UseTypedVehicleCard.IsVisible = _currentQuery.Length > 0 && !hasExactMatch;
+        if (UseTypedVehicleCard.IsVisible)
+        {
+            UseTypedVehicleLabel.Text = _currentQuery.ToUpperInvariant();
+        }
+    }
+
+    private async void OnUseTypedVehicleTapped(object? sender, EventArgs e)
+    {
+        if (_resultSent || _currentQuery.Length == 0)
+        {
+            return;
+        }
+
+        _resultSent = true;
+        _onResult(_currentQuery.ToUpperInvariant());
+        await CloseAsync();
     }
 
     private async void OnItemTapped(object? sender, EventArgs e)

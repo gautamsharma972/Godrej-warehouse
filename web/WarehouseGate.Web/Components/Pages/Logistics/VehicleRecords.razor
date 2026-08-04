@@ -45,16 +45,16 @@
         <section class="logistics-filter-card" aria-label="Dispatch filters">
             <div class="logistics-filter-grid">
                 <div class="admin-form-field">
-                    <label for="vehicleSearch">Vehicle Search</label>
-                    <input id="vehicleSearch" class="admin-form-control" placeholder="Search vehicle number" @bind="_vehicleSearch" @bind:event="oninput" />
+                    <label for="vehicleSearch">Search</label>
+                    <input id="vehicleSearch" class="admin-form-control" placeholder="Search PO or vehicle number" @bind="_vehicleSearch" @bind:event="oninput" />
                 </div>
                 <div class="admin-form-field">
                     <label for="fromDate">Created From</label>
-                    <input id="fromDate" type="date" class="admin-form-control" @bind="_fromDate" />
+                    <input id="fromDate" type="date" class="admin-form-control" @bind="_fromDate" @bind:after="LoadAsync" />
                 </div>
                 <div class="admin-form-field">
                     <label for="toDate">Created To</label>
-                    <input id="toDate" type="date" class="admin-form-control" @bind="_toDate" />
+                    <input id="toDate" type="date" class="admin-form-control" @bind="_toDate" @bind:after="LoadAsync" />
                 </div>
                 <div class="admin-form-field">
                     <label for="statusFilter">Status</label>
@@ -90,9 +90,13 @@
                                 <div class="dispatch-card-vehicle">
                                     <span class="admin-row-icon"><i class="bx bxs-truck"></i></span>
                                     <div>
-                                        <span>Vehicle</span>
+                                        <span>PO Number</span>
                                         <strong>@group.Key</strong>
                                     </div>
+                                </div>
+                                <div>
+                                    <span>Vehicle</span>
+                                    <strong>@ValueOrDash(first.VehicleNumber)</strong>
                                 </div>
                                 <div>
                                     <span>Route</span>
@@ -112,8 +116,8 @@
                                     <strong><span class="@groupedStatus.BadgeClass">@groupedStatus.Label</span></strong>
                                 </div>
                                 <div class="dispatch-card-actions">
-                                    <button class="admin-icon-btn edit" type="button" title="Edit" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => OpenGroupEditor(group)"><i class="bx bx-edit"></i></button>
-                                    <button class="admin-icon-btn delete" type="button" title="Delete" disabled="@(group.All(r => r.Status == "Deleted"))" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => DeleteGroupAsync(group)"><i class="bx bx-trash"></i></button>
+                                    <button class="admin-icon-btn edit" type="button" title="@(groupedStatus.Label == "In-Transit" ? "Edit" : "View")" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => OpenGroupEditor(group)"><i class="bx @(groupedStatus.Label == "In-Transit" ? "bx-edit" : "bx-show")"></i></button>
+                                    <button class="admin-icon-btn delete" type="button" title="Delete" disabled="@(groupedStatus.Label != "In-Transit" || group.All(r => r.Status == "Deleted"))" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => DeleteGroupAsync(group)"><i class="bx bx-trash"></i></button>
                                 </div>
                                 <div class="dispatch-card-toggle">
                                     <i class="bx bx-chevron-down"></i>
@@ -141,10 +145,12 @@
                                                 <th>SKU</th>
                                                 <th>SKU Code</th>
                                                 <th>PO</th>
-                                                <th>Boxes</th>
+                                                <th>Order Qty</th>
+                                                <th>Picklist Qty</th>
+                                                <th>Loaded Qty</th>
+                                                <th>Physical Qty</th>
                                                 <th>ETA</th>
                                                 <th>Status</th>
-                                                <th></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -155,11 +161,11 @@
                                                     <td class="admin-muted">@ValueOrDash(record.SkuCode)</td>
                                                     <td>@ValueOrDash(record.PoNumber)</td>
                                                     <td>@record.BoxQuantity</td>
-                                                    <td>@(record.EtaDateTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                                    <td>@ValueOrDash(record.PickListQty)</td>
+                                                    <td>@ValueOrDash(record.LoadedQty)</td>
+                                                    <td>@ValueOrDash(record.PhysicalQty)</td>
+                                                    <td>@(record.EtaDateTime?.ToString("yyyy-MM-dd") ?? "-")</td>
                                                     <td><span class="@StatusBadgeClass(record.Status)">@StatusLabel(record.Status)</span></td>
-                                                    <td class="admin-actions-cell">
-                                                        <button class="admin-icon-btn delete" type="button" title="Delete" disabled="@(record.Status == "Deleted")" @onclick="() => DeleteAsync(record)"><i class="bx bx-trash"></i></button>
-                                                    </td>
                                                 </tr>
                                             }
                                         </tbody>
@@ -180,15 +186,20 @@
     private bool _uploading;
 
     private string _vehicleSearch = string.Empty;
-    private DateTime? _fromDate;
-    private DateTime? _toDate;
+    // Defaults to the last 30 days, matching LogisticsController.GetVehicleRecords' own default -
+    // the fields show the window that's actually being applied rather than appearing unfiltered.
+    private DateTime? _fromDate = DateTime.Today.AddDays(-29);
+    private DateTime? _toDate = DateTime.Today;
     private string _statusFilter = "All";
 
     private List<VehicleLogisticsRecordDto> FilteredRecords => _records?.Where(MatchesFilters).ToList() ?? [];
 
+    // Grouped by PO Number, not Vehicle Number - vehicle number is usually unknown until Office
+    // tags it (see InwardService.TagVehicleAsync), so PO Number is the only reliable identity a
+    // dispatch plan group has from the moment it's uploaded/entered.
     private List<IGrouping<string, VehicleLogisticsRecordDto>> VehicleGroups =>
         FilteredRecords
-            .GroupBy(r => r.VehicleNumber)
+            .GroupBy(r => r.PoNumber ?? $"(no PO) #{r.Id}")
             .OrderByDescending(g => g.Max(r => r.CreatedAtUtc))
             .ToList();
 
@@ -230,7 +241,22 @@
         try
         {
             _warehouses = await Api.GetAsync<List<WarehouseDto>>("api/logistics/warehouses");
-            _records = await Api.GetAsync<List<VehicleLogisticsRecordDto>>("api/logistics/vehicle-records");
+
+            // Created From/To drive the server-side date window directly (see
+            // LogisticsController.GetVehicleRecords) - left blank, the server applies its own
+            // last-30-days default, so a cleared field still returns a sensible result.
+            var queryParams = new List<string>();
+            if (_fromDate is not null)
+            {
+                queryParams.Add($"from={_fromDate.Value:yyyy-MM-dd}");
+            }
+            if (_toDate is not null)
+            {
+                queryParams.Add($"to={_toDate.Value:yyyy-MM-dd}");
+            }
+            var query = "api/logistics/vehicle-records" + (queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : string.Empty);
+
+            _records = await Api.GetAsync<List<VehicleLogisticsRecordDto>>(query);
         }
         catch (ApiException ex)
         {
@@ -241,7 +267,8 @@
     private bool MatchesFilters(VehicleLogisticsRecordDto record)
     {
         if (!string.IsNullOrWhiteSpace(_vehicleSearch) &&
-            !record.VehicleNumber.Contains(_vehicleSearch, StringComparison.OrdinalIgnoreCase))
+            (record.VehicleNumber is null || !record.VehicleNumber.Contains(_vehicleSearch, StringComparison.OrdinalIgnoreCase)) &&
+            (record.PoNumber is null || !record.PoNumber.Contains(_vehicleSearch, StringComparison.OrdinalIgnoreCase)))
         {
             return false;
         }
@@ -251,29 +278,21 @@
             return false;
         }
 
-        var createdLocal = record.CreatedAtUtc.ToLocalTime().Date;
-        if (_fromDate is not null && createdLocal < _fromDate.Value.Date)
-        {
-            return false;
-        }
-
-        if (_toDate is not null && createdLocal > _toDate.Value.Date)
-        {
-            return false;
-        }
-
         return true;
     }
 
-    private void ClearFilters()
+    private async Task ClearFilters()
     {
         _vehicleSearch = string.Empty;
-        _fromDate = null;
-        _toDate = null;
+        _fromDate = DateTime.Today.AddDays(-29);
+        _toDate = DateTime.Today;
         _statusFilter = "All";
+        await LoadAsync();
     }
 
     private static string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+
+    private static string ValueOrDash(decimal? value) => value?.ToString("0.##") ?? "-";
 
     private static string GroupedRoute(IGrouping<string, VehicleLogisticsRecordDto> group)
     {
@@ -283,7 +302,7 @@
 
     private static string GroupedEta(IGrouping<string, VehicleLogisticsRecordDto> group)
     {
-        var distinct = group.Select(r => r.EtaDateTime?.ToString("yyyy-MM-dd HH:mm") ?? "-").Distinct().ToList();
+        var distinct = group.Select(r => r.EtaDateTime?.ToString("yyyy-MM-dd") ?? "-").Distinct().ToList();
         return distinct.Count == 1 ? distinct[0] : "Multiple";
     }
 
@@ -333,14 +352,15 @@
             content.Add(streamContent, "file", file.Name);
 
             var result = await Api.PostFormAsync<VehicleLogisticsUploadResultDto>("api/logistics/vehicle-records/upload", content);
+            var summary = $"{result.InsertedCount} new, {result.UpdatedCount} updated";
 
             if (result.Errors.Count == 0)
             {
-                Snackbar.Add($"Imported {result.ImportedCount} record(s).", Severity.Success);
+                Snackbar.Add($"Imported: {summary}.", Severity.Success);
             }
             else
             {
-                var message = $"Imported {result.ImportedCount} record(s). {result.Errors.Count} row(s) skipped: " +
+                var message = $"Imported: {summary}. {result.Errors.Count} row(s) skipped: " +
                     string.Join("; ", result.Errors.Select(e => $"row {e.RowNumber}: {e.Reason}"));
                 Snackbar.Add(message, Severity.Warning, config => config.VisibleStateDuration = 10000);
             }
@@ -361,11 +381,15 @@
     {
         var isNew = group is null;
         var first = group?.FirstOrDefault();
+        // Once a group has left In-Transit, an Outward job has already claimed/loaded it - the
+        // dialog opens in read-only "View" mode instead of blocking access to it entirely.
+        var isReadOnly = !isNew && GroupedStatus(group!).Label != "In-Transit";
 
         var parameters = new DialogParameters<VehicleGroupEditorDialog>
         {
             { d => d.IsNew, isNew },
-            { d => d.VehicleNumber, group?.Key ?? string.Empty },
+            { d => d.IsReadOnly, isReadOnly },
+            { d => d.VehicleNumber, first?.VehicleNumber ?? string.Empty },
             { d => d.InwardTransactionId, first?.InwardTransactionId },
             { d => d.TransporterName, first?.TransporterName },
             { d => d.DriverName, first?.DriverName },
@@ -375,7 +399,10 @@
             { d => d.FromWarehouseId, first?.FromWarehouseId ?? 0 },
             { d => d.ToWarehouseId, first?.ToWarehouseId ?? 0 },
             { d => d.Warehouses, _warehouses! },
-            { d => d.InitialRows, group?.Select(r => new VehicleSkuRowModel
+            // Extra (supervisor-added) SKUs have no backing Dispatch Plan row to edit at all - the
+            // Vehicle Dispatch dialog only ever deals with the original planned SKUs/quantities;
+            // extras still show read-only in this page's own accordion SKU table above.
+            { d => d.InitialRows, group?.Where(r => !r.IsExtra).Select(r => new VehicleSkuRowModel
                 {
                     Id = r.Id,
                     Sku = r.Sku,
@@ -386,7 +413,8 @@
                     Status = r.Status
                 }).ToList() ?? new() }
         };
-        var dialog = await DialogService.ShowAsync<VehicleGroupEditorDialog>(isNew ? "Add Vehicle Dispatch" : "Edit Vehicle Dispatch", parameters);
+        var title = isNew ? "Add Vehicle Dispatch" : isReadOnly ? "View Vehicle Dispatch" : "Edit Vehicle Dispatch";
+        var dialog = await DialogService.ShowAsync<VehicleGroupEditorDialog>(title, parameters);
         var result = await dialog.Result;
         if (result is null || result.Canceled || result.Data is not VehicleGroupSaveResult save)
         {
@@ -432,7 +460,7 @@
         var activeRecords = group.Where(r => r.Status != "Deleted").ToList();
         var confirmed = await DialogService.ShowMessageBoxAsync(
             "Delete vehicle dispatch",
-            $"Delete all {activeRecords.Count} SKU line(s) for vehicle '{group.Key}'?",
+            $"Delete all {activeRecords.Count} SKU line(s) for PO '{group.Key}'?",
             yesText: "Delete", cancelText: "Cancel");
         if (confirmed != true)
         {
@@ -445,26 +473,6 @@
             {
                 await Api.DeleteAsync($"api/logistics/vehicle-records/{record.Id}");
             }
-            Snackbar.Add("Deleted.", Severity.Success);
-            await LoadAsync();
-        }
-        catch (ApiException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-    }
-
-    private async Task DeleteAsync(VehicleLogisticsRecordDto record)
-    {
-        var confirmed = await DialogService.ShowMessageBoxAsync("Delete SKU line", $"Delete '{record.Sku}' from vehicle '{record.VehicleNumber}'?", yesText: "Delete", cancelText: "Cancel");
-        if (confirmed != true)
-        {
-            return;
-        }
-
-        try
-        {
-            await Api.DeleteAsync($"api/logistics/vehicle-records/{record.Id}");
             Snackbar.Add("Deleted.", Severity.Success);
             await LoadAsync();
         }

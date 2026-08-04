@@ -114,7 +114,7 @@ public record ResolveFollowUpFormSubmitRequest(int FollowUpId, string? Notes);
 // the widget from which form type was rendered), both dropdown values are real IDs.
 public record AssignSupervisorFormSubmitRequest(string JobType, int JobId, string SupervisorUserId);
 
-// Structured submissions from the two Pick List forms - the dropdown values are a real vehicle
-// number (already scoped to the caller's own pending rows) and a real VehicleLogisticsRecord ID.
-public record GeneratePickListFormSubmitRequest(string VehicleNumber);
+// Structured submissions from the two Pick List forms - the dropdown values are a real PO Number
+// (already scoped to the caller's own pending rows) and a real VehicleLogisticsRecord ID.
+public record GeneratePickListFormSubmitRequest(string PoNumber);
 public record UpdatePickListQuantityFormSubmitRequest(int LineId, int Quantity);

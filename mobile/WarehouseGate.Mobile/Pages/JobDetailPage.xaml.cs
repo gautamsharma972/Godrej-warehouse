@@ -16,7 +16,9 @@ public partial class JobDetailPage : ContentPage
     private int _jobId;
     private InwardJob? _job;
     private readonly List<InspectionRow> _inspectionRows = new();
+    private readonly List<UnplannedRow> _unplannedRows = new();
     private readonly Dictionary<int, string> _localPhotoPaths = new();
+    private readonly Dictionary<int, string> _localDocumentPaths = new();
     private string? _photoFilterType;
     private bool _outwardReferenceFetched;
     private string? _lastOutwardReferenceVizPayload;
@@ -24,6 +26,12 @@ public partial class JobDetailPage : ContentPage
     private bool _baysFetched;
     private string? _selectedBayName;
     private bool? _isWideLayout;
+
+    // OnAppearing fires again the moment a modal WE pushed (SkuPickerPage, PhotoViewerPage) pops
+    // back to this page - its unconditional LoadAsync() would otherwise reload from the server and
+    // wipe any not-yet-saved Mismatch SKU Details rows the user just added. Set true right before
+    // pushing a modal that doesn't itself refresh _job; OnAppearing consumes and resets it once.
+    private bool _suppressNextAppearingReload;
 
     private class InspectionRow
     {
@@ -39,6 +47,15 @@ public partial class JobDetailPage : ContentPage
         public required Border Background { get; init; }
         public required Label Label { get; init; }
         public required Entry QuantityEntry { get; init; }
+    }
+
+    private class UnplannedRow
+    {
+        public required Border Container { get; init; }
+        public required Label SkuLabel { get; init; }
+        public required Entry QuantityEntry { get; init; }
+        public int? ProductId { get; set; }
+        public string? ProductName { get; set; }
     }
 
     public string JobId
@@ -63,6 +80,13 @@ public partial class JobDetailPage : ContentPage
         SupervisorHubClient.JobUpdated += OnHubJobUpdated;
         Shell.SetFlyoutBehavior(this, Session.IsSecurity || Session.IsSupervisor ? FlyoutBehavior.Locked : FlyoutBehavior.Disabled);
         SupervisorNavBar.IsVisible = false;
+
+        if (_suppressNextAppearingReload)
+        {
+            _suppressNextAppearingReload = false;
+            return;
+        }
+
         _ = LoadAsync();
     }
 
@@ -456,7 +480,10 @@ public partial class JobDetailPage : ContentPage
         TimeTrackingLabel.IsVisible = job.HasTimeTrackingCaption;
         TimeTrackingLabel.Text = job.TimeTrackingCaption;
 
-        var showPhotosAndInspection = job.Status is "Inspecting" or "Completed";
+        // PendingOfficeVerification (unloading done, Office hasn't confirmed yet) shows the same
+        // Photos/Inspection detail as Inspecting/Completed, just entirely read-only - Supervisor can
+        // still review what they submitted, they just can't change it once it's with Office.
+        var showPhotosAndInspection = job.Status is "Inspecting" or "PendingOfficeVerification" or "Completed";
         PhotoSection.IsVisible = showPhotosAndInspection;
         InspectionSection.IsVisible = showPhotosAndInspection;
 
@@ -467,16 +494,19 @@ public partial class JobDetailPage : ContentPage
         }
 
         PhotoCountLabel.Text = job.Photos.Count == 1 ? "1 photo" : $"{job.Photos.Count} photos";
-        var readOnly = job.Status == "Completed" || Session.IsSecurity;
-        CaptureVehiclePhotoButton.IsEnabled = showPhotosAndInspection && !Session.IsSecurity;
-        CaptureMaterialPhotoButton.IsEnabled = showPhotosAndInspection && !Session.IsSecurity;
-        CaptureExceptionPhotoButton.IsEnabled = showPhotosAndInspection && !Session.IsSecurity;
+        var readOnly = job.Status is "PendingOfficeVerification" or "Completed" || Session.IsSecurity;
+        CaptureVehiclePhotoButton.IsEnabled = !readOnly && showPhotosAndInspection;
+        CaptureMaterialPhotoButton.IsEnabled = !readOnly && showPhotosAndInspection;
+        CaptureExceptionPhotoButton.IsEnabled = !readOnly && showPhotosAndInspection;
 
         RenderPhotos(job);
+        RenderDocuments(job);
         RestylePhotoFilterButtons();
         BuildInspectionRows(job, readOnly);
+        BuildUnplannedRows(job, readOnly);
 
         SubmitInspectionButton.IsVisible = !readOnly;
+        AddUnplannedLineButton.IsVisible = !readOnly;
         CompleteButton.IsVisible = job.Status == "Inspecting" && !Session.IsSecurity;
         CompleteButton.IsEnabled = job.Photos.Count > 0;
         CompleteHintLabel.IsVisible = job.Status == "Inspecting" && job.Photos.Count == 0 && !Session.IsSecurity;
@@ -769,6 +799,70 @@ public partial class JobDetailPage : ContentPage
         }
     }
 
+    // Documents (E-Way Bill/Invoice/Lorry Receipt/Other) are captured the same way as gate photos
+    // by Security at Gate Check-in - shown here read-only so the supervisor doesn't have to go
+    // hunting for them elsewhere. Shares the PhotoDisplayItem/PhotoViewerPage plumbing above since
+    // an InwardDocument is just another captured image with a different Type vocabulary.
+    private void RenderDocuments(InwardJob job)
+    {
+        var documents = BuildDocumentDisplayItems(job);
+        NoDocumentsLabel.IsVisible = documents.Count == 0;
+        DocumentsCarousel.IsVisible = documents.Count > 0;
+        DocumentsCarousel.ItemsSource = documents;
+        DocumentCountLabel.Text = documents.Count == 1 ? "1 document" : $"{documents.Count} documents";
+        _ = DownloadMissingDocumentsAsync(job);
+    }
+
+    private List<PhotoDisplayItem> BuildDocumentDisplayItems(InwardJob job) =>
+        job.Documents.Select(document => new PhotoDisplayItem
+        {
+            Id = document.Id,
+            Type = document.Type,
+            CapturedAt = document.UploadedAt,
+            LocalPath = _localDocumentPaths.TryGetValue(document.Id, out var localPath) ? localPath : null
+        }).ToList();
+
+    private async Task DownloadMissingDocumentsAsync(InwardJob job)
+    {
+        var missing = job.Documents.Where(d => !_localDocumentPaths.ContainsKey(d.Id)).ToList();
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        var anyDownloaded = false;
+        foreach (var document in missing)
+        {
+            var cachedPath = Path.Combine(FileSystem.CacheDirectory, $"inward-document-{document.Id}{Path.GetExtension(document.FilePath)}");
+            if (File.Exists(cachedPath))
+            {
+                _localDocumentPaths[document.Id] = cachedPath;
+                anyDownloaded = true;
+                continue;
+            }
+
+            try
+            {
+                var bytes = await ApiClient.DownloadFileAsync(document.FilePath);
+                await File.WriteAllBytesAsync(cachedPath, bytes);
+                _localDocumentPaths[document.Id] = cachedPath;
+                anyDownloaded = true;
+            }
+            catch
+            {
+                // Leave it as a placeholder - server copy genuinely unavailable right now.
+            }
+        }
+
+        if (anyDownloaded && ReferenceEquals(_job, job))
+        {
+            var documents = BuildDocumentDisplayItems(job);
+            NoDocumentsLabel.IsVisible = documents.Count == 0;
+            DocumentsCarousel.IsVisible = documents.Count > 0;
+            DocumentsCarousel.ItemsSource = documents;
+        }
+    }
+
     private async void OnPhotoTapped(object? sender, EventArgs e)
     {
         if (sender is not Border { BindingContext: PhotoDisplayItem item })
@@ -776,6 +870,7 @@ public partial class JobDetailPage : ContentPage
             return;
         }
 
+        _suppressNextAppearingReload = true;
         await Navigation.PushModalAsync(new PhotoViewerPage(item));
     }
 
@@ -856,7 +951,7 @@ public partial class JobDetailPage : ContentPage
                     },
                     new Label
                     {
-                        Text = $"Expected {FormatQty(line.ExpectedQty)} {line.UnitOfMeasure}",
+                        Text = $"Expected {FormatQty(line.ExpectedQty)} {line.UnitOfMeasure}" + (line.IsExtra ? " · Added during loading" : ""),
                         Style = (Style)Application.Current.Resources["MetaLabel"],
                         FontSize = 12
                     }
@@ -971,11 +1066,11 @@ public partial class JobDetailPage : ContentPage
                 enteredLabel.Text = $"Entered {FormatQty(total)}";
             }
 
-            // Damaged/Short/Mismatch cartons were never actually received in good condition, so
-            // they come OUT of Ok rather than being entered as extra on top of it - otherwise the
-            // total entered quantity balloons past what was really delivered (Expected 997 + 5
-            // Damaged reading as 1002 received, instead of 992 Ok + 5 Damaged = 997). Excess is the
-            // one exception: it's genuinely more than Expected, so it stays purely additive.
+            // Damaged/Short/Mismatch cartons were never actually received as good units of this SKU,
+            // so they come OUT of Ok rather than being entered as extra on top of it - otherwise the
+            // total entered quantity balloons past what was really delivered (Expected 997 + 5 Damaged
+            // reading as 1002 received, instead of 992 Ok + 5 Damaged = 997). Excess is the one
+            // exception: it's genuinely more than Expected, so it stays purely additive.
             void RecomputeOkFromExceptions()
             {
                 if (!row.QuantityEntries.TryGetValue("Ok", out var okEntry))
@@ -987,33 +1082,29 @@ public partial class JobDetailPage : ContentPage
                     .Sum(c => row.QuantityEntries.TryGetValue(c, out var entry) && TryParseQuantity(entry.Text, out var qty) ? qty : 0);
 
                 var recomputedOk = Math.Max(0, line.ExpectedQty - deducted);
-                var recomputedText = recomputedOk.ToString(CultureInfo.InvariantCulture);
+                // "0" format, not the default ToString - a decimal like 790.00m stringifies with its
+                // stored scale ("790.00"), and the digits-only TextChanged filter below strips the "."
+                // without removing the zeros, silently turning it into "79000".
+                var recomputedText = recomputedOk.ToString("0", CultureInfo.InvariantCulture);
                 if (okEntry.Text != recomputedText)
                 {
                     okEntry.Text = recomputedText;
                 }
             }
 
-            var exceptionsGrid = new Grid
+            var exceptionsGrid = new Grid { ColumnSpacing = 8 };
+            for (var c = 0; c < Conditions.Length; c++)
             {
-                ColumnDefinitions = new ColumnDefinitionCollection
-                {
-                    new(GridLength.Star),
-                    new(GridLength.Star),
-                    new(GridLength.Star),
-                    new(GridLength.Star),
-                    new(GridLength.Star)
-                },
-                ColumnSpacing = 8
-            };
+                exceptionsGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            }
 
             View BuildConditionCard(string condition, int index)
             {
                 var color = (Color)ColorConverter.Convert(condition, typeof(Color), null, CultureInfo.CurrentCulture);
                 var existingQty = existingByCondition.TryGetValue(condition, out var savedQty)
-                    ? savedQty.ToString(CultureInfo.InvariantCulture)
+                    ? savedQty.ToString("0", CultureInfo.InvariantCulture)
                     : condition == "Ok" && existingByCondition.Count == 0
-                    ? line.ExpectedQty.ToString(CultureInfo.InvariantCulture)
+                    ? line.ExpectedQty.ToString("0", CultureInfo.InvariantCulture)
                         : string.Empty;
 
                 var label = new Label
@@ -1103,8 +1194,16 @@ public partial class JobDetailPage : ContentPage
 
                 if (!readOnly)
                 {
-                    qtyInput.TextChanged += (_, _) =>
+                    qtyInput.TextChanged += (_, e) =>
                     {
+                        // Digits-only, mirrors the Bay Number field's filter elsewhere on this page.
+                        var digitsOnly = new string((e.NewTextValue ?? string.Empty).Where(char.IsDigit).ToArray());
+                        if (qtyInput.Text != digitsOnly)
+                        {
+                            qtyInput.Text = digitsOnly;
+                            return;
+                        }
+
                         if (condition is "Damaged" or "Short" or "Mismatch")
                         {
                             RecomputeOkFromExceptions();
@@ -1169,6 +1268,7 @@ public partial class JobDetailPage : ContentPage
                         }
                     },
                     exceptionsGrid,
+                    BuildSkuPhotoRow(line, readOnly),
                     notesBorder
                 }
             };
@@ -1207,6 +1307,192 @@ public partial class JobDetailPage : ContentPage
 
             _inspectionRows.Add(row);
         }
+    }
+
+    private const int MaxPhotosPerSkuLine = 2;
+
+    private View BuildSkuPhotoRow(PoLine line, bool readOnly)
+    {
+        var count = _job!.Photos.Count(p => p.Type == "SkuCondition" && p.PurchaseOrderLineId == line.Id);
+
+        var countLabel = new Label
+        {
+            Text = $"{count}/{MaxPhotosPerSkuLine} photos",
+            FontFamily = "PoppinsSemiBold",
+            FontSize = 12,
+            TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"],
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        var addButton = new Button
+        {
+            Text = "Add Photo",
+            IsEnabled = !readOnly && count < MaxPhotosPerSkuLine,
+            Style = (Style)Application.Current!.Resources["ChipButton"],
+            FontSize = 11,
+            ImageSource = new FontImageSource { FontFamily = "FaSolid", Glyph = IconGlyphs.Camera, Color = (Color)Application.Current.Resources["Primary"], Size = 11 }
+        };
+        addButton.Clicked += async (_, _) => await CapturePhotoAsync("SkuCondition", line.Id);
+
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto) },
+            ColumnSpacing = 10
+        };
+        var iconLabel = new Label
+        {
+            Text = IconGlyphs.Camera,
+            FontFamily = "FaSolid",
+            FontSize = 12,
+            TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
+            VerticalOptions = LayoutOptions.Center
+        };
+        Grid.SetColumn(iconLabel, 0);
+        Grid.SetColumn(countLabel, 1);
+        Grid.SetColumn(addButton, 2);
+        grid.Children.Add(iconLabel);
+        grid.Children.Add(countLabel);
+        grid.Children.Add(addButton);
+        return grid;
+    }
+
+    private void BuildUnplannedRows(InwardJob job, bool readOnly)
+    {
+        UnplannedLinesContainer.Children.Clear();
+        _unplannedRows.Clear();
+
+        foreach (var line in job.UnplannedLines)
+        {
+            var row = AddUnplannedRow(readOnly);
+            row.ProductId = line.ProductId;
+            row.ProductName = line.ProductName;
+            row.SkuLabel.Text = string.IsNullOrWhiteSpace(line.SkuCode) ? line.ProductName : $"{line.ProductName} ({line.SkuCode})";
+            row.SkuLabel.TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"];
+            // Whole-number text only - QuantityEntry's own TextChanged handler strips any
+            // non-digit character (including a decimal point), so formatting with "0.##" or
+            // similar here would get mangled (e.g. "12.00" -> "1200") the instant this assignment
+            // fires it.
+            row.QuantityEntry.Text = line.Quantity.ToString("0", CultureInfo.InvariantCulture);
+        }
+    }
+
+    private async void OnAddUnplannedLineClicked(object? sender, EventArgs e)
+    {
+        var row = AddUnplannedRow(readOnly: false);
+
+        var tcs = new TaskCompletionSource<SkuMasterItem?>();
+        _suppressNextAppearingReload = true;
+        await Navigation.PushModalAsync(new SkuPickerPage(result => tcs.TrySetResult(result)));
+        var selected = await tcs.Task;
+        if (selected is null)
+        {
+            RemoveUnplannedRow(row);
+            return;
+        }
+
+        row.ProductId = selected.Id;
+        row.ProductName = selected.Name;
+        row.SkuLabel.Text = string.IsNullOrWhiteSpace(selected.SkuCode) ? selected.Name : $"{selected.Name} ({selected.SkuCode})";
+        row.SkuLabel.TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"];
+    }
+
+    private UnplannedRow AddUnplannedRow(bool readOnly)
+    {
+        var skuLabel = new Label
+        {
+            Text = "Select SKU",
+            FontFamily = "PoppinsSemiBold",
+            FontSize = 13,
+            TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"],
+            VerticalOptions = LayoutOptions.Center,
+            LineBreakMode = LineBreakMode.TailTruncation
+        };
+
+        var qtyEntry = new Entry
+        {
+            Placeholder = "Qty",
+            Keyboard = Keyboard.Numeric,
+            IsEnabled = !readOnly,
+            HorizontalTextAlignment = TextAlignment.Center,
+            WidthRequest = 70,
+            FontFamily = "PoppinsBold"
+        };
+        qtyEntry.TextChanged += (_, e) =>
+        {
+            var digitsOnly = new string((e.NewTextValue ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (qtyEntry.Text != digitsOnly)
+            {
+                qtyEntry.Text = digitsOnly;
+            }
+        };
+
+        var removeButton = new Button
+        {
+            Text = "Remove",
+            IsVisible = !readOnly,
+            Style = (Style)Application.Current!.Resources["ChipButton"],
+            FontSize = 11
+        };
+
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star), new(GridLength.Auto), new(GridLength.Auto) },
+            ColumnSpacing = 10
+        };
+        Grid.SetColumn(skuLabel, 0);
+        Grid.SetColumn(qtyEntry, 1);
+        Grid.SetColumn(removeButton, 2);
+        grid.Children.Add(skuLabel);
+        grid.Children.Add(qtyEntry);
+        grid.Children.Add(removeButton);
+
+        var container = new Border
+        {
+            Stroke = (Color)Application.Current!.Resources["CardBorderLight"],
+            StrokeThickness = 1,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+            Padding = new Thickness(12, 10),
+            Content = grid
+        };
+
+        skuLabel.GestureRecognizers.Add(new TapGestureRecognizer
+        {
+            Command = new Command(async () =>
+            {
+                if (readOnly)
+                {
+                    return;
+                }
+
+                var row = _unplannedRows.First(r => r.Container == container);
+                var tcs = new TaskCompletionSource<SkuMasterItem?>();
+                _suppressNextAppearingReload = true;
+                await Navigation.PushModalAsync(new SkuPickerPage(result => tcs.TrySetResult(result)));
+                var selected = await tcs.Task;
+                if (selected is null)
+                {
+                    return;
+                }
+
+                row.ProductId = selected.Id;
+                row.ProductName = selected.Name;
+                skuLabel.Text = string.IsNullOrWhiteSpace(selected.SkuCode) ? selected.Name : $"{selected.Name} ({selected.SkuCode})";
+                skuLabel.TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"];
+            })
+        });
+
+        var newRow = new UnplannedRow { Container = container, SkuLabel = skuLabel, QuantityEntry = qtyEntry };
+        removeButton.Clicked += (_, _) => RemoveUnplannedRow(newRow);
+
+        _unplannedRows.Add(newRow);
+        UnplannedLinesContainer.Children.Add(container);
+        return newRow;
+    }
+
+    private void RemoveUnplannedRow(UnplannedRow row)
+    {
+        _unplannedRows.Remove(row);
+        UnplannedLinesContainer.Children.Remove(row.Container);
     }
 
     private static Label BuildTableHeaderLabel(string text, int column)
@@ -1434,7 +1720,7 @@ public partial class JobDetailPage : ContentPage
         };
     }
 
-    private async Task CapturePhotoAsync(string type)
+    private async Task CapturePhotoAsync(string type, int? purchaseOrderLineId = null)
     {
         try
         {
@@ -1456,7 +1742,7 @@ public partial class JobDetailPage : ContentPage
             Spinner.IsVisible = true;
             Spinner.IsRunning = true;
 
-            _job = await ApiClient.UploadPhotoAsync(_jobId, type, localPath);
+            _job = await ApiClient.UploadPhotoAsync(_jobId, type, localPath, purchaseOrderLineId);
             var newest = _job.Photos.OrderBy(p => p.Id).LastOrDefault();
             if (newest is not null)
             {
@@ -1523,12 +1809,30 @@ public partial class JobDetailPage : ContentPage
             }
         }
 
+        var unplannedLines = new List<UnplannedReceiptLineInput>();
+        foreach (var row in _unplannedRows)
+        {
+            if (row.ProductId is null)
+            {
+                await DisplayAlert("Missing SKU", "Select a SKU for every row in Mismatch SKU Details, or remove the row.", "OK");
+                return;
+            }
+
+            if (!TryParseQuantity(row.QuantityEntry.Text, out var qty) || qty <= 0)
+            {
+                await DisplayAlert("Invalid quantity", $"Enter a valid mismatch quantity for {row.ProductName}.", "OK");
+                return;
+            }
+
+            unplannedLines.Add(new UnplannedReceiptLineInput { ProductId = row.ProductId.Value, Quantity = qty });
+        }
+
         SubmitInspectionButton.IsEnabled = false;
         Spinner.IsVisible = true;
         Spinner.IsRunning = true;
         try
         {
-            _job = await ApiClient.SubmitInspectionAsync(_jobId, lines);
+            _job = await ApiClient.SubmitInspectionAsync(_jobId, lines, unplannedLines);
             RenderJob();
         }
         catch (ApiException ex)

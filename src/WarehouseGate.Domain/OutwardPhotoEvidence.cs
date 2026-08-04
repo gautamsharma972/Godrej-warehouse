@@ -13,6 +13,12 @@ public class OutwardPhotoEvidence
     public int? OutwardLoadPlanGroupId { get; set; }
     public OutwardLoadPlanGroup? OutwardLoadPlanGroup { get; set; }
 
+    // Set only for Type=SkuLoaded (per-SKU Load Confirmation photos, max 2 per line - see
+    // OutwardService.AddPhotoAsync); null for all other (job-level) photo types. Mirrors
+    // PhotoEvidence.PurchaseOrderLineId on the Inward side.
+    public int? DispatchOrderLineId { get; set; }
+    public DispatchOrderLine? DispatchOrderLine { get; set; }
+
     public OutwardPhotoType Type { get; set; }
     public string FilePath { get; set; } = string.Empty;
     public DateTime CapturedAt { get; set; }

@@ -13,6 +13,13 @@ public partial class LoadPlanEditorPage : ContentPage
     private static readonly string[] Palette =
         { "#4f7cff", "#ff9f43", "#26c281", "#e0568c", "#8e6cff", "#ffcf44", "#3fbfbf", "#ff6b6b" };
 
+    // Mirrors OutwardLoadPlanService's GetVehicleProfile fallback - a vehicle with no registered
+    // capacity would otherwise send the viewport a 0x0x0 envelope (nothing renders at all) instead
+    // of just an oversized placeholder truck.
+    private const double FallbackVehicleLengthCm = 2000;
+    private const double FallbackVehicleWidthCm = 300;
+    private const double FallbackVehicleHeightCm = 300;
+
     // Adjacency order for the GroupToolbar's directional Move buttons - must match
     // OutwardLoadPlanService.ZoneFootprint's convention exactly.
     private static readonly string[] ZoneLengthOrder = { "Front", "Middle", "Back" };
@@ -970,9 +977,9 @@ public partial class LoadPlanEditorPage : ContentPage
         {
             vehicle = new
             {
-                widthCm = (double)(_job.VehicleWidthCm ?? 0),
-                lengthCm = (double)(_job.VehicleLengthCm ?? 0),
-                heightCm = (double)(_job.VehicleHeightCm ?? 0),
+                widthCm = (double?)_job.VehicleWidthCm ?? FallbackVehicleWidthCm,
+                lengthCm = (double?)_job.VehicleLengthCm ?? FallbackVehicleLengthCm,
+                heightCm = (double?)_job.VehicleHeightCm ?? FallbackVehicleHeightCm,
                 number = _job.VehicleNumber ?? "",
                 typeLabel = _job.VehicleMaxWeightKg is null ? "" : $"~{Math.Round(_job.VehicleMaxWeightKg.Value / 1000)} Ton Truck"
             },
@@ -1131,6 +1138,46 @@ public partial class LoadPlanEditorPage : ContentPage
             Spinner.IsVisible = false;
             Spinner.IsRunning = false;
             StartConfirmationButton.IsEnabled = true;
+        }
+    }
+
+    // Lets a Supervisor load stock beyond the original pick list, once "Free m3" on this page
+    // shows there's still spare vehicle space - reuses the same SKU Master picker Inward's
+    // "Add Unplanned Line" uses, then a simple quantity prompt. The added line flows through the
+    // normal LoadAsync/RefreshOptionsAsync refresh afterward, so it shows up as just another
+    // placeable SKU chip in the viewport without any changes to the 3D rendering itself.
+    private async void OnAddSkuClicked(object? sender, EventArgs e)
+    {
+        var tcs = new TaskCompletionSource<SkuMasterItem?>();
+        await Navigation.PushModalAsync(new SkuPickerPage(result => tcs.TrySetResult(result)));
+        var sku = await tcs.Task;
+        if (sku is null)
+        {
+            return;
+        }
+
+        var quantityText = await DisplayPromptAsync(
+            "Add SKU", $"How many cartons of {sku.Name} to add?", "Add", "Cancel", keyboard: Keyboard.Numeric);
+        if (string.IsNullOrWhiteSpace(quantityText) || !decimal.TryParse(quantityText, out var quantity) || quantity <= 0)
+        {
+            return;
+        }
+
+        Spinner.IsVisible = true;
+        Spinner.IsRunning = true;
+        try
+        {
+            await ApiClient.AddOutwardDispatchLineAsync(_jobId, sku.Id, quantity);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            await DisplayAlert("Could not add SKU", ex.Message, "OK");
+        }
+        finally
+        {
+            Spinner.IsVisible = false;
+            Spinner.IsRunning = false;
         }
     }
 }

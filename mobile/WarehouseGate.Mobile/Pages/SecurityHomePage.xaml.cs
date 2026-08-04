@@ -31,12 +31,11 @@ public partial class SecurityHomePage : ContentPage
     private readonly Dictionary<string, string> _pendingPhotosBySlot = new();
     private int _sessionCount;
     private int _selectedTab;
-    private string? _selectedTransporter;
     private bool? _isWide;
     private int _photoGridColumns = 3;
 
     private List<ExpectedShipment> _expectedShipments = new();
-    private string? _selectedVehicleNumber;
+    private List<string> _transporterNames = new();
     private readonly List<PoTxnRow> _poTxnRows = new();
 
     private class PoTxnRow
@@ -153,6 +152,15 @@ public partial class SecurityHomePage : ContentPage
         {
             _expectedShipments = new();
         }
+
+        try
+        {
+            _transporterNames = await ApiClient.GetTransportersAsync();
+        }
+        catch (Exception)
+        {
+            _transporterNames = new();
+        }
     }
 
     private void OnVehicleTabClicked(object? sender, EventArgs e) => SelectTab(0);
@@ -236,30 +244,79 @@ public partial class SecurityHomePage : ContentPage
     private void OnDriverFieldUnfocused(object? sender, FocusEventArgs e) =>
         UiHelpers.SetFieldFocus(sender == DriverNameEntry ? DriverNameEntryBorder : DriverMobileEntryBorder, false);
 
-    private void OnRemarksFocused(object? sender, FocusEventArgs e) => UiHelpers.SetFieldFocus(RemarksEditorBorder, true);
-    private void OnRemarksUnfocused(object? sender, FocusEventArgs e) => UiHelpers.SetFieldFocus(RemarksEditorBorder, false);
-
-    private async void OnVehicleFieldTapped(object? sender, EventArgs e)
+    private void OnDriverNameTextChanged(object? sender, TextChangedEventArgs e)
     {
-        if (_expectedShipments.Count == 0)
+        var upper = e.NewTextValue?.ToUpperInvariant() ?? string.Empty;
+        if (DriverNameEntry.Text != upper)
         {
-            await DisplayAlert("No expected vehicles",
-                "There are no pre-registered inward shipments for your warehouse yet. Ask your Logistics Manager to upload the expected shipment list.", "OK");
+            DriverNameEntry.Text = upper;
+        }
+    }
+
+    // Digits-only as-you-type filter, plus the length check itself runs again at submit (see
+    // OnSubmitClicked) since MaxLength alone doesn't stop someone pasting/dictating a longer string.
+    private void OnDriverMobileTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        var digitsOnly = new string((e.NewTextValue ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (DriverMobileEntry.Text != digitsOnly)
+        {
+            DriverMobileEntry.Text = digitsOnly;
             return;
         }
 
+        if (digitsOnly.Length == 0 || digitsOnly.Length == 10)
+        {
+            DriverMobileEntryBorder.Stroke = Colors.Transparent;
+            DriverMobileErrorLabel.IsVisible = false;
+        }
+    }
+
+    private void OnRemarksFocused(object? sender, FocusEventArgs e) => UiHelpers.SetFieldFocus(RemarksEditorBorder, true);
+    private void OnRemarksUnfocused(object? sender, FocusEventArgs e) => UiHelpers.SetFieldFocus(RemarksEditorBorder, false);
+
+    // Uppercase-as-typed, mirrors VehicleExitPage.xaml.cs's OnUppercaseTextChanged - Vehicle Number
+    // is free text (the picker below only ever populates it, it doesn't gate whether the field can
+    // be edited), so typos need the same normalization a picked value already gets.
+    private void OnVehicleNumberTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        var upper = e.NewTextValue?.ToUpperInvariant() ?? string.Empty;
+        if (VehicleNumberEntry.Text != upper)
+        {
+            VehicleNumberEntry.Text = upper;
+            return;
+        }
+
+        VehicleNumberBorder.Stroke = Colors.Transparent;
+        VehicleNumberErrorLabel.IsVisible = false;
+        RefreshTabErrorBadges();
+    }
+
+    // Security logs the physical arrival directly now (no Dispatch Plan match required - see
+    // InwardService.CheckInAsync), so this picker is just a convenience shortcut for legacy
+    // expected-shipment rows that happened to already have a vehicle number set directly in the
+    // Dispatch Plan Excel. Typing a vehicle number that isn't in this list works fine too.
+    private async void OnVehicleFieldTapped(object? sender, EventArgs e)
+    {
         var options = _expectedShipments
             .GroupBy(s => s.VehicleNumber)
             .Select(g => new VehicleOption { VehicleNumber = g.Key, Summary = BuildVehicleSummary(g.ToList()) })
             .OrderBy(o => o.VehicleNumber)
             .ToList();
 
+        if (options.Count == 0)
+        {
+            await DisplayAlert("No vehicles found",
+                "No pre-registered shipments with a known vehicle number yet. You can still type a vehicle number directly.", "OK");
+            return;
+        }
+
         var tcs = new TaskCompletionSource<string?>();
         await Navigation.PushModalAsync(new ExpectedVehiclePickerPage(options, result => tcs.TrySetResult(result)));
         var selected = await tcs.Task;
         if (!string.IsNullOrWhiteSpace(selected))
         {
-            await OnVehicleSelectedAsync(selected);
+            VehicleNumberEntry.Text = selected;
+            await ApplyVehicleDataAsync(selected);
         }
     }
 
@@ -271,13 +328,19 @@ public partial class SecurityHomePage : ContentPage
         return poCount <= 1 ? $"PO {shipments[0].PoNumber} · {etaText}" : $"{poCount} POs · {etaText}";
     }
 
-    private async Task OnVehicleSelectedAsync(string vehicleNumber)
+    // Fires whenever the Vehicle Number field loses focus, whether the user typed it directly or
+    // it was just set by the picker (OnVehicleFieldTapped calls this explicitly too, since setting
+    // .Text programmatically doesn't reliably raise Unfocused).
+    private async void OnVehicleNumberUnfocused(object? sender, FocusEventArgs e) =>
+        await ApplyVehicleDataAsync(VehicleNumberEntry.Text?.Trim());
+
+    private async Task ApplyVehicleDataAsync(string? vehicleNumber)
     {
-        _selectedVehicleNumber = vehicleNumber;
-        VehicleNumberLabel.Text = vehicleNumber;
-        VehicleNumberLabel.TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"];
-        VehicleNumberBorder.Stroke = Colors.Transparent;
-        VehicleNumberErrorLabel.IsVisible = false;
+        if (string.IsNullOrWhiteSpace(vehicleNumber))
+        {
+            return;
+        }
+
         RefreshTabErrorBadges();
 
         var shipmentsForVehicle = _expectedShipments.Where(s => s.VehicleNumber == vehicleNumber).ToList();
@@ -293,6 +356,13 @@ public partial class SecurityHomePage : ContentPage
             ?? shipmentsForVehicle.Select(s => s.DriverPhone).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
         SetSelectedTransporter(record?.TransporterName
             ?? shipmentsForVehicle.Select(s => s.TransporterName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)));
+
+        if (shipmentsForVehicle.Count == 0)
+        {
+            // Genuinely unknown vehicle (typed fresh, not tagged, not in any expected shipment) -
+            // leave whatever PO/txn row(s) the user already has; don't clear or fabricate one here.
+            return;
+        }
 
         // PO/inward-txn rows, from the pre-registered shipment data - one row per distinct
         // (PO, inward txn) pair; several SKU rows sharing a pair collapse into a single row.
@@ -312,18 +382,12 @@ public partial class SecurityHomePage : ContentPage
         }
     }
 
-    private void SetSelectedTransporter(string? transporter)
-    {
-        _selectedTransporter = transporter;
-        TransporterLabel.Text = string.IsNullOrWhiteSpace(transporter) ? "Select transporter" : transporter;
-        TransporterLabel.TextColor = (Color)Application.Current!.Resources[
-            string.IsNullOrWhiteSpace(transporter) ? "TextSecondaryLight" : "TextPrimaryLight"];
-    }
+    private void SetSelectedTransporter(string? transporter) => TransporterEntry.Text = transporter;
 
     private async void OnTransporterFieldTapped(object? sender, EventArgs e)
     {
         var tcs = new TaskCompletionSource<string?>();
-        await Navigation.PushModalAsync(new TransporterPickerPage(result => tcs.TrySetResult(result)));
+        await Navigation.PushModalAsync(new TransporterPickerPage(result => tcs.TrySetResult(result), _transporterNames));
         var selected = await tcs.Task;
         if (!string.IsNullOrWhiteSpace(selected))
         {
@@ -638,9 +702,14 @@ public partial class SecurityHomePage : ContentPage
             return;
         }
 
-        var vehicleValid = _selectedVehicleNumber is not null;
+        var vehicleValid = !string.IsNullOrWhiteSpace(VehicleNumberEntry.Text);
         VehicleNumberBorder.Stroke = vehicleValid ? Colors.Transparent : (Color)Application.Current!.Resources["StatusException"];
         VehicleNumberErrorLabel.IsVisible = !vehicleValid;
+
+        var mobileText = DriverMobileEntry.Text?.Trim();
+        var mobileValid = string.IsNullOrEmpty(mobileText) || (mobileText.Length == 10 && mobileText.All(char.IsDigit));
+        DriverMobileEntryBorder.Stroke = mobileValid ? Colors.Transparent : (Color)Application.Current!.Resources["StatusException"];
+        DriverMobileErrorLabel.IsVisible = !mobileValid;
 
         var rowsValid = _poTxnRows.Count > 0
             && _poTxnRows.All(r => !string.IsNullOrWhiteSpace(r.PoEntry.Text) && !string.IsNullOrWhiteSpace(r.TxnEntry.Text));
@@ -648,15 +717,15 @@ public partial class SecurityHomePage : ContentPage
 
         RefreshTabErrorBadges();
 
-        if (!vehicleValid || !rowsValid)
+        if (!vehicleValid || !mobileValid || !rowsValid)
         {
             // Jump to whichever tab holds the first invalid field so the highlighted border is
             // actually visible - the other tabs are hidden (IsVisible=False) while not selected.
-            SelectTab(!vehicleValid ? 0 : 1);
+            SelectTab(!vehicleValid || !mobileValid ? 0 : 1);
             return;
         }
 
-        var vehicleNumber = _selectedVehicleNumber!;
+        var vehicleNumber = VehicleNumberEntry.Text!.Trim();
         var pairs = _poTxnRows.Select(r => (PoNumber: r.PoEntry.Text!.Trim(), TxnNumber: r.TxnEntry.Text!.Trim())).ToList();
 
         SubmitButton.IsEnabled = false;
@@ -673,7 +742,7 @@ public partial class SecurityHomePage : ContentPage
             var location = await TryGetLocationAsync();
             var driverName = string.IsNullOrWhiteSpace(DriverNameEntry.Text) ? null : DriverNameEntry.Text.Trim();
             var driverMobile = string.IsNullOrWhiteSpace(DriverMobileEntry.Text) ? null : DriverMobileEntry.Text.Trim();
-            var transporterName = string.IsNullOrWhiteSpace(_selectedTransporter) ? null : _selectedTransporter;
+            var transporterName = string.IsNullOrWhiteSpace(TransporterEntry.Text) ? null : TransporterEntry.Text.Trim();
             var gateName = GatePicker.SelectedItem as string;
             var remarks = string.IsNullOrWhiteSpace(RemarksEditor.Text) ? null : RemarksEditor.Text.Trim();
 
@@ -734,7 +803,7 @@ public partial class SecurityHomePage : ContentPage
             _sessionCount++;
             foreach (var job in createdJobs)
             {
-                _recentCheckIns.Insert(0, new RecentCheckIn(vehicleNumber, job.PONumber, DateTime.Now));
+                _recentCheckIns.Insert(0, new RecentCheckIn(vehicleNumber, job.SecurityEnteredPoNumber ?? job.PONumber ?? "-", DateTime.Now));
             }
             while (_recentCheckIns.Count > 5)
             {
@@ -767,14 +836,14 @@ public partial class SecurityHomePage : ContentPage
 
     private void ResetForm()
     {
-        _selectedVehicleNumber = null;
-        VehicleNumberLabel.Text = "Select expected vehicle";
-        VehicleNumberLabel.TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"];
+        VehicleNumberEntry.Text = string.Empty;
         VehicleNumberBorder.Stroke = Colors.Transparent;
         VehicleNumberErrorLabel.IsVisible = false;
 
         DriverNameEntry.Text = string.Empty;
         DriverMobileEntry.Text = string.Empty;
+        DriverMobileEntryBorder.Stroke = Colors.Transparent;
+        DriverMobileErrorLabel.IsVisible = false;
         SetSelectedTransporter(null);
         GatePicker.SelectedIndex = -1;
         RemarksEditor.Text = string.Empty;
@@ -898,8 +967,8 @@ public partial class SecurityHomePage : ContentPage
     private void ShowSuccessResult(List<InwardJob> jobs, List<(string PoNumber, string Reason)> failures, int uploadFailures = 0)
     {
         SuccessDetailLabel.Text = jobs.Count == 1
-            ? $"{jobs[0].VehicleNumber} · PO {jobs[0].PONumber} · {jobs[0].SupplierName}\nPushed to supervisors for assignment."
-            : $"{jobs[0].VehicleNumber} · {jobs.Count} transactions created (PO {string.Join(", ", jobs.Select(j => j.PONumber))})\nPushed to supervisors for assignment.";
+            ? $"{jobs[0].VehicleNumber} · PO noted: {jobs[0].SecurityEnteredPoNumber ?? "none"}\nAwaiting office to link this arrival to a Dispatch Plan entry."
+            : $"{jobs[0].VehicleNumber} · {jobs.Count} transactions created (PO noted: {string.Join(", ", jobs.Select(j => j.SecurityEnteredPoNumber ?? "none"))})\nAwaiting office to link these arrivals to Dispatch Plan entries.";
 
         SuccessBadgesContainer.Children.Clear();
         if (jobs.Any(j => j.IsNewVehicle))

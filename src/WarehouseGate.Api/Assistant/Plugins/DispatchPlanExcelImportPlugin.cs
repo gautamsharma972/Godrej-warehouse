@@ -115,14 +115,13 @@ public class DispatchPlanExcelImportPlugin
             return "This confirmation doesn't belong to you - please upload the file again.";
         }
 
-        _db.VehicleLogisticsRecords.AddRange(payload.Rows);
-        await _db.SaveChangesAsync();
+        var (insertedCount, updatedCount) = await VehicleLogisticsRecordUpsertService.UpsertAsync(_db, payload.Rows, currentUserId);
 
         await _audit.LogAsync("VehicleLogisticsRecord", 0, AuditAction.Created,
-            $"Imported {payload.Rows.Count} vehicle logistics record(s) from '{payload.FileName}' ({payload.SkippedCount} row(s) skipped) via Assistant.",
+            $"Imported {insertedCount} new / updated {updatedCount} existing vehicle logistics record(s) from '{payload.FileName}' ({payload.SkippedCount} row(s) skipped) via Assistant.",
             currentUserId, currentUserName);
         await _hub.Clients.Groups(InwardHub.LogisticsGroup, InwardHub.OfficeGroup, InwardHub.AdminsGroup).SendAsync("VehicleLogisticsRecordChanged");
 
-        return $"Imported {payload.Rows.Count} Dispatch Plan row(s) from '{payload.FileName}'.";
+        return $"Imported {insertedCount} new and updated {updatedCount} existing Dispatch Plan row(s) from '{payload.FileName}'.";
     }
 }

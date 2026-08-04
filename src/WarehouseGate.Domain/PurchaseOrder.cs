@@ -28,4 +28,11 @@ public class PurchaseOrderLine
     // the source warehouse; LoadedQty is what the source warehouse's supervisor actually loaded.
     public decimal? PickListQty { get; set; }
     public decimal? LoadedQty { get; set; }
+
+    // True for a line synthesized from a DispatchOrderLine that had no matching Dispatch Plan row
+    // at all - a SKU the source warehouse's supervisor added during loading (3D Load Plan Workspace
+    // "Add SKU"), beyond what Logistics/Office originally planned. See
+    // InwardService.ResolveDispatchQuantitiesAsync's ExtraDispatchLine. False for every ordinary
+    // Dispatch-Plan-matched or manually-entered PO line.
+    public bool IsExtra { get; set; }
 }

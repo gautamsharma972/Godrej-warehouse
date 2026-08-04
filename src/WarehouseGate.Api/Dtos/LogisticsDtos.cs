@@ -2,21 +2,35 @@ using WarehouseGate.Domain;
 
 namespace WarehouseGate.Api.Dtos;
 
+// PickListQty/LoadedQty are always live-resolved (never stored on the record itself) from the
+// Outward job that claimed this row, if one has - see LogisticsController.ResolveLiveDispatchDataAsync.
+// Null means that stage hasn't happened yet (no Outward job, or pick list/loading not reached).
+// PhysicalQty is likewise live-resolved from the destination's Inward job, if that side has
+// completed its receiving inspection (Ok+Damaged+Excess, mirroring InwardJobDetail.razor's own
+// FormatPhysicalQty) - null until that inspection has been submitted.
+// IsExtra marks a synthetic row with no backing VehicleLogisticsRecord at all - a SKU the source
+// warehouse's supervisor added during loading (beyond the original Dispatch Plan) - see
+// LogisticsController.ResolveLiveDispatchDataAsync. Its Id is a negative placeholder purely for
+// UI list-keying; it must never be sent to the vehicle-records PUT/DELETE endpoints.
 public record VehicleLogisticsRecordDto(
-    int Id, string VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,
+    int Id, string? VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,
     string? DriverName, string? DriverPhone, string? VehicleType, string Sku, string? SkuCode, int BoxQuantity,
+    decimal? PickListQty, decimal? LoadedQty, decimal? PhysicalQty,
     DateTime? DepartureDate, DateTime? EtaDateTime,
     int FromWarehouseId, string FromWarehouseName, int ToWarehouseId, string ToWarehouseName,
-    string Status, DateTime CreatedAtUtc);
+    string Status, DateTime CreatedAtUtc, bool IsExtra = false);
 
 public record UpsertVehicleLogisticsRecordRequest(
-    string VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,
+    string? VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,
     string? DriverName, string? DriverPhone, string? VehicleType, string Sku, string? SkuCode, int BoxQuantity,
     DateTime? DepartureDate, DateTime? EtaDateTime,
     int FromWarehouseId, int ToWarehouseId, VehicleLogisticsStatus? Status);
 
 public record VehicleLogisticsUploadRowErrorDto(int RowNumber, string Reason);
-public record VehicleLogisticsUploadResultDto(int ImportedCount, List<VehicleLogisticsUploadRowErrorDto> Errors);
+
+// A row is "updated" instead of "inserted" when it duplicates an existing InTransit record's PO
+// Number + From/To Warehouse + SKU identifier - see VehicleLogisticsRecordUpsertService.
+public record VehicleLogisticsUploadResultDto(int InsertedCount, int UpdatedCount, List<VehicleLogisticsUploadRowErrorDto> Errors);
 
 // Office-facing view of a Dispatch Plan vehicle group that hasn't been claimed by a real job yet
 // (Status == InTransit) - used both for the Outward "pending pick list" queue (From = caller's own
@@ -25,8 +39,12 @@ public record PendingDispatchPlanLineDto(int Id, string Sku, string? SkuCode, in
 
 public record UpdatePickListQuantityRequest(int? Quantity);
 
+// VehicleNumber is null until Office tags this PO with a real vehicle (see
+// InwardService.TagVehicleAsync) or a legacy Excel upload already set it directly - PoNumber is
+// what the Inward "Expected" panel groups/tags by since it's the only identity guaranteed present
+// before that happens. Outward's pending pick-list panel still groups by VehicleNumber (unchanged).
 public record PendingDispatchPlanGroupDto(
-    string VehicleNumber, string CounterpartWarehouseName, DateTime? EtaDateTime, List<PendingDispatchPlanLineDto> Lines);
+    string? VehicleNumber, string? PoNumber, string CounterpartWarehouseName, DateTime? EtaDateTime, List<PendingDispatchPlanLineDto> Lines);
 
 public record VehicleMasterFullDto(
     int Id, int VehicleTypeId, string VehicleTypeName, int VehicleCategoryId, string VehicleCategoryName,

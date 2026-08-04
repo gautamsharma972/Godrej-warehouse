@@ -16,6 +16,9 @@ public class PoLine
     public string ProductName { get; set; } = string.Empty;
     public decimal ExpectedQty { get; set; }
     public string UnitOfMeasure { get; set; } = string.Empty;
+    // True for a SKU the source warehouse's supervisor added during loading, with no matching
+    // Dispatch Plan row at all - see InwardService.ResolveDispatchQuantitiesAsync (API side).
+    public bool IsExtra { get; set; }
 }
 
 public class Photo
@@ -24,6 +27,35 @@ public class Photo
     public string Type { get; set; } = string.Empty;
     public string FilePath { get; set; } = string.Empty;
     public DateTime CapturedAt { get; set; }
+    public int? PurchaseOrderLineId { get; set; }
+}
+
+// The real SKU actually received in place of an expected one - backs "Mismatch SKU Details".
+// Distinct from an InspectionLine with Condition == "Mismatch", which just records how much of an
+// expected PO line's quantity turned out not to be that SKU at all. See
+// InwardService.SubmitInspectionAsync for the cross-validation between the two.
+public class UnplannedReceiptLine
+{
+    public int Id { get; set; }
+    public int ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public string? SkuCode { get; set; }
+    public decimal Quantity { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class UnplannedReceiptLineInput
+{
+    public int ProductId { get; set; }
+    public decimal Quantity { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class SkuMasterItem
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string SkuCode { get; set; } = string.Empty;
 }
 
 public class InspectionLine
@@ -57,8 +89,12 @@ public class InwardJob
     public int Id { get; set; }
     public string VehicleNumber { get; set; } = string.Empty;
     public string InwardTxnNumber { get; set; } = string.Empty;
-    public string PONumber { get; set; } = string.Empty;
-    public string SupplierName { get; set; } = string.Empty;
+    // Null until Office links this job to a Dispatch Plan entry (see the web Office app's Link
+    // Vehicle action) - Security's Gate Check-in no longer creates this with a PO attached.
+    public string? PONumber { get; set; }
+    // Whatever PO Number Security typed at Gate Check-in - a hint only, shown until PONumber above is set for real.
+    public string? SecurityEnteredPoNumber { get; set; }
+    public string? SupplierName { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime GateInTime { get; set; }
     public string? DriverName { get; set; }
@@ -78,13 +114,18 @@ public class InwardJob
     public List<Photo> Photos { get; set; } = new();
     public List<GateDocument> Documents { get; set; } = new();
     public List<InspectionLine> InspectionLines { get; set; } = new();
+    public List<UnplannedReceiptLine> UnplannedLines { get; set; } = new();
     public Grn? Grn { get; set; }
     public string? Remarks { get; set; }
     public DateTime? GateOutTime { get; set; }
     public string? GatePassToken { get; set; }
 
-    public string Subtitle => $"PO {PONumber} · {SupplierName}";
-    public string SubtitleWithTime => $"PO {PONumber} · {SupplierName} · {GateInTime:d MMM, h:mm tt}";
+    private string PoAndSupplierText => PONumber is null
+        ? (string.IsNullOrWhiteSpace(SecurityEnteredPoNumber) ? "Not linked to a PO yet" : $"Not linked yet (PO noted: {SecurityEnteredPoNumber})")
+        : $"PO {PONumber} · {SupplierName}";
+
+    public string Subtitle => PoAndSupplierText;
+    public string SubtitleWithTime => $"{PoAndSupplierText} · {GateInTime:d MMM, h:mm tt}";
     public string WaitingCaption => Services.TimeFormat.Since(GateInTime);
 
     public string? TimeTrackingCaption => Status switch

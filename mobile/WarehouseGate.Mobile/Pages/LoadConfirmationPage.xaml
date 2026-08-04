@@ -93,7 +93,7 @@
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                     <Label Text="Photo evidence" Style="{StaticResource CardTitleLabel}" FontSize="17" />
-                                    <Label Text="Capture and review closing proof for this dispatch." Style="{StaticResource MetaLabel}" />
+                                    <Label Text="Captured per SKU below - reviewed here." Style="{StaticResource MetaLabel}" />
                                 </VerticalStackLayout>
                                 <Border Grid.Column="2" Padding="12,7" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}"
                                         StrokeShape="RoundRectangle 14" VerticalOptions="Center">
@@ -114,38 +114,27 @@
                                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                                 <Label Text="Required before completion" FontSize="13" FontFamily="PoppinsSemiBold"
                                                        TextColor="{StaticResource TextPrimaryLight}" />
-                                                <Label Text="Minimum 1 photo. Maximum 5 photos." Style="{StaticResource MetaLabel}" FontSize="11" />
+                                                <Label x:Name="PhotoLimitHintLabel" Style="{StaticResource MetaLabel}" FontSize="11" />
                                             </VerticalStackLayout>
                                         </Grid>
                                     </Border>
 
                                     <Border x:Name="PhotoLimitLabel" StrokeThickness="0" BackgroundColor="{StaticResource StatusExceptionTint}"
                                             StrokeShape="RoundRectangle 16" Padding="12,10" IsVisible="False">
-                                            <Label Text="5 of 5 photos - limit reached" FontSize="11" FontFamily="PoppinsSemiBold"
+                                            <Label x:Name="PhotoLimitReachedLabel" FontSize="11" FontFamily="PoppinsSemiBold"
                                                    TextColor="{StaticResource StatusException}" HorizontalOptions="Center" />
                                     </Border>
 
                                     <Border x:Name="NoPhotosLabel" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
                                             BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 20"
                                             Padding="12,10" IsVisible="False">
-                                        <Label Text="No photos captured yet. Use the capture tile below." Style="{StaticResource MetaLabel}"
+                                        <Label Text="No photos captured yet. Use the Add Photo button on a SKU below." Style="{StaticResource MetaLabel}"
                                                FontSize="11" HorizontalOptions="Center" />
                                     </Border>
                             </VerticalStackLayout>
 
-                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="16,0,16,16">
-                                <Button Grid.Column="0" x:Name="CapturePhotoButton" Text="Capture&#10;Photo" Clicked="OnCapturePhotoClicked"
-                                        WidthRequest="164" HeightRequest="130" CornerRadius="16" Padding="12"
-                                        BorderWidth="1" BorderColor="{StaticResource CardBorderLight}"
-                                        BackgroundColor="{StaticResource CardTint}" TextColor="{StaticResource Primary}"
-                                        FontFamily="PoppinsSemiBold" FontSize="13" LineBreakMode="WordWrap"
-                                        ContentLayout="Top,8">
-                                    <Button.ImageSource>
-                                        <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Camera}" Color="{StaticResource Primary}" Size="24" />
-                                    </Button.ImageSource>
-                                </Button>
-
-                                <CollectionView Grid.Column="1" x:Name="PhotoGallery" HeightRequest="142"
+                            <Grid Grid.Row="2" ColumnDefinitions="*" Padding="16,0,16,16">
+                                <CollectionView Grid.Column="0" x:Name="PhotoGallery" HeightRequest="142"
                                                 HorizontalOptions="Fill" IsVisible="False">
                                     <CollectionView.ItemsLayout>
                                         <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />

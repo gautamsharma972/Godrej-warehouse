@@ -15,6 +15,7 @@ public class StatusToColorConverter : IValueConverter
             "Assigned" => "StatusAssigned",
             "Docked" or "Docking" or "Inspecting" => "StatusDocked",
             "Loading" => "StatusLoading",
+            "PendingOfficeVerification" => "StatusAssigned",
             "Completed" or "Ok" => "StatusSuccess",
             "Damaged" or "Short" or "Excess" or "Mismatch" => "StatusException",
             _ => "StatusNeutral"
@@ -41,6 +42,7 @@ public class StatusToDisplayTextConverter : IValueConverter
             "Docked" => "Docked",
             "Inspecting" => "Inspecting",
             "Loading" => "Loading",
+            "PendingOfficeVerification" => "Pending Verification",
             "Completed" => "Completed",
             _ => key
         };

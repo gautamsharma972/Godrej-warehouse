@@ -80,17 +80,18 @@
                             <Label Text="VEHICLE NUMBER" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
                             <Border x:Name="VehicleNumberBorder" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
                                     StrokeShape="RoundRectangle 10" Padding="12,0" HeightRequest="42">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Tapped="OnVehicleFieldTapped" />
-                                </Border.GestureRecognizers>
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <Label x:Name="VehicleNumberLabel" Grid.Column="0" Text="Select expected vehicle" LineBreakMode="TailTruncation"
-                                           TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                    <Entry x:Name="VehicleNumberEntry" Grid.Column="0" Placeholder="Type or pick a vehicle number"
+                                           VerticalOptions="Center" TextChanged="OnVehicleNumberTextChanged" Unfocused="OnVehicleNumberUnfocused" />
                                     <Label Grid.Column="1" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
-                                           FontSize="12" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                           FontSize="12" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnVehicleFieldTapped" />
+                                        </Label.GestureRecognizers>
+                                    </Label>
                                 </Grid>
                             </Border>
-                            <Label x:Name="VehicleNumberErrorLabel" Text="Select a vehicle from the expected shipments list." FontSize="11"
+                            <Label x:Name="VehicleNumberErrorLabel" Text="Enter or select a vehicle number." FontSize="11"
                                    TextColor="{StaticResource StatusException}" IsVisible="False" />
                         </VerticalStackLayout>
 
@@ -101,6 +102,7 @@
                                     <Border x:Name="DriverNameEntryBorder" Grid.Column="0" Stroke="{StaticResource CardBorderLight}"
                                             StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,0" HeightRequest="42">
                                         <Entry x:Name="DriverNameEntry" Placeholder="e.g. Ramesh Kumar" VerticalOptions="Center"
+                                               TextChanged="OnDriverNameTextChanged"
                                                Focused="OnDriverFieldFocused" Unfocused="OnDriverFieldUnfocused" />
                                     </Border>
                                     <Button x:Name="DriverNameMicButton" SemanticProperties.Description="Speak driver name" Grid.Column="1" Clicked="OnDriverNameMicClicked"
@@ -117,7 +119,8 @@
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                     <Border x:Name="DriverMobileEntryBorder" Grid.Column="0" Stroke="{StaticResource CardBorderLight}"
                                             StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,0" HeightRequest="42">
-                                        <Entry x:Name="DriverMobileEntry" Placeholder="e.g. 9876543210" Keyboard="Telephone" VerticalOptions="Center"
+                                        <Entry x:Name="DriverMobileEntry" Placeholder="e.g. 9876543210" Keyboard="Telephone" MaxLength="10" VerticalOptions="Center"
+                                               TextChanged="OnDriverMobileTextChanged"
                                                Focused="OnDriverFieldFocused" Unfocused="OnDriverFieldUnfocused" />
                                     </Border>
                                     <Button x:Name="DriverMobileMicButton" SemanticProperties.Description="Speak driver mobile" Grid.Column="1" Clicked="OnDriverMobileMicClicked"
@@ -127,6 +130,8 @@
                                         </Button.ImageSource>
                                     </Button>
                                 </Grid>
+                                <Label x:Name="DriverMobileErrorLabel" Text="Enter a 10-digit mobile number." FontSize="11"
+                                       TextColor="{StaticResource StatusException}" IsVisible="False" />
                             </VerticalStackLayout>
                         </Grid>
 
@@ -134,14 +139,15 @@
                             <VerticalStackLayout x:Name="TransporterSection" Grid.Row="0" Grid.Column="0" Spacing="6">
                                 <Label Text="TRANSPORTER" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
                                 <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="12,0" HeightRequest="42">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnTransporterFieldTapped" />
-                                    </Border.GestureRecognizers>
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <Label x:Name="TransporterLabel" Grid.Column="0" Text="Select transporter" LineBreakMode="TailTruncation"
-                                               TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                        <Entry x:Name="TransporterEntry" Grid.Column="0" Placeholder="Type or pick a transporter"
+                                               VerticalOptions="Center" />
                                         <Label Grid.Column="1" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
-                                               FontSize="12" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                               FontSize="12" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center">
+                                            <Label.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnTransporterFieldTapped" />
+                                            </Label.GestureRecognizers>
+                                        </Label>
                                     </Grid>
                                 </Border>
                             </VerticalStackLayout>

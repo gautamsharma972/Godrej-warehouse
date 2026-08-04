@@ -21,16 +21,40 @@
             <div>
                 <p class="admin-eyebrow">Inward Job</p>
                 <h1 class="admin-page-title">@_job.VehicleNumber</h1>
-                <p class="admin-page-subtitle">@_job.PONumber · @_job.SupplierName</p>
+                <p class="admin-page-subtitle">
+                    @if (_job.PONumber is not null)
+                    {
+                        @($"{_job.PONumber} · {_job.SupplierName}")
+                    }
+                    else
+                    {
+                        <text>Not linked to a Dispatch Plan entry yet</text>
+                        @if (!string.IsNullOrWhiteSpace(_job.SecurityEnteredPoNumber))
+                        {
+                            @($" (PO noted by Security: {_job.SecurityEnteredPoNumber})")
+                        }
+                    }
+                </p>
             </div>
             <div class="admin-page-actions">
                 <span class="admin-count-pill"><i class="bx bx-barcode"></i>@_job.InwardTxnNumber</span>
-                <span class="admin-badge info">@_job.Status</span>
-                @if (_job.Status != "Completed")
+                <span class="admin-badge info">@StatusLabel(_job.Status)</span>
+                @if (_job.Status != "Completed" && _job.PONumber is not null)
                 {
                     <button class="admin-secondary-btn" type="button" @onclick="OpenAssignDialog">
                         <i class="bx bx-user-check"></i>
                         @(_job.AssignedSupervisorUserId is null ? "Assign Supervisor" : "Reassign Supervisor")
+                    </button>
+                }
+                @if (_job.Status == "PendingOfficeVerification")
+                {
+                    <button class="admin-secondary-btn" type="button" disabled="@_savingInspection" @onclick="SaveInspectionAsync">
+                        <i class="bx bx-save"></i>
+                        @(_savingInspection ? "Saving..." : "Save Changes")
+                    </button>
+                    <button class="admin-primary-btn" type="button" disabled="@_verifying" @onclick="VerifyAndGenerateGrnAsync">
+                        <i class="bx bx-check-double"></i>
+                        @(_verifying ? "Generating..." : "Confirm & Generate GRN")
                     </button>
                 }
             </div>
@@ -84,8 +108,14 @@
                             @foreach (var line in _job.Lines)
                             {
                                 <tr>
-                                    <td>@line.ProductName</td>
-                                    <td>@line.ExpectedQty</td>
+                                    <td>
+                                        @line.ProductName
+                                        @if (line.IsExtra)
+                                        {
+                                            <span class="admin-badge neutral">Added during loading</span>
+                                        }
+                                    </td>
+                                    <td>@line.ExpectedQty.ToString("0")</td>
                                     @* <td class="admin-muted">@FormatQty(line.PickListQty)</td> *@
                                     @* <td class="admin-muted">@FormatQty(line.LoadedQty)</td> *@
                                     <td>@FormatPhysicalQty(line.Id)</td>
@@ -96,6 +126,106 @@
                     </table>
                 </div>
             </article>
+
+            @if (_job.InspectionLines.Count > 0)
+            {
+                <article class="office-detail-card">
+                    <div class="office-detail-card-head">
+                        <div>
+                            <p class="logistics-panel-kicker">Receiving Inspection</p>
+                            <h2>Condition breakdown</h2>
+                        </div>
+                        <div class="logistics-panel-icon accent"><i class="bx bx-clipboard-check"></i></div>
+                    </div>
+                    <div class="admin-table-scroll @(_job.Status == "PendingOfficeVerification" ? "vehicle-sku-edit-table" : "")">
+                        <table class="admin-table compact">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Condition</th>
+                                    <th>Received Qty</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var line in _editLines)
+                                {
+                                    <tr>
+                                        <td>@line.ProductName</td>
+                                        <td><span class="@(line.Condition == "Ok" ? "admin-badge success" : "admin-badge warning")">@line.Condition</span></td>
+                                        <td>
+                                            @if (_job.Status == "PendingOfficeVerification")
+                                            {
+                                                <input class="admin-form-control" type="number" min="0" step="1" @bind="line.ReceivedQty" @bind:event="oninput" />
+                                            }
+                                            else
+                                            {
+                                                @line.ReceivedQty
+                                            }
+                                        </td>
+                                        <td class="admin-muted">@ValueOrDash(line.Notes)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            }
+
+            @if (_job.UnplannedLines.Count > 0)
+            {
+                <article class="office-detail-card">
+                    <div class="office-detail-card-head">
+                        <div>
+                            <p class="logistics-panel-kicker">Mismatch SKU Details</p>
+                            <h2>Mismatch SKUs received</h2>
+                        </div>
+                        <div class="logistics-panel-icon orange"><i class="bx bx-package"></i></div>
+                    </div>
+                    <div class="admin-table-scroll @(_job.Status == "PendingOfficeVerification" ? "vehicle-sku-edit-table" : "")">
+                        <table class="admin-table compact">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>SKU Code</th>
+                                    <th>Quantity</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var line in _editUnplanned)
+                                {
+                                    <tr>
+                                        @if (_job.Status == "PendingOfficeVerification")
+                                        {
+                                            <td colspan="2">
+                                                <select class="admin-form-select" @bind="line.ProductId">
+                                                    @if (!_skuMaster.Any(s => s.Id == line.ProductId))
+                                                    {
+                                                        <option value="@line.ProductId">@line.ProductName (@line.SkuCode)</option>
+                                                    }
+                                                    @foreach (var sku in _skuMaster)
+                                                    {
+                                                        <option value="@sku.Id">@sku.Name (@sku.SkuCode)</option>
+                                                    }
+                                                </select>
+                                            </td>
+                                            <td><input class="admin-form-control" type="number" min="0" step="1" @bind="line.Quantity" /></td>
+                                        }
+                                        else
+                                        {
+                                            <td>@line.ProductName</td>
+                                            <td class="admin-muted">@ValueOrDash(line.SkuCode)</td>
+                                            <td>@line.Quantity</td>
+                                        }
+                                        <td class="admin-muted">@ValueOrDash(line.Notes)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            }
 
             <article class="office-detail-card">
                 <div class="office-detail-card-head">
@@ -155,6 +285,35 @@
 
     private InwardJobDto? _job;
     private List<SupervisorOptionDto> _supervisors = new();
+    private bool _verifying;
+
+    // Mutable local copies Office can edit while PendingOfficeVerification - InspectionLineDto/
+    // UnplannedReceiptLineDto are immutable records, so edits are staged here and only sent to the
+    // server on "Save Changes" (SaveInspectionAsync), not written back into _job directly.
+    private List<EditableInspectionLine> _editLines = new();
+    private List<EditableUnplannedLine> _editUnplanned = new();
+    private List<SkuMasterItemDto> _skuMaster = new();
+    private bool _savingInspection;
+
+    // Qty is int, not decimal - these are always whole units (PCS/cartons), and a bound decimal
+    // renders its stored scale verbatim in the input ("774.00"), which reads wrong here.
+    private class EditableInspectionLine
+    {
+        public int PurchaseOrderLineId { get; set; }
+        public string ProductName { get; set; } = "";
+        public string Condition { get; set; } = "";
+        public int ReceivedQty { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    private class EditableUnplannedLine
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = "";
+        public string? SkuCode { get; set; }
+        public int Quantity { get; set; }
+        public string? Notes { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -174,9 +333,11 @@
         }
     }
 
+    // A background refresh (someone else's change, e.g. a Supervisor reassignment) must not stomp
+    // on Office's in-progress, not-yet-saved edits - only our own explicit loads/saves reset them.
     private void OnInwardJobChanged() => _ = InvokeAsync(async () =>
     {
-        await LoadAsync();
+        await LoadAsync(resetEditState: false);
         StateHasChanged();
     });
 
@@ -186,16 +347,69 @@
         return ValueTask.CompletedTask;
     }
 
-    private async Task LoadAsync()
+    private async Task LoadAsync(bool resetEditState = true)
     {
         try
         {
             _job = await Api.GetAsync<InwardJobDto>($"api/office/inward-jobs/{Id}");
             _supervisors = await Api.GetAsync<List<SupervisorOptionDto>>("api/office/supervisors");
+
+            if (resetEditState)
+            {
+                _editLines = _job.InspectionLines.Select(l => new EditableInspectionLine
+                {
+                    PurchaseOrderLineId = l.PurchaseOrderLineId,
+                    ProductName = l.ProductName,
+                    Condition = l.Condition,
+                    ReceivedQty = (int)l.ReceivedQty,
+                    Notes = l.Notes
+                }).ToList();
+                _editUnplanned = _job.UnplannedLines.Select(l => new EditableUnplannedLine
+                {
+                    ProductId = l.ProductId,
+                    ProductName = l.ProductName,
+                    SkuCode = l.SkuCode,
+                    Quantity = (int)l.Quantity,
+                    Notes = l.Notes
+                }).ToList();
+            }
+
+            if (_job.Status == "PendingOfficeVerification" && _skuMaster.Count == 0)
+            {
+                _skuMaster = await Api.GetAsync<List<SkuMasterItemDto>>("api/inward/sku-master");
+            }
         }
         catch (ApiException ex)
         {
             Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task SaveInspectionAsync()
+    {
+        if (_job is null)
+        {
+            return;
+        }
+
+        _savingInspection = true;
+        try
+        {
+            var request = new UpdateInspectionRequest(
+                _editLines.Select(l => new UpdateInspectionLineRequest(l.PurchaseOrderLineId, l.ReceivedQty, l.Condition, l.Notes)).ToList(),
+                _editUnplanned.Select(l => new UpdateUnplannedReceiptLineRequest(l.ProductId, l.Quantity, l.Notes)).ToList());
+
+            await Api.PutAsync<InwardJobDto>($"api/office/inward-jobs/{Id}/inspection", request);
+            Snackbar.Add("Inspection details saved.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _savingInspection = false;
         }
     }
 
@@ -230,28 +444,58 @@
         }
     }
 
+    private async Task VerifyAndGenerateGrnAsync()
+    {
+        _verifying = true;
+        try
+        {
+            await Api.PostAsync<InwardJobDto>($"api/office/inward-jobs/{Id}/verify-and-generate-grn", new { });
+            Snackbar.Add("GRN generated.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _verifying = false;
+        }
+    }
+
     private static string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "PendingOfficeVerification" => "Pending Verification",
+        _ => status
+    };
 
     // Pairs with the commented-out Pick List Qty / Loaded Qty columns above - kept for a quick
     // re-enable rather than deleted outright.
     // private static string FormatQty(decimal? value) => value?.ToString("0.##") ?? "-";
 
-    // Physical Qty is what actually arrived on the truck for this line - one InspectionLine row
-    // per condition bucket (Ok/Damaged/Short/Excess/Mismatch). Ok/Damaged/Mismatch/Excess cartons
-    // were all physically present (just in varying condition or, for Excess, genuinely more than
-    // expected); Short is the opposite - it's the shortfall that never arrived at all, mirroring
-    // how the mobile inspection screen computes it (JobDetailPage.xaml.cs's RecomputeOkFromExceptions:
-    // Ok = Expected - Damaged - Short - Mismatch). Summing Short in here would silently cancel out
-    // the very shortage this column exists to surface. "-" until inspection has been submitted.
+    // Physical Qty = Ok + Damaged + Excess. Short is excluded - it's the shortfall that never
+    // arrived at all, not a physically-present quantity. Mismatch is also excluded - a Mismatch
+    // quantity means that portion of the expected SKU wasn't actually this SKU at all (the real
+    // item received instead is recorded separately in Mismatch SKU Details), so it doesn't count
+    // toward this line's physical count either way. "-" until inspection has been submitted.
+    // Reads from _editLines (the staged, possibly-just-typed values), not the immutable _job
+    // snapshot - so the Physical Qty column recalculates live as Office edits Received Qty, before
+    // "Save Changes" is even clicked. _editLines mirrors _job.InspectionLines exactly whenever
+    // there's nothing in-flight to edit, so this is equally correct for read-only statuses too.
     private string FormatPhysicalQty(int purchaseOrderLineId)
     {
-        var allLines = _job?.InspectionLines.Where(l => l.PurchaseOrderLineId == purchaseOrderLineId).ToList();
-        if (allLines is null || allLines.Count == 0)
+        var lines = _editLines.Where(l => l.PurchaseOrderLineId == purchaseOrderLineId).ToList();
+        if (lines.Count == 0)
         {
             return "-"; // Not inspected yet - distinct from a legitimate 0 (fully short-received).
         }
 
-        return allLines.Where(l => l.Condition != "Short").Sum(l => l.ReceivedQty).ToString("0.##");
+        int QtyFor(string condition) => lines.Where(l => l.Condition == condition).Sum(l => l.ReceivedQty);
+
+        var physicalQty = QtyFor("Ok") + QtyFor("Damaged") + QtyFor("Excess");
+        return physicalQty.ToString();
     }
 
     private static string FormatDriver(InwardJobDto job)

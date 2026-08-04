@@ -9,11 +9,15 @@ namespace WarehouseGate.Api.Services;
 // insensitive), not position, since real-world spreadsheets drift in column order.
 public static class VehicleLogisticsExcelParser
 {
+    // The canonical Dispatch Plan upload format: PO Number, SKU, SKU Code, Box Quantity, From/To
+    // Warehouse Name, Departure Date, ETA Datetime. Vehicle/transporter/driver/vehicle-type/inward-
+    // transaction-id are no longer part of the format at all - that data is supplied later by
+    // Office's "Tag Vehicle" action (see InwardService.TagVehicleAsync). Still accepted if a legacy
+    // file happens to include them (read via the optional-column-safe Get() below), just never
+    // required.
     private static readonly string[] ExpectedHeaders =
     {
-        "veh number", "po number", "inward transaction id", "transporter name", "driver name",
-        "driver ph. number", "vehicle type", "sku", "sku code", "box quantity",
-        "from warehouse id", "from warehouse name", "to warehouse id", "to warehouse name",
+        "po number", "sku", "sku code", "box quantity", "from warehouse name", "to warehouse name",
         "departure date", "eta datetime"
     };
 
@@ -49,7 +53,10 @@ public static class VehicleLogisticsExcelParser
             return (created, errors);
         }
 
-        string Get(IXLRow row, string header) => row.Cell(columnIndexByHeader[header]).GetString().Trim();
+        // Empty string for any column not present in the sheet at all (vehicle/transporter/driver/
+        // type/warehouse-id are optional now and may be entirely absent, not just blank per-row).
+        string Get(IXLRow row, string header) =>
+            columnIndexByHeader.TryGetValue(header, out var col) ? row.Cell(col).GetString().Trim() : string.Empty;
 
         var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
         for (var rowNumber = 2; rowNumber <= lastRow; rowNumber++)
@@ -60,22 +67,53 @@ public static class VehicleLogisticsExcelParser
                 continue;
             }
 
-            var vehicleNumber = Get(row, "veh number");
-            var sku = Get(row, "sku");
-            if (string.IsNullOrWhiteSpace(vehicleNumber) || string.IsNullOrWhiteSpace(sku))
+            var poNumber = Get(row, "po number");
+            if (string.IsNullOrWhiteSpace(poNumber))
             {
-                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "Vehicle number and SKU are required."));
+                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "PO Number is required."));
                 continue;
             }
 
-            var fromWarehouse = ResolveWarehouse(Get(row, "from warehouse id"), Get(row, "from warehouse name"), allWarehouses);
+            // Either SKU or SKU Code is enough - not both. Whichever is present becomes the record's
+            // Sku (the identifier used everywhere downstream, e.g. as the synthesized PO line's
+            // ProductName); SKU is preferred when both are given.
+            var sku = Get(row, "sku");
+            var skuCode = Get(row, "sku code");
+            if (string.IsNullOrWhiteSpace(sku) && string.IsNullOrWhiteSpace(skuCode))
+            {
+                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "SKU or SKU Code is required."));
+                continue;
+            }
+
+            var boxQuantityText = Get(row, "box quantity");
+            if (!int.TryParse(boxQuantityText, out var boxQuantity) || boxQuantity <= 0)
+            {
+                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "Box Quantity is required and must be a whole number greater than 0."));
+                continue;
+            }
+
+            var fromWarehouseName = Get(row, "from warehouse name");
+            if (string.IsNullOrWhiteSpace(fromWarehouseName))
+            {
+                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "From Warehouse Name is required."));
+                continue;
+            }
+
+            var toWarehouseName = Get(row, "to warehouse name");
+            if (string.IsNullOrWhiteSpace(toWarehouseName))
+            {
+                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "To Warehouse Name is required."));
+                continue;
+            }
+
+            var fromWarehouse = ResolveWarehouse(Get(row, "from warehouse id"), fromWarehouseName, allWarehouses);
             if (fromWarehouse is null)
             {
                 errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "From warehouse not found in the warehouse master."));
                 continue;
             }
 
-            var toWarehouse = ResolveWarehouse(Get(row, "to warehouse id"), Get(row, "to warehouse name"), allWarehouses);
+            var toWarehouse = ResolveWarehouse(Get(row, "to warehouse id"), toWarehouseName, allWarehouses);
             if (toWarehouse is null)
             {
                 errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "To warehouse not found in the warehouse master."));
@@ -94,26 +132,35 @@ public static class VehicleLogisticsExcelParser
                 continue;
             }
 
-            var boxQuantityText = Get(row, "box quantity");
-            if (!int.TryParse(boxQuantityText, out var boxQuantity))
+            // Date-only: Logistics plans a day, not a time-of-day, for departure/ETA.
+            var departureDate = ParseDateOrNull(row.Cell(columnIndexByHeader["departure date"]))?.Date;
+            if (departureDate is null)
             {
-                boxQuantity = 0;
+                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "Departure Date is required and must be a valid date."));
+                continue;
+            }
+
+            var etaDateTime = ParseDateOrNull(row.Cell(columnIndexByHeader["eta datetime"]))?.Date;
+            if (etaDateTime is null)
+            {
+                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "ETA Datetime is required and must be a valid date."));
+                continue;
             }
 
             created.Add(new VehicleLogisticsRecord
             {
-                VehicleNumber = vehicleNumber,
-                PoNumber = NullIfEmpty(Get(row, "po number")),
+                VehicleNumber = NullIfEmpty(Get(row, "veh number")),
+                PoNumber = poNumber,
                 InwardTransactionId = NullIfEmpty(Get(row, "inward transaction id")),
                 TransporterName = NullIfEmpty(Get(row, "transporter name")),
                 DriverName = NullIfEmpty(Get(row, "driver name")),
                 DriverPhone = NullIfEmpty(Get(row, "driver ph. number")),
                 VehicleType = NullIfEmpty(Get(row, "vehicle type")),
-                Sku = sku,
-                SkuCode = NullIfEmpty(Get(row, "sku code")),
+                Sku = string.IsNullOrWhiteSpace(sku) ? skuCode : sku,
+                SkuCode = NullIfEmpty(skuCode),
                 BoxQuantity = boxQuantity,
-                DepartureDate = ParseDateOrNull(row.Cell(columnIndexByHeader["departure date"])),
-                EtaDateTime = ParseDateOrNull(row.Cell(columnIndexByHeader["eta datetime"])),
+                DepartureDate = departureDate,
+                EtaDateTime = etaDateTime,
                 FromWarehouseId = fromWarehouse.Id,
                 ToWarehouseId = toWarehouse.Id,
                 Status = VehicleLogisticsStatus.InTransit,

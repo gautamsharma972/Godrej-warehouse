@@ -523,6 +523,7 @@ public partial class SecurityStatusPage : ContentPage
 
         return ContainsText(job.VehicleNumber, query) ||
                ContainsText(job.PONumber, query) ||
+               ContainsText(job.SecurityEnteredPoNumber, query) ||
                ContainsText(job.SupplierName, query) ||
                ContainsText(job.InwardTxnNumber, query);
     }
@@ -534,11 +535,11 @@ public partial class SecurityStatusPage : ContentPage
             return true;
         }
 
-        return ContainsText(job.PONumber, poNumber) || ContainsText(job.InwardTxnNumber, poNumber);
+        return ContainsText(job.PONumber, poNumber) || ContainsText(job.SecurityEnteredPoNumber, poNumber) || ContainsText(job.InwardTxnNumber, poNumber);
     }
 
-    private static bool ContainsText(string source, string value) =>
-        source.Contains(value, StringComparison.OrdinalIgnoreCase);
+    private static bool ContainsText(string? source, string value) =>
+        source is not null && source.Contains(value, StringComparison.OrdinalIgnoreCase);
 
     private void ApplyActiveFilter()
     {

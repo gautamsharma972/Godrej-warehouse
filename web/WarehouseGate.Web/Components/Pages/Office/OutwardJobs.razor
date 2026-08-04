@@ -91,7 +91,11 @@
                             </div>
                             <div class="dispatch-card-actions">
                                 <button class="admin-icon-btn edit" type="button" title="View" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => ViewDetail(job)"><i class="bx bx-show"></i></button>
-                                @if (job.Status != "Completed")
+                                @if (job.Status is not ("Completed" or "PendingOfficeVerification"))
+                                {
+                                    <button class="admin-icon-btn edit" type="button" title="@(job.VehicleNumber is null ? "Link Vehicle" : "Reassign Vehicle")" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => OpenLinkVehicleDialog(job)"><i class="bx bx-link"></i></button>
+                                }
+                                @if (job.Status is not ("Completed" or "PendingOfficeVerification"))
                                 {
                                     <button class="admin-icon-btn edit" type="button" title="Assign" @onclick:stopPropagation="true" @onclick:preventDefault="true" @onclick="() => OpenAssignDialog(job)"><i class="bx bx-user-check"></i></button>
                                 }
@@ -124,6 +128,7 @@
 @code {
     private List<OutwardJobDto>? _jobs;
     private List<SupervisorOptionDto> _supervisors = new();
+    private List<OutwardGateArrivalDto> _unlinkedArrivals = new();
     private bool _activeOnly = true;
     private string _search = string.Empty;
     private string? _statusFilter;
@@ -158,6 +163,7 @@
     {
         Realtime.OutwardJobChanged += OnOutwardJobChanged;
         Realtime.SupervisorsChanged += OnSupervisorsChanged;
+        Realtime.OutwardGateArrivalChanged += OnOutwardGateArrivalChanged;
         await LoadAsync();
     }
 
@@ -187,12 +193,21 @@
         StateHasChanged();
     });
 
+    // Security gate-checking-in (or Office linking) a vehicle elsewhere shouldn't need a full jobs
+    // reload - just refetch unlinked arrivals so the Link Vehicle dialog's dropdown stays current.
+    private void OnOutwardGateArrivalChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadUnlinkedArrivalsAsync();
+        StateHasChanged();
+    });
+
     // Unsubscribe only - see InwardJobs.razor's identical DisposeAsync for why Realtime itself
     // isn't disposed here (it's a scoped, per-circuit service shared across every Office page).
     public ValueTask DisposeAsync()
     {
         Realtime.OutwardJobChanged -= OnOutwardJobChanged;
         Realtime.SupervisorsChanged -= OnSupervisorsChanged;
+        Realtime.OutwardGateArrivalChanged -= OnOutwardGateArrivalChanged;
         return ValueTask.CompletedTask;
     }
 
@@ -201,6 +216,7 @@
         try
         {
             await LoadSupervisorsAsync();
+            await LoadUnlinkedArrivalsAsync();
             _jobs = await Api.GetAsync<List<OutwardJobDto>>($"api/office/outward-jobs?activeOnly={_activeOnly}");
         }
         catch (ApiException ex)
@@ -212,6 +228,11 @@
     private async Task LoadSupervisorsAsync()
     {
         _supervisors = await Api.GetAsync<List<SupervisorOptionDto>>("api/office/supervisors");
+    }
+
+    private async Task LoadUnlinkedArrivalsAsync()
+    {
+        _unlinkedArrivals = await Api.GetAsync<List<OutwardGateArrivalDto>>("api/office/dispatch-plan/outward/unlinked-arrivals");
     }
 
     private async Task OnActiveOnlyChangedAsync(ChangeEventArgs args)
@@ -230,11 +251,41 @@
     {
         "Completed" => "admin-badge success",
         "Cancelled" or "Deleted" => "admin-badge danger",
-        "PickListGenerated" => "admin-badge warning",
+        "PickListGenerated" or "PendingOfficeVerification" => "admin-badge warning",
         _ => "admin-badge info"
     };
 
     private void ViewDetail(OutwardJobDto job) => Navigation.NavigateTo($"/office/outward-jobs/{job.Id}");
+
+    private async Task OpenLinkVehicleDialog(OutwardJobDto job)
+    {
+        var isReassign = job.VehicleNumber is not null;
+        var parameters = new DialogParameters<LinkOutwardVehicleDialog>
+        {
+            { d => d.OutwardTransactionId, job.Id },
+            { d => d.DispatchOrderNumber, job.DispatchOrderNumber },
+            { d => d.IsReassign, isReassign },
+            { d => d.UnlinkedArrivals, _unlinkedArrivals }
+        };
+        var dialogTitle = isReassign ? $"Reassign Vehicle - {job.DispatchOrderNumber}" : $"Link Vehicle - {job.DispatchOrderNumber}";
+        var dialog = await DialogService.ShowAsync<LinkOutwardVehicleDialog>(dialogTitle, parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not LinkOutwardVehicleRequest request)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.PostAsync<OutwardJobDto>("api/office/dispatch-plan/outward/link-vehicle", request);
+            Snackbar.Add(isReassign ? "Vehicle reassigned." : "Vehicle linked.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error, config => config.VisibleStateDuration = 8000);
+        }
+    }
 
     private async Task OpenAssignDialog(OutwardJobDto job)
     {

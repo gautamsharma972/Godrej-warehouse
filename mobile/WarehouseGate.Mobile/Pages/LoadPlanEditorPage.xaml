@@ -147,6 +147,23 @@
                     </Border>
 
                     <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Border Grid.Column="0" WidthRequest="38" HeightRequest="38" StrokeThickness="0"
+                                        BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 19">
+                                    <Label Text="{x:Static services:IconGlyphs.Box}" Style="{StaticResource IconLabel}"
+                                           FontSize="14" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Add SKU" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
+                                    <Label Text="Still space left? Load extra stock beyond the pick list." Style="{StaticResource MetaLabel}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                            <Button x:Name="AddSkuButton" Text="Add SKU" Clicked="OnAddSkuClicked" Style="{StaticResource ChipButton}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
                         <VerticalStackLayout Spacing="14">
                             <Grid ColumnDefinitions="*,Auto">
                                 <VerticalStackLayout Grid.Column="0" Spacing="1">

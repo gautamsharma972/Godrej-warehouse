@@ -53,7 +53,7 @@ public class OutwardLoadPlanService
     public async Task<List<LoadPlanOptionSummaryDto>> GetOptionsAsync(int transactionId, string supervisorUserId)
     {
         var transaction = await GetOwnedTransactionAsync(transactionId, supervisorUserId);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         return transaction.LoadPlanOptions.OrderBy(o => o.CreatedAt).Select(option =>
         {
@@ -68,7 +68,7 @@ public class OutwardLoadPlanService
     {
         var transaction = await GetOwnedTransactionAsync(transactionId, supervisorUserId);
         RequireEditableStatus(transaction);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         if (transaction.LoadPlanOptions.Count >= MaxOptionsPerTransaction)
         {
@@ -116,7 +116,7 @@ public class OutwardLoadPlanService
     {
         var transaction = await GetOwnedTransactionAsync(transactionId, supervisorUserId);
         var target = RequireOption(transaction, optionId);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         var currentlySelected = transaction.LoadPlanOptions.FirstOrDefault(o => o.IsSelected);
         if (currentlySelected is not null && currentlySelected.Id != optionId
@@ -227,7 +227,7 @@ public class OutwardLoadPlanService
     {
         var transaction = await GetOwnedTransactionAsync(transactionId, supervisorUserId);
         var option = RequireOption(transaction, optionId);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         var (zoneLength, zoneWidth, unitProduct, line) = ResolveZoneRequest(transaction, request);
 
@@ -259,7 +259,7 @@ public class OutwardLoadPlanService
         var transaction = await GetOwnedTransactionAsync(transactionId, supervisorUserId);
         var option = RequireOption(transaction, optionId);
         RequireEditableStatus(transaction);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         var (zoneLength, zoneWidth, unitProduct, line) = ResolveZoneRequest(transaction, request);
         EnsureOrderedQtyNotExceeded(option, request.DispatchOrderLineId, excludeGroupId: null, request.Quantity, line);
@@ -294,7 +294,7 @@ public class OutwardLoadPlanService
         var group = RequireGroup(option, groupId);
         RequireNotStarted(group);
         RequireNotLocked(group);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         var (zoneLength, zoneWidth, unitProduct, line) = ResolveZoneRequest(transaction, request);
         EnsureOrderedQtyNotExceeded(option, request.DispatchOrderLineId, excludeGroupId: groupId, request.Quantity, line);
@@ -328,7 +328,7 @@ public class OutwardLoadPlanService
         var group = RequireGroup(option, groupId);
         RequireNotStarted(group);
         RequireNotLocked(group);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         var zoneLength = group.ZoneLength;
         var zoneWidth = group.ZoneWidth;
@@ -348,7 +348,7 @@ public class OutwardLoadPlanService
         var option = RequireOption(transaction, optionId);
         RequireEditableStatus(transaction);
         var source = RequireGroup(option, groupId);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         var line = transaction.DispatchOrder!.Lines.First(l => l.Id == source.DispatchOrderLineId);
         var unitProduct = BuildUnitProduct(line);
@@ -388,7 +388,7 @@ public class OutwardLoadPlanService
         var source = RequireGroup(option, groupId);
         RequireNotStarted(source);
         RequireNotLocked(source);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         if (splitQuantity <= 0 || splitQuantity >= source.Quantity)
         {
@@ -431,7 +431,7 @@ public class OutwardLoadPlanService
         var transaction = await GetOwnedTransactionAsync(transactionId, supervisorUserId);
         var option = RequireOption(transaction, optionId);
         RequireEditableStatus(transaction);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         foreach (var zone in option.Groups.Select(g => (g.ZoneLength, g.ZoneWidth)).Distinct().ToList())
         {
@@ -462,7 +462,7 @@ public class OutwardLoadPlanService
     {
         var transaction = await GetOwnedTransactionAsync(transactionId, supervisorUserId);
         var option = RequireOption(transaction, optionId);
-        var vehicle = RequireVehicleProfile(transaction);
+        var vehicle = GetVehicleProfile(transaction);
 
         var validation = LoadPlanValidator.Validate(BuildPlacedItems(option.Groups), vehicle);
 
@@ -698,30 +698,25 @@ public class OutwardLoadPlanService
         return new ZoneGrid(rows, columns, layers, columns * unitProduct.Width, layers * unitProduct.Height, rows * unitProduct.Length);
     }
 
-    private static ProductItem BuildUnitProduct(DispatchOrderLine line)
+    // A missing/zero master dimension falls back to a 1cm placeholder rather than blocking
+    // placement - geometric fitment is cosmetic only (see ComputeZoneGrid), and ComputeZoneGrid
+    // divides zone size by these values, so they must stay positive.
+    private static double PositiveOrFallbackCm(decimal? valueCm) => valueCm is > 0 ? (double)valueCm.Value : 1;
+
+    private static ProductItem BuildUnitProduct(DispatchOrderLine line) => new()
     {
-        var unitProduct = new ProductItem
-        {
-            Sku = line.Id.ToString(),
-            Description = line.ProductName,
-            Quantity = 1,
-            Length = (double)(line.Product?.LengthCm ?? 0),
-            Width = (double)(line.Product?.WidthCm ?? 0),
-            Height = (double)(line.Product?.HeightCm ?? 0),
-            Weight = (double)(line.Product?.WeightKg ?? 0),
-            // Not used for stacking rejection any more (nothing rejects), kept only because
-            // BuildPlacedItems/LoadPlanValidator still read it for the advisory rule panel.
-            IsStackable = line.Product?.IsStackable ?? true,
-            MaxStackLayers = line.Product?.MaxStackLayers ?? int.MaxValue
-        };
-
-        if (unitProduct.Length <= 0 || unitProduct.Width <= 0 || unitProduct.Height <= 0)
-        {
-            throw new InvalidOperationException("This product has no dimensions on file - link it to a Product master record first.");
-        }
-
-        return unitProduct;
-    }
+        Sku = line.Id.ToString(),
+        Description = line.ProductName,
+        Quantity = 1,
+        Length = PositiveOrFallbackCm(line.Product?.LengthCm),
+        Width = PositiveOrFallbackCm(line.Product?.WidthCm),
+        Height = PositiveOrFallbackCm(line.Product?.HeightCm),
+        Weight = (double)(line.Product?.WeightKg ?? 0),
+        // Not used for stacking rejection any more (nothing rejects), kept only because
+        // BuildPlacedItems/LoadPlanValidator still read it for the advisory rule panel.
+        IsStackable = line.Product?.IsStackable ?? true,
+        MaxStackLayers = line.Product?.MaxStackLayers ?? int.MaxValue
+    };
 
     private (LoadZoneLength ZoneLength, LoadZoneWidth ZoneWidth, ProductItem UnitProduct, DispatchOrderLine Line) ResolveZoneRequest(
         OutwardTransaction transaction, PlaceLoadGroupInZoneRequest request)
@@ -922,21 +917,24 @@ public class OutwardLoadPlanService
     private static string ZoneCode(OutwardLoadPlanGroup g) =>
         $"{g.ZoneLength.ToString()[0]}-{g.ZoneWidth.ToString()[0]}-{g.ZoneHeight.ToString()[0]}";
 
-    private static VehicleProfile RequireVehicleProfile(OutwardTransaction transaction)
+    // No real capacity ceiling is enforced here - the 3D workspace is a convenience simulation for
+    // where cartons would physically sit, not a hard loading rule, so a vehicle with no registered
+    // dimensions still gets a (generously oversized) envelope instead of blocking the page entirely.
+    private const double FallbackVehicleLengthCm = 2000;
+    private const double FallbackVehicleWidthCm = 300;
+    private const double FallbackVehicleHeightCm = 300;
+    private const double FallbackVehicleMaxPayloadKg = 100000;
+
+    private static VehicleProfile GetVehicleProfile(OutwardTransaction transaction)
     {
         var vehicle = transaction.Vehicle;
-        if (vehicle?.MaxWeightKg is null || vehicle.LengthCm is null || vehicle.WidthCm is null || vehicle.HeightCm is null)
-        {
-            throw new InvalidOperationException("Vehicle capacity is not on file for this job yet.");
-        }
-
         return new VehicleProfile
         {
-            Name = vehicle.Number,
-            Length = (double)vehicle.LengthCm.Value,
-            Width = (double)vehicle.WidthCm.Value,
-            Height = (double)vehicle.HeightCm.Value,
-            MaxPayload = (double)vehicle.MaxWeightKg.Value
+            Name = vehicle?.Number ?? "Unknown",
+            Length = (double?)vehicle?.LengthCm ?? FallbackVehicleLengthCm,
+            Width = (double?)vehicle?.WidthCm ?? FallbackVehicleWidthCm,
+            Height = (double?)vehicle?.HeightCm ?? FallbackVehicleHeightCm,
+            MaxPayload = (double?)vehicle?.MaxWeightKg ?? FallbackVehicleMaxPayloadKg
         };
     }
 

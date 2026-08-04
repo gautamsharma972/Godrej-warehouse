@@ -5,7 +5,9 @@ public class VehicleLogisticsRecord : ITenantScoped
     public int Id { get; set; }
     public int OrganizationId { get; set; }
 
-    public string VehicleNumber { get; set; } = string.Empty;
+    // Null until Office tags this dispatch plan row with a real vehicle (see
+    // InwardService.TagVehicleAsync) or a legacy Excel upload/manual entry already set it directly.
+    public string? VehicleNumber { get; set; }
     public string? PoNumber { get; set; }
     public string? InwardTransactionId { get; set; }
     public string? TransporterName { get; set; }

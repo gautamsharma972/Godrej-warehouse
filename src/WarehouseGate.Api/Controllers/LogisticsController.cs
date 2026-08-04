@@ -67,8 +67,11 @@ public class LogisticsController : ControllerBase
 
     // ============================ VEHICLE LOGISTICS RECORDS ============================
 
+    // Defaults to the last 30 days (by CreatedAtUtc, inclusive calendar days) so the Dispatch Plan
+    // list doesn't grow unbounded over the life of a region - Logistics Managers widen or narrow
+    // that window with the Created From/To filters, same convention as ReportsController.GetDetailed.
     [HttpGet("vehicle-records")]
-    public async Task<ActionResult<List<VehicleLogisticsRecordDto>>> GetVehicleRecords()
+    public async Task<ActionResult<List<VehicleLogisticsRecordDto>>> GetVehicleRecords([FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
         var regionId = await GetCallerRegionIdAsync();
         if (regionId is null)
@@ -76,21 +79,39 @@ public class LogisticsController : ControllerBase
             return Ok(new List<VehicleLogisticsRecordDto>());
         }
 
-        // No filter parameters on this endpoint at all - Logistics reviews the full upload as one
-        // list, so unlike Inward/Outward's history caps there's no "filtered vs unfiltered" case
-        // to distinguish. Capped to the most recent 500 records so a region with years of vehicle
-        // logistics data can't silently balloon this into an unbounded payload.
+        var toDate = to ?? DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var fromDate = from ?? toDate.AddDays(-29);
+
+        if (fromDate > toDate)
+        {
+            (fromDate, toDate) = (toDate, fromDate);
+        }
+
+        if (toDate.DayNumber - fromDate.DayNumber > MaxRangeDays)
+        {
+            return BadRequest(new { message = $"Date range cannot exceed {MaxRangeDays} days." });
+        }
+
+        var rangeStart = fromDate.ToDateTime(TimeOnly.MinValue);
+        var rangeEnd = toDate.AddDays(1).ToDateTime(TimeOnly.MinValue);
+
+        // Capped to the most recent 500 records within the selected window so a region with years
+        // of vehicle logistics data can't silently balloon this into an unbounded payload.
         var records = await _db.VehicleLogisticsRecords
             .Include(r => r.FromWarehouse).Include(r => r.ToWarehouse)
-            .Where(r => r.FromWarehouse!.RegionId == regionId || r.ToWarehouse!.RegionId == regionId)
+            .Where(r => (r.FromWarehouse!.RegionId == regionId || r.ToWarehouse!.RegionId == regionId)
+                && r.CreatedAtUtc >= rangeStart && r.CreatedAtUtc < rangeEnd)
             .OrderByDescending(r => r.CreatedAtUtc)
             .Take(MaxVehicleRecordResults)
             .ToListAsync();
 
-        return Ok(records.Select(ToDto).ToList());
+        var (liveInfo, extraRows) = await ResolveLiveDispatchDataAsync(records);
+        var dtos = records.Select(r => ToDto(r, liveInfo.GetValueOrDefault(r.Id))).Concat(extraRows).ToList();
+        return Ok(dtos);
     }
 
     private const int MaxVehicleRecordResults = 500;
+    private const int MaxRangeDays = 366;
 
     [HttpPost("vehicle-records")]
     public async Task<ActionResult<VehicleLogisticsRecordDto>> CreateVehicleRecord(UpsertVehicleLogisticsRecordRequest request)
@@ -103,7 +124,7 @@ public class LogisticsController : ControllerBase
 
         var record = new VehicleLogisticsRecord
         {
-            VehicleNumber = request.VehicleNumber.Trim(),
+            VehicleNumber = string.IsNullOrWhiteSpace(request.VehicleNumber) ? null : request.VehicleNumber.Trim(),
             PoNumber = request.PoNumber,
             InwardTransactionId = request.InwardTransactionId,
             TransporterName = request.TransporterName,
@@ -146,13 +167,18 @@ public class LogisticsController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "This record is outside your region." });
         }
 
+        if (record.Status != VehicleLogisticsStatus.InTransit)
+        {
+            return BadRequest(new { message = "Dispatch records can only be edited while still in-transit." });
+        }
+
         var validation = await ValidateWarehousesAsync(request.FromWarehouseId, request.ToWarehouseId);
         if (validation is not null)
         {
             return validation;
         }
 
-        record.VehicleNumber = request.VehicleNumber.Trim();
+        record.VehicleNumber = string.IsNullOrWhiteSpace(request.VehicleNumber) ? null : request.VehicleNumber.Trim();
         record.PoNumber = request.PoNumber;
         record.InwardTransactionId = request.InwardTransactionId;
         record.TransporterName = request.TransporterName;
@@ -196,6 +222,11 @@ public class LogisticsController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "This record is outside your region." });
         }
 
+        if (record.Status != VehicleLogisticsStatus.InTransit)
+        {
+            return BadRequest(new { message = "Dispatch records can only be deleted while still in-transit." });
+        }
+
         // Soft delete - the record stays queryable/filterable by status (matches the "Deleted"
         // status option in the UI) rather than disappearing from the audit trail entirely.
         record.Status = VehicleLogisticsStatus.Deleted;
@@ -220,24 +251,24 @@ public class LogisticsController : ControllerBase
         var allWarehouses = await _db.Warehouses.ToListAsync();
         var regionId = await GetCallerRegionIdAsync();
 
-        List<Domain.VehicleLogisticsRecord> created;
+        List<VehicleLogisticsRecord> parsedRows;
         List<VehicleLogisticsUploadRowErrorDto> errors;
         await using (var stream = file.OpenReadStream())
         {
-            (created, errors) = VehicleLogisticsExcelParser.Parse(stream, CurrentUserId, allWarehouses, regionId);
+            (parsedRows, errors) = VehicleLogisticsExcelParser.Parse(stream, CurrentUserId, allWarehouses, regionId);
         }
 
-        if (created.Count > 0)
+        var (insertedCount, updatedCount) = await VehicleLogisticsRecordUpsertService.UpsertAsync(_db, parsedRows, CurrentUserId);
+
+        if (insertedCount > 0 || updatedCount > 0)
         {
-            _db.VehicleLogisticsRecords.AddRange(created);
-            await _db.SaveChangesAsync();
             await _audit.LogAsync("VehicleLogisticsRecord", 0, AuditAction.Created,
-                $"Imported {created.Count} vehicle logistics record(s) from '{file.FileName}' ({errors.Count} row(s) skipped).",
+                $"Imported {insertedCount} new / updated {updatedCount} existing vehicle logistics record(s) from '{file.FileName}' ({errors.Count} row(s) skipped).",
                 CurrentUserId, CurrentUserName);
             await BroadcastChangedAsync();
         }
 
-        return Ok(new VehicleLogisticsUploadResultDto(created.Count, errors));
+        return Ok(new VehicleLogisticsUploadResultDto(insertedCount, updatedCount, errors));
     }
 
     // Both warehouses must exist, be distinct, and at least one must fall in the caller's own
@@ -277,12 +308,160 @@ public class LogisticsController : ControllerBase
         var record = await _db.VehicleLogisticsRecords
             .Include(r => r.FromWarehouse).Include(r => r.ToWarehouse)
             .FirstAsync(r => r.Id == id);
-        return Ok(ToDto(record));
+        var (liveInfo, _) = await ResolveLiveDispatchDataAsync(new List<VehicleLogisticsRecord> { record });
+        return Ok(ToDto(record, liveInfo.GetValueOrDefault(record.Id)));
     }
 
-    private static VehicleLogisticsRecordDto ToDto(Domain.VehicleLogisticsRecord r) => new(
-        r.Id, r.VehicleNumber, r.PoNumber, r.InwardTransactionId, r.TransporterName, r.DriverName, r.DriverPhone,
+    private sealed record LiveDispatchInfo(
+        decimal? PickListQty, decimal? LoadedQty, decimal? PhysicalQty,
+        string? VehicleNumber, string? DriverName, string? DriverPhone, string? TransporterName);
+
+    // Mirrors InwardService.ResolveDispatchQuantitiesAsync's join pattern, extended with
+    // Vehicle/Driver/Transporter - a Dispatch Plan row's own stored fields only ever get patched
+    // once the DESTINATION Office links a vehicle (InwardService.TryClaimDispatchPlanForLinkingAsync);
+    // the SOURCE Office's own vehicle link (OutwardService.LinkVehicleAsync) only ever lands on the
+    // OutwardTransaction itself, so the Logistics Manager would otherwise see "-" for the whole
+    // window between the source loading the truck and the destination eventually linking it too.
+    //
+    // Also synthesizes a read-only extra row (IsExtra = true) for every DispatchOrderLine on those
+    // same Outward transactions whose ProductName matches none of the passed-in records' Sku - SKUs
+    // the source supervisor added during loading (3D Load Plan Workspace "Add SKU") that have no
+    // Dispatch Plan row at all, mirroring InwardService.ResolveDispatchQuantitiesAsync's identical
+    // fix for the destination side's "Expected material" list.
+    private async Task<(Dictionary<int, LiveDispatchInfo> ByRecordId, List<VehicleLogisticsRecordDto> ExtraRows)> ResolveLiveDispatchDataAsync(
+        List<VehicleLogisticsRecord> records)
+    {
+        var outwardTransactionIds = records
+            .Where(r => r.ConsumedByOutwardTransactionId.HasValue)
+            .Select(r => r.ConsumedByOutwardTransactionId!.Value)
+            .Distinct()
+            .ToList();
+
+        var inwardTransactionIds = records
+            .Where(r => r.ConsumedByInwardTransactionId.HasValue)
+            .Select(r => r.ConsumedByInwardTransactionId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (outwardTransactionIds.Count == 0 && inwardTransactionIds.Count == 0)
+        {
+            return (new Dictionary<int, LiveDispatchInfo>(), new List<VehicleLogisticsRecordDto>());
+        }
+
+        var transactions = await _db.OutwardTransactions
+            .Include(t => t.Vehicle)
+            .Include(t => t.DispatchOrder!).ThenInclude(d => d.Lines)
+            .Where(t => outwardTransactionIds.Contains(t.Id))
+            .ToListAsync();
+
+        var loadLines = await _db.OutwardLoadLines
+            .Include(l => l.DispatchOrderLine)
+            .Where(l => outwardTransactionIds.Contains(l.OutwardTransactionId))
+            .ToListAsync();
+
+        var inwardTransactions = await _db.InwardTransactions
+            .Include(t => t.PurchaseOrder!).ThenInclude(po => po.Lines)
+            .Include(t => t.InspectionLines)
+            .Where(t => inwardTransactionIds.Contains(t.Id))
+            .ToListAsync();
+
+        // Mirrors InwardJobDetail.razor's own FormatPhysicalQty exactly: Short means it never
+        // physically arrived at all, Mismatch means it turned out to be a different SKU entirely -
+        // neither counts toward this line's physical receipt. Null (not "-") until at least one
+        // inspection line exists for it, distinct from a legitimate 0 (fully short-received).
+        decimal? ComputePhysicalQty(int inwardTransactionId, string productName)
+        {
+            var inwardTransaction = inwardTransactions.FirstOrDefault(t => t.Id == inwardTransactionId);
+            var line = inwardTransaction?.PurchaseOrder?.Lines.FirstOrDefault(l => l.ProductName == productName);
+            if (line is null)
+            {
+                return null;
+            }
+
+            var inspectionLines = inwardTransaction!.InspectionLines.Where(l => l.PurchaseOrderLineId == line.Id).ToList();
+            if (inspectionLines.Count == 0)
+            {
+                return null;
+            }
+
+            return inspectionLines
+                .Where(l => l.Condition is MaterialCondition.Ok or MaterialCondition.Damaged or MaterialCondition.Excess)
+                .Sum(l => l.ReceivedQty);
+        }
+
+        var byRecordId = new Dictionary<int, LiveDispatchInfo>();
+        foreach (var record in records)
+        {
+            var physicalQty = record.ConsumedByInwardTransactionId is { } inwardTransactionId
+                ? ComputePhysicalQty(inwardTransactionId, record.Sku)
+                : null;
+
+            if (record.ConsumedByOutwardTransactionId is not { } outwardTransactionId)
+            {
+                if (physicalQty is not null)
+                {
+                    byRecordId[record.Id] = new LiveDispatchInfo(null, null, physicalQty, null, null, null, null);
+                }
+                continue;
+            }
+
+            var transaction = transactions.FirstOrDefault(t => t.Id == outwardTransactionId);
+            if (transaction is null)
+            {
+                continue;
+            }
+
+            var pickListQty = transaction.DispatchOrder?.Lines
+                .FirstOrDefault(l => l.ProductName == record.Sku)?.OrderedQty;
+            var loadedQty = loadLines
+                .FirstOrDefault(l => l.OutwardTransactionId == outwardTransactionId && l.DispatchOrderLine!.ProductName == record.Sku)?.LoadedQty;
+
+            byRecordId[record.Id] = new LiveDispatchInfo(
+                pickListQty, loadedQty, physicalQty,
+                transaction.Vehicle?.Number, transaction.DriverName, transaction.DriverMobile, transaction.TransporterName);
+        }
+
+        var extraRows = new List<VehicleLogisticsRecordDto>();
+        foreach (var outwardTransactionId in outwardTransactionIds)
+        {
+            var transaction = transactions.FirstOrDefault(t => t.Id == outwardTransactionId);
+            var recordsForTransaction = records.Where(r => r.ConsumedByOutwardTransactionId == outwardTransactionId).ToList();
+            if (transaction?.DispatchOrder is null || recordsForTransaction.Count == 0)
+            {
+                continue;
+            }
+
+            var matchedSkus = recordsForTransaction.Select(r => r.Sku).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var context = recordsForTransaction[0];
+
+            foreach (var line in transaction.DispatchOrder.Lines.Where(l => !matchedSkus.Contains(l.ProductName)))
+            {
+                var loadedQty = loadLines
+                    .FirstOrDefault(l => l.OutwardTransactionId == outwardTransactionId && l.DispatchOrderLine!.ProductName == line.ProductName)?.LoadedQty;
+                var physicalQty = context.ConsumedByInwardTransactionId is { } inwardTransactionId
+                    ? ComputePhysicalQty(inwardTransactionId, line.ProductName)
+                    : null;
+
+                extraRows.Add(new VehicleLogisticsRecordDto(
+                    -line.Id, transaction.Vehicle?.Number ?? context.VehicleNumber, context.PoNumber, context.InwardTransactionId,
+                    transaction.TransporterName ?? context.TransporterName, transaction.DriverName ?? context.DriverName,
+                    transaction.DriverMobile ?? context.DriverPhone, context.VehicleType,
+                    line.ProductName, null, (int)Math.Round(line.OrderedQty),
+                    line.OrderedQty, loadedQty, physicalQty,
+                    context.DepartureDate, context.EtaDateTime,
+                    context.FromWarehouseId, context.FromWarehouse!.Name, context.ToWarehouseId, context.ToWarehouse!.Name,
+                    context.Status.ToString(), context.CreatedAtUtc, IsExtra: true));
+            }
+        }
+
+        return (byRecordId, extraRows);
+    }
+
+    private static VehicleLogisticsRecordDto ToDto(Domain.VehicleLogisticsRecord r, LiveDispatchInfo? live = null) => new(
+        r.Id, r.VehicleNumber ?? live?.VehicleNumber, r.PoNumber, r.InwardTransactionId,
+        r.TransporterName ?? live?.TransporterName, r.DriverName ?? live?.DriverName, r.DriverPhone ?? live?.DriverPhone,
         r.VehicleType, r.Sku, r.SkuCode, r.BoxQuantity,
+        live?.PickListQty, live?.LoadedQty, live?.PhysicalQty,
         r.DepartureDate, r.EtaDateTime,
         r.FromWarehouseId, r.FromWarehouse!.Name, r.ToWarehouseId, r.ToWarehouse!.Name,
         r.Status.ToString(), r.CreatedAtUtc);

@@ -71,11 +71,15 @@
                             <summary>
                                 <div class="dispatch-card-summary office-pending-summary">
                                     <div class="dispatch-card-vehicle">
-                                        <span class="admin-row-icon"><i class="bx bxs-truck"></i></span>
+                                        <span class="admin-row-icon"><i class="bx bx-file"></i></span>
                                         <div>
-                                            <span>Vehicle</span>
-                                            <strong>@group.VehicleNumber</strong>
+                                            <span>PO Number</span>
+                                            <strong>@(group.PoNumber ?? "-")</strong>
                                         </div>
+                                    </div>
+                                    <div>
+                                        <span>Vehicle</span>
+                                        <strong>@(group.VehicleNumber ?? "Not yet tagged")</strong>
                                     </div>
                                     <div>
                                         <span>From Warehouse</span>
@@ -83,12 +87,23 @@
                                     </div>
                                     <div>
                                         <span>ETA</span>
-                                        <strong>@(group.EtaDateTime?.ToString("yyyy-MM-dd HH:mm") ?? "-")</strong>
+                                        <strong>@(group.EtaDateTime?.ToString("yyyy-MM-dd") ?? "-")</strong>
                                     </div>
                                     <div>
                                         <span>Lines</span>
                                         <strong>@group.Lines.Count line@(group.Lines.Count == 1 ? "" : "s")</strong>
                                         <em>@group.Lines.Sum(l => l.BoxQuantity) total qty</em>
+                                    </div>
+                                    <div class="dispatch-card-actions">
+                                        @if (group.VehicleNumber is null && group.PoNumber is not null)
+                                        {
+                                            <button class="admin-primary-btn" type="button"
+                                                    @onclick:stopPropagation="true" @onclick:preventDefault="true"
+                                                    @onclick="() => OpenLinkVehicleDialog(group)">
+                                                <i class="bx bx-link"></i>
+                                                Link Vehicle
+                                            </button>
+                                        }
                                     </div>
                                     <div class="dispatch-card-toggle"><i class="bx bx-chevron-down"></i></div>
                                 </div>
@@ -227,14 +242,14 @@
                                             @foreach (var job in group)
                                             {
                                                 <tr>
-                                                    <td>@job.PONumber</td>
-                                                    <td>@job.SupplierName</td>
-                                                    <td><span class="@OfficeStatusBadgeClass(job.Status)">@job.Status</span></td>
+                                                    <td>@(job.PONumber ?? (string.IsNullOrWhiteSpace(job.SecurityEnteredPoNumber) ? "Not linked" : $"Not linked (noted: {job.SecurityEnteredPoNumber})"))</td>
+                                                    <td>@(job.SupplierName ?? "-")</td>
+                                                    <td><span class="@OfficeStatusBadgeClass(job.Status)">@StatusLabel(job.Status)</span></td>
                                                     <td>@job.GateInTime.ToString("yyyy-MM-dd HH:mm")</td>
                                                     <td>@SupervisorName(job.AssignedSupervisorUserId)</td>
                                                     <td class="admin-actions-cell">
                                                         <button class="admin-icon-btn edit" type="button" title="View" @onclick="() => ViewDetail(job)"><i class="bx bx-show"></i></button>
-                                                        @if (job.Status != "Completed")
+                                                        @if (job.Status != "Completed" && job.PONumber is not null)
                                                         {
                                                             <button class="admin-icon-btn edit" type="button" title="Assign" @onclick="() => OpenAssignDialog(job)"><i class="bx bx-user-check"></i></button>
                                                         }
@@ -263,6 +278,7 @@
     private List<InwardJobDto>? _jobs;
     private List<PendingDispatchPlanGroupDto>? _pendingInward;
     private List<SupervisorOptionDto> _supervisors = new();
+    private List<UnlinkedArrivalDto> _unlinkedArrivals = new();
     private bool _activeOnly = true;
     private string _activeInwardTab = "expected";
 
@@ -286,7 +302,8 @@
 
     private IEnumerable<PendingDispatchPlanGroupDto> ExpectedFiltered => (_pendingInward ?? [])
         .Where(g => string.IsNullOrWhiteSpace(_expectedSearch) ||
-            g.VehicleNumber.Contains(_expectedSearch, StringComparison.OrdinalIgnoreCase) ||
+            (g.VehicleNumber?.Contains(_expectedSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (g.PoNumber?.Contains(_expectedSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
             g.CounterpartWarehouseName.Contains(_expectedSearch, StringComparison.OrdinalIgnoreCase))
         .Where(g => _expectedWarehouseFilter is null || g.CounterpartWarehouseName == _expectedWarehouseFilter);
 
@@ -315,8 +332,8 @@
     private IEnumerable<IGrouping<string, InwardJobDto>> JobGroupsFiltered => VehicleGroups
         .Where(g => string.IsNullOrWhiteSpace(_jobsSearch) ||
             g.Key.Contains(_jobsSearch, StringComparison.OrdinalIgnoreCase) ||
-            g.Any(j => j.PONumber.Contains(_jobsSearch, StringComparison.OrdinalIgnoreCase) ||
-                       j.SupplierName.Contains(_jobsSearch, StringComparison.OrdinalIgnoreCase)))
+            g.Any(j => (j.PONumber?.Contains(_jobsSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                       (j.SupplierName?.Contains(_jobsSearch, StringComparison.OrdinalIgnoreCase) ?? false)))
         .Where(g => _jobsStatusFilter is null || GroupedStatus(g).Label == _jobsStatusFilter);
 
     private int JobGroupsFilteredCount => JobGroupsFiltered.Count();
@@ -406,6 +423,7 @@
             await LoadSupervisorsAsync();
             _jobs = await Api.GetAsync<List<InwardJobDto>>($"api/office/inward-jobs?activeOnly={_activeOnly}");
             await LoadPendingInwardAsync();
+            await LoadUnlinkedArrivalsAsync();
         }
         catch (ApiException ex)
         {
@@ -423,6 +441,14 @@
         _supervisors = await Api.GetAsync<List<SupervisorOptionDto>>("api/office/supervisors");
     }
 
+    // Refreshed on every LoadAsync (fired by InwardJobChanged, incl. when Security gate-checks-in a
+    // new arrival or Office links one), so the Link Vehicle dropdown always reflects who's currently
+    // sitting unlinked at this warehouse.
+    private async Task LoadUnlinkedArrivalsAsync()
+    {
+        _unlinkedArrivals = await Api.GetAsync<List<UnlinkedArrivalDto>>("api/office/dispatch-plan/inward/unlinked-arrivals");
+    }
+
     private async Task OnActiveOnlyChangedAsync(ChangeEventArgs args)
     {
         _activeOnly = args.Value is bool value && value;
@@ -438,20 +464,20 @@
     private static string GroupedPoNumber(IGrouping<string, InwardJobDto> group)
     {
         var distinct = group.Select(j => j.PONumber).Distinct().ToList();
-        return distinct.Count == 1 ? distinct[0] : "Multiple";
+        return distinct.Count == 1 ? (distinct[0] ?? "Not linked") : "Multiple";
     }
 
     private static string GroupedSupplier(IGrouping<string, InwardJobDto> group)
     {
         var distinct = group.Select(j => j.SupplierName).Distinct().ToList();
-        return distinct.Count == 1 ? distinct[0] : "Multiple";
+        return distinct.Count == 1 ? (distinct[0] ?? "-") : "Multiple";
     }
 
     private static (string Label, string BadgeClass) GroupedStatus(IGrouping<string, InwardJobDto> group)
     {
         var distinct = group.Select(j => j.Status).Distinct().ToList();
         return distinct.Count == 1
-            ? (distinct[0], OfficeStatusBadgeClass(distinct[0]))
+            ? (StatusLabel(distinct[0]), OfficeStatusBadgeClass(distinct[0]))
             : ("Mixed", "admin-badge neutral");
     }
 
@@ -459,8 +485,17 @@
     {
         "Completed" => "admin-badge success",
         "Cancelled" or "Deleted" => "admin-badge danger",
-        "Pending" or "Waiting" => "admin-badge warning",
+        "Pending" or "Waiting" or "PendingOfficeVerification" => "admin-badge warning",
         _ => "admin-badge info"
+    };
+
+    // "PendingOfficeVerification" reads awkwardly as a raw enum name in the Status column - give it
+    // a human label everywhere a job's status is displayed (GroupedStatus and the per-job rows both
+    // go through this instead of using job.Status directly).
+    private static string StatusLabel(string status) => status switch
+    {
+        "PendingOfficeVerification" => "Pending Verification",
+        _ => status
     };
 
     private void ViewDetail(InwardJobDto job) => Navigation.NavigateTo($"/office/inward-jobs/{job.Id}");
@@ -488,6 +523,37 @@
         catch (ApiException ex)
         {
             Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OpenLinkVehicleDialog(PendingDispatchPlanGroupDto group)
+    {
+        if (group.PoNumber is null)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<LinkVehicleDialog>
+        {
+            { d => d.PoNumber, group.PoNumber },
+            { d => d.UnlinkedArrivals, _unlinkedArrivals }
+        };
+        var dialog = await DialogService.ShowAsync<LinkVehicleDialog>($"Link Vehicle - PO {group.PoNumber}", parameters);
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not LinkVehicleRequest request)
+        {
+            return;
+        }
+
+        try
+        {
+            await Api.PostAsync<InwardJobDto>("api/office/dispatch-plan/inward/link-vehicle", request);
+            Snackbar.Add("Vehicle linked - now visible under Inward Jobs.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error, config => config.VisibleStateDuration = 8000);
         }
     }
 

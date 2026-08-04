@@ -5,8 +5,19 @@ namespace WarehouseGate.Mobile.Pages;
 
 public partial class VehicleExitPage : ContentPage
 {
+    // (Display label, OutwardPhotoType, max photo count) - see OutwardService.MaxGateArrivalPhotos
+    // for the server-side caps this mirrors.
+    private static readonly (string Label, string Type, int Max)[] ArrivalPhotoCategories =
+    {
+        ("Vehicle", "VehicleAtGate", 5),
+        ("Driver", "Driver", 3),
+        ("Vehicle RC", "VehicleRc", 2),
+        ("Driving Licence", "DrivingLicense", 2)
+    };
+
     private string? _selectedOutwardTransporter;
-    private string? _outwardGatePhotoLocalPath;
+    private readonly Dictionary<string, List<string>> _pendingArrivalPhotosByType =
+        ArrivalPhotoCategories.ToDictionary(c => c.Type, c => new List<string>());
     private bool? _isWide;
     private List<VehicleOption> _outwardVehicleOptions = new();
 
@@ -76,35 +87,25 @@ public partial class VehicleExitPage : ContentPage
         OutwardDriverNameMicButton.IsVisible = voiceAndScanSupported;
         OutwardDriverMobileMicButton.IsVisible = voiceAndScanSupported;
 
+        RefreshArrivalPhotoCategories();
         _ = LoadOutwardVehicleOptionsAsync();
     }
 
+    // Real Admin Vehicle Registry - searchable, with free-text entry still available as fallback
+    // for a plate not in the registry yet (ApiClient.OutwardGateCheckInAsync creates one on the fly).
     private async Task LoadOutwardVehicleOptionsAsync()
     {
         try
         {
-            var masters = await ApiClient.GetVehicleMastersAsync();
-            _outwardVehicleOptions = masters
-                .Select(m => new VehicleOption
-                {
-                    VehicleNumber = m.VehicleNumber,
-                    Summary = BuildVehicleMasterSummary(m)
-                })
+            var vehicles = await ApiClient.GetVehicleRegistryAsync();
+            _outwardVehicleOptions = vehicles
+                .Select(v => new VehicleOption { VehicleNumber = v.Number, Summary = "Vehicle registry" })
                 .ToList();
         }
         catch
         {
             _outwardVehicleOptions = new();
         }
-    }
-
-    private static string BuildVehicleMasterSummary(VehicleMasterDto master)
-    {
-        var parts = new[] { master.DriverName, master.TransporterName }
-            .Where(p => !string.IsNullOrWhiteSpace(p))
-            .ToList();
-
-        return parts.Count == 0 ? "Vehicle master" : string.Join(" - ", parts);
     }
 
     private async Task<string?> CapturePhotoToLocalCacheAsync()
@@ -256,7 +257,7 @@ public partial class VehicleExitPage : ContentPage
         if (_outwardVehicleOptions.Count == 0)
         {
             await DisplayAlert("No vehicles found",
-                "No vehicle master records are available yet. Ask Logistics to add vehicle masters, or try again later.", "OK");
+                "No vehicles are registered yet. Type the vehicle number manually, or try again later.", "OK");
             return;
         }
 
@@ -314,7 +315,71 @@ public partial class VehicleExitPage : ContentPage
         }
     }
 
-    private async void OnOutwardGatePhotoTapped(object? sender, EventArgs e)
+    // Rebuilds the 4 gate-photo category rows (Vehicle/Driver/Vehicle RC/Driving Licence) from
+    // scratch - mirrors JobDetailPage.BuildSkuPhotoRow's "count/max + Add Photo" pattern, just
+    // repeated per category instead of per PO line.
+    private void RefreshArrivalPhotoCategories()
+    {
+        ArrivalPhotoCategoriesContainer.Children.Clear();
+        foreach (var category in ArrivalPhotoCategories)
+        {
+            ArrivalPhotoCategoriesContainer.Children.Add(BuildArrivalPhotoCategoryRow(category.Label, category.Type, category.Max));
+        }
+    }
+
+    private View BuildArrivalPhotoCategoryRow(string label, string type, int max)
+    {
+        var photos = _pendingArrivalPhotosByType[type];
+
+        var titleLabel = new Label
+        {
+            Text = $"{label} ({photos.Count}/{max})",
+            FontFamily = "PoppinsSemiBold",
+            FontSize = 14,
+            TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"]
+        };
+
+        var addButton = new Button
+        {
+            Text = "Add Photo",
+            IsEnabled = photos.Count < max,
+            Style = (Style)Application.Current!.Resources["ChipButton"],
+            FontSize = 11,
+            ImageSource = new FontImageSource { FontFamily = "FaSolid", Glyph = IconGlyphs.Camera, Color = (Color)Application.Current.Resources["Primary"], Size = 11 }
+        };
+        addButton.Clicked += async (_, _) => await CaptureArrivalPhotoAsync(type);
+
+        titleLabel.VerticalOptions = LayoutOptions.Center;
+        var header = new Grid { ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star), new(GridLength.Auto) } };
+        Grid.SetColumn(titleLabel, 0);
+        Grid.SetColumn(addButton, 1);
+        header.Children.Add(titleLabel);
+        header.Children.Add(addButton);
+
+        var row = new VerticalStackLayout { Spacing = 8 };
+        row.Children.Add(header);
+
+        if (photos.Count > 0)
+        {
+            var thumbnails = new HorizontalStackLayout { Spacing = 8 };
+            foreach (var path in photos)
+            {
+                thumbnails.Children.Add(new Border
+                {
+                    WidthRequest = 56,
+                    HeightRequest = 56,
+                    StrokeThickness = 0,
+                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+                    Content = new Image { Source = ImageSource.FromFile(path), Aspect = Aspect.AspectFill }
+                });
+            }
+            row.Children.Add(thumbnails);
+        }
+
+        return row;
+    }
+
+    private async Task CaptureArrivalPhotoAsync(string type)
     {
         var localPath = await CapturePhotoToLocalCacheAsync();
         if (localPath is null)
@@ -322,11 +387,8 @@ public partial class VehicleExitPage : ContentPage
             return;
         }
 
-        _outwardGatePhotoLocalPath = localPath;
-        OutwardGatePhotoImage.Source = ImageSource.FromFile(localPath);
-        OutwardGatePhotoImage.IsVisible = true;
-        OutwardGatePhotoPlaceholder.IsVisible = false;
-        OutwardGatePhotoButton.Text = "Retake Photo";
+        _pendingArrivalPhotosByType[type].Add(localPath);
+        RefreshArrivalPhotoCategories();
     }
 
     private static async Task<Location?> TryGetLocationAsync()
@@ -345,17 +407,18 @@ public partial class VehicleExitPage : ContentPage
     {
         GateInResultBorder.IsVisible = false;
 
-        var doValid = ValidateRequiredField(DispatchOrderNumberEntry, DispatchOrderNumberBorder, DispatchOrderNumberErrorIcon, DispatchOrderNumberErrorLabel);
+        // Dispatch Order Number is an optional hint now (Office links the vehicle afterward) -
+        // only Vehicle Number is still required to check in.
         var vehicleValid = ValidateRequiredField(OutwardVehicleNumberEntry, OutwardVehicleNumberBorder, OutwardVehicleNumberErrorIcon, OutwardVehicleNumberErrorLabel);
         OutwardVehicleNumberChevron.IsVisible = vehicleValid;
 
-        if (!doValid || !vehicleValid)
+        if (!vehicleValid)
         {
             return;
         }
 
-        var dispatchOrderNumber = DispatchOrderNumberEntry.Text!.Trim();
         var vehicleNumber = OutwardVehicleNumberEntry.Text!.Trim();
+        var dispatchOrderNumber = string.IsNullOrWhiteSpace(DispatchOrderNumberEntry.Text) ? null : DispatchOrderNumberEntry.Text.Trim();
 
         GateInSubmitButton.IsEnabled = false;
         GateInSubmitButton.Text = "Gating out...";
@@ -366,32 +429,35 @@ public partial class VehicleExitPage : ContentPage
         {
             var location = await TryGetLocationAsync();
 
-            var job = await ApiClient.OutwardGateCheckInAsync(new OutwardGateCheckInInput
+            var arrival = await ApiClient.OutwardGateCheckInAsync(new OutwardGateCheckInInput
             {
-                DispatchOrderNumber = dispatchOrderNumber,
                 VehicleNumber = vehicleNumber,
                 DriverName = string.IsNullOrWhiteSpace(OutwardDriverNameEntry.Text) ? null : OutwardDriverNameEntry.Text.Trim(),
                 DriverMobile = string.IsNullOrWhiteSpace(OutwardDriverMobileEntry.Text) ? null : OutwardDriverMobileEntry.Text.Trim(),
                 TransporterName = string.IsNullOrWhiteSpace(_selectedOutwardTransporter) ? null : _selectedOutwardTransporter,
                 GateName = OutwardGatePicker.SelectedItem as string,
                 GpsLatitude = location?.Latitude,
-                GpsLongitude = location?.Longitude
+                GpsLongitude = location?.Longitude,
+                DispatchOrderNumber = dispatchOrderNumber
             });
 
             var uploadFailures = 0;
-            if (_outwardGatePhotoLocalPath is not null)
+            foreach (var category in ArrivalPhotoCategories)
             {
-                try
+                foreach (var localPath in _pendingArrivalPhotosByType[category.Type])
                 {
-                    job = await ApiClient.UploadOutwardGatePhotoAsync(job.Id, "VehicleAtGate", _outwardGatePhotoLocalPath);
-                }
-                catch (Exception)
-                {
-                    uploadFailures++;
+                    try
+                    {
+                        await ApiClient.UploadOutwardGateArrivalPhotoAsync(arrival.Id, category.Type, localPath);
+                    }
+                    catch (Exception)
+                    {
+                        uploadFailures++;
+                    }
                 }
             }
 
-            ShowGateInSuccessResult(job, uploadFailures);
+            ShowGateInSuccessResult(arrival, uploadFailures);
             ResetGateInForm();
         }
         catch (ApiException ex)
@@ -422,10 +488,11 @@ public partial class VehicleExitPage : ContentPage
         SetSelectedOutwardTransporter(null);
         OutwardGatePicker.SelectedIndex = -1;
 
-        _outwardGatePhotoLocalPath = null;
-        OutwardGatePhotoImage.IsVisible = false;
-        OutwardGatePhotoPlaceholder.IsVisible = true;
-        OutwardGatePhotoButton.Text = "Capture Photo";
+        foreach (var category in ArrivalPhotoCategories)
+        {
+            _pendingArrivalPhotosByType[category.Type].Clear();
+        }
+        RefreshArrivalPhotoCategories();
 
         ClearFieldValidation(DispatchOrderNumberBorder, DispatchOrderNumberErrorIcon, DispatchOrderNumberErrorLabel);
         ClearFieldValidation(OutwardVehicleNumberBorder, OutwardVehicleNumberErrorIcon, OutwardVehicleNumberErrorLabel);
@@ -443,9 +510,10 @@ public partial class VehicleExitPage : ContentPage
         GateInResultBorder.IsVisible = true;
     }
 
-    private void ShowGateInSuccessResult(OutwardJob job, int uploadFailures = 0)
+    private void ShowGateInSuccessResult(OutwardGateArrival arrival, int uploadFailures = 0)
     {
-        GateInSuccessDetailLabel.Text = $"{job.VehicleNumber} - DO {job.DispatchOrderNumber} - {job.CustomerName}\nGate-out recorded for outward loading.";
+        var driverSuffix = string.IsNullOrWhiteSpace(arrival.DriverName) ? string.Empty : $" - {arrival.DriverName}";
+        GateInSuccessDetailLabel.Text = $"{arrival.VehicleNumber}{driverSuffix}\nGate-out recorded - Office will link this vehicle to its dispatch order.";
 
         GateInSuccessBadgesContainer.Children.Clear();
         if (uploadFailures > 0)
