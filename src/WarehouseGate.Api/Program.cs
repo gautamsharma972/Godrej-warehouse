@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using WarehouseGate.Api;
 using WarehouseGate.Api.Assistant;
 using WarehouseGate.Api.Hubs;
 using WarehouseGate.Api.Services;
@@ -10,137 +12,151 @@ using WarehouseGate.Infrastructure;
 using WarehouseGate.Infrastructure.Storage;
 using WarehouseGate.LoadPlanning;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
-    ?? throw new InvalidOperationException("Jwt configuration section is missing.");
-builder.Services.AddSingleton(jwtOptions);
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
 
-var photoStorageOptions = builder.Configuration.GetSection("PhotoStorage").Get<LocalDiskPhotoStorageOptions>()
-    ?? new LocalDiskPhotoStorageOptions();
-builder.Services.AddSingleton(photoStorageOptions);
-builder.Services.AddSingleton<IPhotoStorageService, LocalDiskPhotoStorageService>();
+    builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext());
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentTenantProvider, HttpContextCurrentTenantProvider>();
+    var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
+        ?? throw new InvalidOperationException("Jwt configuration section is missing.");
+    builder.Services.AddSingleton(jwtOptions);
 
-var connectionString = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<WarehouseGateDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-        mySqlOptions => mySqlOptions.EnableRetryOnFailure()));
+    var photoStorageOptions = builder.Configuration.GetSection("PhotoStorage").Get<LocalDiskPhotoStorageOptions>()
+        ?? new LocalDiskPhotoStorageOptions();
+    builder.Services.AddSingleton(photoStorageOptions);
+    builder.Services.AddSingleton<IPhotoStorageService, LocalDiskPhotoStorageService>();
 
-builder.Services
-    .AddIdentityCore<ApplicationUser>(options =>
-    {
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequiredLength = 6;
-    })
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<WarehouseGateDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ICurrentTenantProvider, HttpContextCurrentTenantProvider>();
 
-builder.Services.AddScoped<TokenService>(_ => new TokenService(jwtOptions));
-builder.Services.AddScoped<InwardService>();
-builder.Services.AddScoped<OutwardLoadPlanService>();
-builder.Services.AddScoped<OutwardService>();
-builder.Services.AddScoped<AuditService>();
-builder.Services.AddScoped<VehicleLogisticsSyncService>();
-builder.Services.AddSingleton<LoadPlanningEngine>();
-builder.Services.AddScoped<LoadPlanningService>();
-builder.Services.AddScoped<DashboardAnalyticsService>();
-builder.Services.AddScoped<WarehouseScopeResolver>();
+    var connectionString = builder.Configuration.GetConnectionString("Default");
+    builder.Services.AddDbContext<WarehouseGateDbContext>(options =>
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+            mySqlOptions => mySqlOptions.EnableRetryOnFailure()));
 
-// Assistant/ is a self-contained folder (Semantic Kernel + a self-hosted Ollama model) - callers
-// outside it should only ever depend on IAssistantService, never AssistantService/SK types
-// directly (see AssistantService's own header comment for why it isn't a separate project).
-var assistantOptions = builder.Configuration.GetSection("Assistant").Get<AssistantOptions>()
-    ?? new AssistantOptions();
-builder.Services.AddSingleton(assistantOptions);
-builder.Services.AddSingleton<IAssistantService, AssistantService>();
-builder.Services.AddSingleton<PendingActionStore>();
-builder.Services.AddSingleton<AssistantConversationStore>();
-builder.Services.AddSingleton<AssistantTelemetry>();
-
-builder.Services
-    .AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
+    builder.Services
+        .AddIdentityCore<ApplicationUser>(options =>
         {
-            ValidateIssuer = true,
-            ValidIssuer = jwtOptions.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwtOptions.Audience,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1)
-        };
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequiredLength = 6;
+        })
+        .AddRoles<IdentityRole>()
+        .AddEntityFrameworkStores<WarehouseGateDbContext>()
+        .AddSignInManager()
+        .AddDefaultTokenProviders();
 
-        // Browsers/native SignalR clients can't always set the Authorization header on the
-        // websocket handshake, so accept the token via query string for hub connections.
-        options.Events = new JwtBearerEvents
+    builder.Services.AddScoped<TokenService>(_ => new TokenService(jwtOptions));
+    builder.Services.AddScoped<InwardService>();
+    builder.Services.AddScoped<OutwardLoadPlanService>();
+    builder.Services.AddScoped<OutwardService>();
+    builder.Services.AddScoped<AuditService>();
+    builder.Services.AddScoped<VehicleLogisticsSyncService>();
+    builder.Services.AddSingleton<LoadPlanningEngine>();
+    builder.Services.AddScoped<LoadPlanningService>();
+    builder.Services.AddScoped<DashboardAnalyticsService>();
+    builder.Services.AddScoped<WarehouseScopeResolver>();
+
+    // Assistant/ is a self-contained folder (Semantic Kernel + a self-hosted Ollama model) - callers
+    // outside it should only ever depend on IAssistantService, never AssistantService/SK types
+    // directly (see AssistantService's own header comment for why it isn't a separate project).
+    var assistantOptions = builder.Configuration.GetSection("Assistant").Get<AssistantOptions>()
+        ?? new AssistantOptions();
+    builder.Services.AddSingleton(assistantOptions);
+    builder.Services.AddSingleton<IAssistantService, AssistantService>();
+    builder.Services.AddSingleton<PendingActionStore>();
+    builder.Services.AddSingleton<AssistantConversationStore>();
+    builder.Services.AddSingleton<AssistantTelemetry>();
+
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails();
+
+    builder.Services
+        .AddAuthentication(options =>
         {
-            OnMessageReceived = context =>
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                var accessToken = context.Request.Query["access_token"];
-                if (!string.IsNullOrEmpty(accessToken) &&
-                    context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                ValidateIssuer = true,
+                ValidIssuer = jwtOptions.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwtOptions.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(1)
+            };
+
+            // Browsers/native SignalR clients can't always set the Authorization header on the
+            // websocket handshake, so accept the token via query string for hub connections.
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
                 {
-                    context.Token = accessToken;
+                    var accessToken = context.Request.Query["access_token"];
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
                 }
-                return Task.CompletedTask;
+            };
+        });
+
+    builder.Services.AddAuthorization();
+    builder.Services.AddSignalR();
+
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+            options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Paste the JWT returned from /api/auth/login."
+        });
+        options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
+            {
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
             }
-        };
+        });
     });
 
-builder.Services.AddAuthorization();
-builder.Services.AddSignalR();
-
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    builder.Services.AddCors(options =>
     {
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Paste the JWT returned from /api/auth/login."
+        options.AddDefaultPolicy(policy =>
+            policy.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true).AllowCredentials());
     });
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
-        {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-            {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
 
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-        policy.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true).AllowCredentials());
-});
-
-var app = builder.Build();
+    var app = builder.Build();
 
 //using (var scope = app.Services.CreateScope())
 //{
@@ -153,17 +169,38 @@ app.UseSwagger();
 app.UseSwaggerUI();
 //}
 
-// Local Android emulators call the dev API over HTTP via 10.0.2.2. Redirecting that
-// request to HTTPS breaks on the emulator because the localhost dev certificate is not trusted.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
+    // Local Android emulators call the dev API over HTTP via 10.0.2.2. Redirecting that
+    // request to HTTPS breaks on the emulator because the localhost dev certificate is not trusted.
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
+    app.UseCors();
+
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.GetLevel = (httpContext, elapsedMs, ex) => ex is not null || httpContext.Response.StatusCode >= 500
+            ? Serilog.Events.LogEventLevel.Error
+            : httpContext.Response.StatusCode >= 400
+                ? Serilog.Events.LogEventLevel.Warning
+                : Serilog.Events.LogEventLevel.Information;
+    });
+
+    app.UseExceptionHandler();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers();
+    app.MapHub<InwardHub>("/hubs/inward");
+
+    app.Run();
 }
-app.UseCors();
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-app.MapHub<InwardHub>("/hubs/inward");
-
-app.Run();
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
