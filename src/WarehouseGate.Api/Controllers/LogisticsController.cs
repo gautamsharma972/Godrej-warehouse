@@ -323,11 +323,17 @@ public class LogisticsController : ControllerBase
     // OutwardTransaction itself, so the Logistics Manager would otherwise see "-" for the whole
     // window between the source loading the truck and the destination eventually linking it too.
     //
-    // Also synthesizes a read-only extra row (IsExtra = true) for every DispatchOrderLine on those
-    // same Outward transactions whose ProductName matches none of the passed-in records' Sku - SKUs
-    // the source supervisor added during loading (3D Load Plan Workspace "Add SKU") that have no
-    // Dispatch Plan row at all, mirroring InwardService.ResolveDispatchQuantitiesAsync's identical
-    // fix for the destination side's "Expected material" list.
+    // Also synthesizes:
+    // - a read-only extra row (IsExtra = true) for every DispatchOrderLine on those same Outward
+    //   transactions with IsExtra == true - SKUs the source supervisor added during loading (3D
+    //   Load Plan Workspace "Add SKU") that have no Dispatch Plan row at all, mirroring
+    //   InwardService.ResolveDispatchQuantitiesAsync's identical fix for the destination's
+    //   "Expected material" list. Matched by DispatchOrderLine.Id/IsExtra, never by ProductName -
+    //   two lines can legitimately share a product name (e.g. the supervisor loads more of an
+    //   already-planned SKU as a separate line), and a name-based diff would silently drop one.
+    // - a read-only unplanned-receipt row (IsUnplannedReceipt = true) for every UnplannedReceiptLine
+    //   on the destination's Inward job - a SKU discovered only during receiving inspection that
+    //   was never expected/loaded at all ("Mismatch SKU Details").
     private async Task<(Dictionary<int, LiveDispatchInfo> ByRecordId, List<VehicleLogisticsRecordDto> ExtraRows)> ResolveLiveDispatchDataAsync(
         List<VehicleLogisticsRecord> records)
     {
@@ -355,13 +361,13 @@ public class LogisticsController : ControllerBase
             .ToListAsync();
 
         var loadLines = await _db.OutwardLoadLines
-            .Include(l => l.DispatchOrderLine)
             .Where(l => outwardTransactionIds.Contains(l.OutwardTransactionId))
             .ToListAsync();
 
         var inwardTransactions = await _db.InwardTransactions
             .Include(t => t.PurchaseOrder!).ThenInclude(po => po.Lines)
             .Include(t => t.InspectionLines)
+            .Include(t => t.UnplannedLines).ThenInclude(l => l.Product)
             .Where(t => inwardTransactionIds.Contains(t.Id))
             .ToListAsync();
 
@@ -369,10 +375,32 @@ public class LogisticsController : ControllerBase
         // physically arrived at all, Mismatch means it turned out to be a different SKU entirely -
         // neither counts toward this line's physical receipt. Null (not "-") until at least one
         // inspection line exists for it, distinct from a legitimate 0 (fully short-received).
-        decimal? ComputePhysicalQty(int inwardTransactionId, string productName)
+        //
+        // Resolves the destination PurchaseOrderLine by SourceDispatchOrderLineId, not ProductName -
+        // once an extra line exists, the destination can have TWO PurchaseOrderLines sharing the
+        // same product name (one mirroring the planned line, one mirroring the extra line), and a
+        // name-based lookup would attach the planned line's own inspected quantity to the extra
+        // row too. sourceDispatchOrderLineId is null only for the "Inward already claimed this row,
+        // but Outward hasn't" case, where there's exactly one PO line for the SKU and name matching
+        // is unambiguous; preferNonExtra additionally guards the legacy-data fallback (rows created
+        // before SourceDispatchOrderLineId existed) so it can never accidentally pick up an extra
+        // line by name.
+        decimal? ComputePhysicalQty(int inwardTransactionId, string productName, int? sourceDispatchOrderLineId, bool preferNonExtra)
         {
             var inwardTransaction = inwardTransactions.FirstOrDefault(t => t.Id == inwardTransactionId);
-            var line = inwardTransaction?.PurchaseOrder?.Lines.FirstOrDefault(l => l.ProductName == productName);
+            var poLines = inwardTransaction?.PurchaseOrder?.Lines;
+            if (poLines is null)
+            {
+                return null;
+            }
+
+            var line = sourceDispatchOrderLineId.HasValue
+                ? poLines.FirstOrDefault(l => l.SourceDispatchOrderLineId == sourceDispatchOrderLineId)
+                : null;
+            if (line is null && preferNonExtra)
+            {
+                line = poLines.FirstOrDefault(l => !l.IsExtra && l.ProductName == productName);
+            }
             if (line is null)
             {
                 return null;
@@ -392,15 +420,14 @@ public class LogisticsController : ControllerBase
         var byRecordId = new Dictionary<int, LiveDispatchInfo>();
         foreach (var record in records)
         {
-            var physicalQty = record.ConsumedByInwardTransactionId is { } inwardTransactionId
-                ? ComputePhysicalQty(inwardTransactionId, record.Sku)
-                : null;
-
             if (record.ConsumedByOutwardTransactionId is not { } outwardTransactionId)
             {
-                if (physicalQty is not null)
+                var physicalQtyOnly = record.ConsumedByInwardTransactionId is { } noOutwardInwardTransactionId
+                    ? ComputePhysicalQty(noOutwardInwardTransactionId, record.Sku, null, preferNonExtra: true)
+                    : null;
+                if (physicalQtyOnly is not null)
                 {
-                    byRecordId[record.Id] = new LiveDispatchInfo(null, null, physicalQty, null, null, null, null);
+                    byRecordId[record.Id] = new LiveDispatchInfo(null, null, physicalQtyOnly, null, null, null, null);
                 }
                 continue;
             }
@@ -411,13 +438,17 @@ public class LogisticsController : ControllerBase
                 continue;
             }
 
-            var pickListQty = transaction.DispatchOrder?.Lines
-                .FirstOrDefault(l => l.ProductName == record.Sku)?.OrderedQty;
-            var loadedQty = loadLines
-                .FirstOrDefault(l => l.OutwardTransactionId == outwardTransactionId && l.DispatchOrderLine!.ProductName == record.Sku)?.LoadedQty;
+            var matchedLine = transaction.DispatchOrder?.Lines
+                .FirstOrDefault(l => !l.IsExtra && l.ProductName == record.Sku);
+            var loadedQty = matchedLine is null
+                ? null
+                : loadLines.FirstOrDefault(l => l.OutwardTransactionId == outwardTransactionId && l.DispatchOrderLineId == matchedLine.Id)?.LoadedQty;
+            var physicalQty = record.ConsumedByInwardTransactionId is { } inwardTransactionId
+                ? ComputePhysicalQty(inwardTransactionId, record.Sku, matchedLine?.Id, preferNonExtra: true)
+                : null;
 
             byRecordId[record.Id] = new LiveDispatchInfo(
-                pickListQty, loadedQty, physicalQty,
+                matchedLine?.OrderedQty, loadedQty, physicalQty,
                 transaction.Vehicle?.Number, transaction.DriverName, transaction.DriverMobile, transaction.TransporterName);
         }
 
@@ -431,16 +462,23 @@ public class LogisticsController : ControllerBase
                 continue;
             }
 
-            var matchedSkus = recordsForTransaction.Select(r => r.Sku).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var context = recordsForTransaction[0];
 
-            foreach (var line in transaction.DispatchOrder.Lines.Where(l => !matchedSkus.Contains(l.ProductName)))
+            foreach (var line in transaction.DispatchOrder.Lines.Where(l => l.IsExtra))
             {
                 var loadedQty = loadLines
-                    .FirstOrDefault(l => l.OutwardTransactionId == outwardTransactionId && l.DispatchOrderLine!.ProductName == line.ProductName)?.LoadedQty;
-                var physicalQty = context.ConsumedByInwardTransactionId is { } inwardTransactionId
-                    ? ComputePhysicalQty(inwardTransactionId, line.ProductName)
-                    : null;
+                    .FirstOrDefault(l => l.OutwardTransactionId == outwardTransactionId && l.DispatchOrderLineId == line.Id)?.LoadedQty;
+                // preferNonExtra: false - an extra line with no SourceDispatchOrderLineId match at
+                // the destination simply hasn't been inspected as its own line yet (or the
+                // destination hasn't synced it in); falling back to name matching here would just
+                // re-attach the planned line's own physical qty, the exact bug this fixes. Once
+                // that happens, fall back to Loaded Qty instead of leaving a dash - a supervisor-
+                // loaded extra with no discrepancy reported against it yet is presumed to have
+                // arrived as loaded, same "no finer-grained number yet, use what we do know"
+                // fallback already used for ExpectedQty elsewhere.
+                var physicalQty = (context.ConsumedByInwardTransactionId is { } inwardTransactionId
+                    ? ComputePhysicalQty(inwardTransactionId, line.ProductName, line.Id, preferNonExtra: false)
+                    : null) ?? loadedQty;
 
                 extraRows.Add(new VehicleLogisticsRecordDto(
                     -line.Id, transaction.Vehicle?.Number ?? context.VehicleNumber, context.PoNumber, context.InwardTransactionId,
@@ -451,6 +489,33 @@ public class LogisticsController : ControllerBase
                     context.DepartureDate, context.EtaDateTime,
                     context.FromWarehouseId, context.FromWarehouse!.Name, context.ToWarehouseId, context.ToWarehouse!.Name,
                     context.Status.ToString(), context.CreatedAtUtc, IsExtra: true));
+            }
+        }
+
+        foreach (var inwardTransactionId in inwardTransactionIds)
+        {
+            var inwardTransaction = inwardTransactions.FirstOrDefault(t => t.Id == inwardTransactionId);
+            var recordsForTransaction = records.Where(r => r.ConsumedByInwardTransactionId == inwardTransactionId).ToList();
+            if (inwardTransaction is null || recordsForTransaction.Count == 0)
+            {
+                continue;
+            }
+
+            var context = recordsForTransaction[0];
+
+            // Offset well clear of the DispatchOrderLine-extra rows' `-line.Id` space above -
+            // DispatchOrderLine and UnplannedReceiptLine ids are independent sequences that could
+            // otherwise collide on the same negative placeholder id.
+            foreach (var line in inwardTransaction.UnplannedLines)
+            {
+                extraRows.Add(new VehicleLogisticsRecordDto(
+                    -(1_000_000 + line.Id), context.VehicleNumber, context.PoNumber, context.InwardTransactionId,
+                    context.TransporterName, context.DriverName, context.DriverPhone, context.VehicleType,
+                    line.Product!.Name, line.Product.SkuCode, 0,
+                    null, null, line.Quantity,
+                    context.DepartureDate, context.EtaDateTime,
+                    context.FromWarehouseId, context.FromWarehouse!.Name, context.ToWarehouseId, context.ToWarehouse!.Name,
+                    context.Status.ToString(), context.CreatedAtUtc, IsExtra: false, IsUnplannedReceipt: true));
             }
         }
 

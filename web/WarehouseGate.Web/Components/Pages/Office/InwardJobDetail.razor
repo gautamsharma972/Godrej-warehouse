@@ -118,7 +118,7 @@
                                     <td>@line.ExpectedQty.ToString("0")</td>
                                     @* <td class="admin-muted">@FormatQty(line.PickListQty)</td> *@
                                     @* <td class="admin-muted">@FormatQty(line.LoadedQty)</td> *@
-                                    <td>@FormatPhysicalQty(line.Id)</td>
+                                    <td>@FormatPhysicalQty(line)</td>
                                     <td>@line.UnitOfMeasure</td>
                                 </tr>
                             }
@@ -484,12 +484,19 @@
     // snapshot - so the Physical Qty column recalculates live as Office edits Received Qty, before
     // "Save Changes" is even clicked. _editLines mirrors _job.InspectionLines exactly whenever
     // there's nothing in-flight to edit, so this is equally correct for read-only statuses too.
-    private string FormatPhysicalQty(int purchaseOrderLineId)
+    private string FormatPhysicalQty(PoLineDto line)
     {
-        var lines = _editLines.Where(l => l.PurchaseOrderLineId == purchaseOrderLineId).ToList();
+        var lines = _editLines.Where(l => l.PurchaseOrderLineId == line.Id).ToList();
         if (lines.Count == 0)
         {
-            return "-"; // Not inspected yet - distinct from a legitimate 0 (fully short-received).
+            // A supervisor-added extra line the destination only just synced in (see
+            // InwardService.SyncExtraLinesAsync) may not have its own inspection recorded yet - the
+            // receiving inspection could well have already been submitted against the ORIGINAL
+            // planned line before this line even existed in the Supervisor's view, so there's
+            // genuinely nothing here to sum. Fall back to Loaded Qty rather than a dash, same
+            // "no finer-grained number yet, use what we do know" fallback already used on the
+            // Logistics Manager's Dispatch Plan view for the identical situation.
+            return line.IsExtra && line.LoadedQty.HasValue ? line.LoadedQty.Value.ToString("0.##") : "-";
         }
 
         int QtyFor(string condition) => lines.Where(l => l.Condition == condition).Sum(l => l.ReceivedQty);

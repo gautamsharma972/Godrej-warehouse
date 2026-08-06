@@ -24,8 +24,10 @@ builder.Services.AddSingleton<IPhotoStorageService, LocalDiskPhotoStorageService
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentTenantProvider, HttpContextCurrentTenantProvider>();
 
+var connectionString = builder.Configuration.GetConnectionString("Default");
 builder.Services.AddDbContext<WarehouseGateDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure()));
 
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>

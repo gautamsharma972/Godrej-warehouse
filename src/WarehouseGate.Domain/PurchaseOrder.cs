@@ -35,4 +35,11 @@ public class PurchaseOrderLine
     // InwardService.ResolveDispatchQuantitiesAsync's ExtraDispatchLine. False for every ordinary
     // Dispatch-Plan-matched or manually-entered PO line.
     public bool IsExtra { get; set; }
+
+    // Which DispatchOrderLine (source warehouse) this line was synthesized from, if any - plain
+    // informational id, no navigation/FK (same lightweight style as PickListQty/LoadedQty above).
+    // Lets InwardService.SyncExtraLinesAsync tell "already mirrored" apart from "not yet mirrored"
+    // by id rather than by ProductName, which breaks the moment two DispatchOrderLines (e.g. two
+    // separate "Add SKU" additions of the same product) share a name.
+    public int? SourceDispatchOrderLineId { get; set; }
 }

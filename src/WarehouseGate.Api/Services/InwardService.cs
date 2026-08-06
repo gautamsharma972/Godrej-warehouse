@@ -281,7 +281,8 @@ public class InwardService
                     ExpectedQty = qty?.LoadedQty ?? r.PickListQuantity ?? r.BoxQuantity,
                     PickListQty = qty?.PickListQty,
                     LoadedQty = qty?.LoadedQty,
-                    UnitOfMeasure = "PCS"
+                    UnitOfMeasure = "PCS",
+                    SourceDispatchOrderLineId = qty?.SourceDispatchOrderLineId
                 };
             }).Concat(extraLines.Select(l => new PurchaseOrderLine
             {
@@ -295,7 +296,8 @@ public class InwardService
                 PickListQty = l.OrderedQty,
                 LoadedQty = l.LoadedQty,
                 UnitOfMeasure = "PCS",
-                IsExtra = true
+                IsExtra = true,
+                SourceDispatchOrderLineId = l.DispatchOrderLineId
             })).ToList()
         };
         _db.PurchaseOrders.Add(po);
@@ -328,29 +330,32 @@ public class InwardService
             return;
         }
 
-        var existingProductNames = transaction.PurchaseOrder.Lines
-            .Select(l => l.ProductName)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // Matched by DispatchOrderLine.Id, not ProductName - two "extra" lines (e.g. the supervisor
+        // clicks "Add SKU" twice for the same product) can share a name, and a name-based diff
+        // would mistake the second for already-mirrored the moment the first gets synced.
+        var mirroredDispatchOrderLineIds = transaction.PurchaseOrder.Lines
+            .Where(l => l.SourceDispatchOrderLineId.HasValue)
+            .Select(l => l.SourceDispatchOrderLineId!.Value)
+            .ToHashSet();
 
         var dispatchLines = await _db.OutwardTransactions
             .Where(t => t.Id == outwardTransactionId)
             .SelectMany(t => t.DispatchOrder!.Lines)
             .ToListAsync();
 
-        var missingLines = dispatchLines.Where(l => !existingProductNames.Contains(l.ProductName)).ToList();
+        var missingLines = dispatchLines.Where(l => l.IsExtra && !mirroredDispatchOrderLineIds.Contains(l.Id)).ToList();
         if (missingLines.Count == 0)
         {
             return;
         }
 
         var loadLines = await _db.OutwardLoadLines
-            .Include(l => l.DispatchOrderLine)
             .Where(l => l.OutwardTransactionId == outwardTransactionId)
             .ToListAsync();
 
         foreach (var line in missingLines)
         {
-            var loadedQty = loadLines.FirstOrDefault(l => l.DispatchOrderLine!.ProductName == line.ProductName)?.LoadedQty;
+            var loadedQty = loadLines.FirstOrDefault(l => l.DispatchOrderLineId == line.Id)?.LoadedQty;
             transaction.PurchaseOrder.Lines.Add(new PurchaseOrderLine
             {
                 ProductName = line.ProductName,
@@ -358,18 +363,19 @@ public class InwardService
                 PickListQty = line.OrderedQty,
                 LoadedQty = loadedQty,
                 UnitOfMeasure = "PCS",
-                IsExtra = true
+                IsExtra = true,
+                SourceDispatchOrderLineId = line.Id
             });
         }
 
         await _db.SaveChangesAsync();
     }
 
-    private sealed record DispatchQuantities(decimal? PickListQty, decimal? LoadedQty);
+    private sealed record DispatchQuantities(decimal? PickListQty, decimal? LoadedQty, int? SourceDispatchOrderLineId);
 
     // A DispatchOrderLine the source warehouse's supervisor added during loading (OutwardService.
-    // AddDispatchOrderLineAsync) that has no matching Dispatch Plan row - see ResolveDispatchQuantitiesAsync.
-    private sealed record ExtraDispatchLine(string ProductName, decimal OrderedQty, decimal? LoadedQty);
+    // AddDispatchOrderLineAsync, IsExtra == true) - see ResolveDispatchQuantitiesAsync.
+    private sealed record ExtraDispatchLine(int DispatchOrderLineId, string ProductName, decimal OrderedQty, decimal? LoadedQty);
 
     // "Expected material" at Inward shows three distinct numbers side by side, each reflecting a
     // later stage of the same shipment's journey at the source warehouse's Outward job (if one
@@ -381,10 +387,12 @@ public class InwardService
     // submitted). Both are null for a row that was never claimed by an Outward job, or hasn't
     // reached that stage yet - the UI shows a dash rather than fabricating a value.
     //
-    // Also returns any DispatchOrderLine on those same Outward transactions whose ProductName
-    // matches none of the passed-in rows' Sku - these are SKUs the supervisor added during
-    // loading that were never part of the Dispatch Plan, so they'd otherwise never reach the
-    // destination's Expected material list at all (see SynthesizePurchaseOrderFromDispatchRowsAsync).
+    // Also returns every DispatchOrderLine on those same Outward transactions with IsExtra == true -
+    // SKUs the supervisor added during loading that were never part of the Dispatch Plan, so
+    // they'd otherwise never reach the destination's Expected material list at all (see
+    // SynthesizePurchaseOrderFromDispatchRowsAsync). Matching is by DispatchOrderLine.Id/IsExtra,
+    // never by ProductName - two lines (one planned, one supervisor-added, or two supervisor-added)
+    // can legitimately share the same product name, and a name-based diff would silently drop one.
     private async Task<(Dictionary<int, DispatchQuantities> ByRowId, List<ExtraDispatchLine> ExtraLines)> ResolveDispatchQuantitiesAsync(List<VehicleLogisticsRecord> rows)
     {
         var outwardTransactionIds = rows
@@ -400,11 +408,17 @@ public class InwardService
 
         var pickListLines = await _db.OutwardTransactions
             .Where(t => outwardTransactionIds.Contains(t.Id))
-            .SelectMany(t => t.DispatchOrder!.Lines, (t, line) => new { t.Id, line.ProductName, line.OrderedQty })
+            .SelectMany(t => t.DispatchOrder!.Lines, (t, line) => new
+            {
+                OutwardTransactionId = t.Id,
+                DispatchOrderLineId = line.Id,
+                line.ProductName,
+                line.OrderedQty,
+                line.IsExtra
+            })
             .ToListAsync();
 
         var loadLines = await _db.OutwardLoadLines
-            .Include(l => l.DispatchOrderLine)
             .Where(l => outwardTransactionIds.Contains(l.OutwardTransactionId))
             .ToListAsync();
 
@@ -416,20 +430,20 @@ public class InwardService
                 continue;
             }
 
-            var pickListQty = pickListLines
-                .FirstOrDefault(l => l.Id == outwardTransactionId && l.ProductName == row.Sku)?.OrderedQty;
-            var loadedQty = loadLines
-                .FirstOrDefault(l => l.OutwardTransactionId == outwardTransactionId && l.DispatchOrderLine!.ProductName == row.Sku)?.LoadedQty;
+            var matchedLine = pickListLines
+                .FirstOrDefault(l => l.OutwardTransactionId == outwardTransactionId && !l.IsExtra && l.ProductName == row.Sku);
+            var loadedQty = matchedLine is null
+                ? null
+                : loadLines.FirstOrDefault(ll => ll.OutwardTransactionId == outwardTransactionId && ll.DispatchOrderLineId == matchedLine.DispatchOrderLineId)?.LoadedQty;
 
-            result[row.Id] = new DispatchQuantities(pickListQty, loadedQty);
+            result[row.Id] = new DispatchQuantities(matchedLine?.OrderedQty, loadedQty, matchedLine?.DispatchOrderLineId);
         }
 
-        var matchedSkus = rows.Select(r => r.Sku).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var extraLines = pickListLines
-            .Where(l => !matchedSkus.Contains(l.ProductName))
+            .Where(l => l.IsExtra)
             .Select(l => new ExtraDispatchLine(
-                l.ProductName, l.OrderedQty,
-                loadLines.FirstOrDefault(ll => ll.OutwardTransactionId == l.Id && ll.DispatchOrderLine!.ProductName == l.ProductName)?.LoadedQty))
+                l.DispatchOrderLineId, l.ProductName, l.OrderedQty,
+                loadLines.FirstOrDefault(ll => ll.OutwardTransactionId == l.OutwardTransactionId && ll.DispatchOrderLineId == l.DispatchOrderLineId)?.LoadedQty))
             .ToList();
 
         return (result, extraLines);

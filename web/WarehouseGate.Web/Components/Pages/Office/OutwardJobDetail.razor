@@ -92,6 +92,42 @@
                 </div>
             </article>
 
+            @if (_job.MismatchReceiptsAtDestination is { Count: > 0 })
+            {
+                <article class="office-detail-card">
+                    <div class="office-detail-card-head">
+                        <div>
+                            <p class="logistics-panel-kicker">Mismatch SKU Details</p>
+                            <h2>Mismatch SKUs received (at destination)</h2>
+                        </div>
+                        <div class="logistics-panel-icon orange"><i class="bx bx-package"></i></div>
+                    </div>
+                    <div class="admin-table-scroll">
+                        <table class="admin-table compact">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>SKU Code</th>
+                                    <th>Quantity</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var line in _job.MismatchReceiptsAtDestination)
+                                {
+                                    <tr>
+                                        <td>@line.ProductName</td>
+                                        <td class="admin-muted">@ValueOrDash(line.SkuCode)</td>
+                                        <td>@line.Quantity</td>
+                                        <td class="admin-muted">@ValueOrDash(line.Notes)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            }
+
             <article class="office-detail-card">
                 <div class="office-detail-card-head">
                     <div>

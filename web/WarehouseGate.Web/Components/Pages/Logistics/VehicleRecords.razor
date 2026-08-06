@@ -157,7 +157,17 @@
                                             @foreach (var record in group)
                                             {
                                                 <tr>
-                                                    <td>@record.Sku</td>
+                                                    <td>
+                                                        @record.Sku
+                                                        @if (record.IsExtra)
+                                                        {
+                                                            <span class="admin-badge neutral">Added during loading</span>
+                                                        }
+                                                        else if (record.IsUnplannedReceipt)
+                                                        {
+                                                            <span class="admin-badge warning">Received as mismatch</span>
+                                                        }
+                                                    </td>
                                                     <td class="admin-muted">@ValueOrDash(record.SkuCode)</td>
                                                     <td>@ValueOrDash(record.PoNumber)</td>
                                                     <td>@record.BoxQuantity</td>

@@ -1259,7 +1259,14 @@ public partial class LoadConfirmationPage : ContentPage
             {
                 _localPhotoPaths[newest.Id] = localPath;
             }
+            // RenderFinalSection rebuilds every load line row from scratch (BuildLoadLineRows) -
+            // only the job's Photos actually changed here, but a full rebuild would otherwise
+            // silently wipe any Loaded Qty/notes the supervisor had typed but not yet submitted.
+            // Snapshot before, reapply after (matched by DispatchOrderLine id, which doesn't change
+            // across the rebuild).
+            var snapshot = SnapshotLoadLineEntries();
             RenderFinalSection(_lastSteps);
+            RestoreLoadLineEntries(snapshot);
         }
         catch (ApiException ex)
         {
@@ -1273,6 +1280,21 @@ public partial class LoadConfirmationPage : ContentPage
         {
             Spinner.IsVisible = false;
             Spinner.IsRunning = false;
+        }
+    }
+
+    private Dictionary<int, (string Qty, string Notes)> SnapshotLoadLineEntries() =>
+        _loadLineRows.ToDictionary(r => r.Line.Id, r => (r.QtyEntry.Text, r.NotesEntry.Text));
+
+    private void RestoreLoadLineEntries(Dictionary<int, (string Qty, string Notes)> snapshot)
+    {
+        foreach (var row in _loadLineRows)
+        {
+            if (snapshot.TryGetValue(row.Line.Id, out var saved))
+            {
+                row.QtyEntry.Text = saved.Qty;
+                row.NotesEntry.Text = saved.Notes;
+            }
         }
     }
 

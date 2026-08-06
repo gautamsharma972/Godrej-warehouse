@@ -417,8 +417,16 @@ public partial class JobDetailPage : ContentPage
 
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            // Adding a photo (CapturePhotoAsync) itself triggers this exact push right back at the
+            // caller - the server broadcasts "JobUpdated" to the whole Supervisors group the moment
+            // AddPhotoAsync saves, including this device's own connection. Without the same
+            // snapshot/restore guard used there, this handler would silently undo that fix a moment
+            // later: CapturePhotoAsync's own RenderJob()+restore completes first, then this hub push
+            // arrives and wipes the restored Ok/Damaged/Short/Excess/Mismatch/notes right back out.
+            var snapshot = SnapshotInspectionEntries();
             _job = job;
             RenderJob();
+            RestoreInspectionEntries(snapshot);
         });
     }
 
@@ -1761,7 +1769,39 @@ public partial class JobDetailPage : ContentPage
         {
             Spinner.IsVisible = false;
             Spinner.IsRunning = false;
+            // RenderJob() rebuilds every inspection row from scratch (BuildInspectionRows) - only
+            // the job's Photos actually changed here, but a full rebuild would otherwise silently
+            // wipe any Ok/Damaged/Short/Excess/Mismatch quantity or notes the supervisor had typed
+            // but not yet submitted. Snapshot before, reapply after (matched by PO line id, which
+            // doesn't change across the rebuild).
+            var snapshot = SnapshotInspectionEntries();
             RenderJob();
+            RestoreInspectionEntries(snapshot);
+        }
+    }
+
+    private Dictionary<int, (string Notes, Dictionary<string, string> Quantities)> SnapshotInspectionEntries() =>
+        _inspectionRows.ToDictionary(
+            r => r.Line.Id,
+            r => (r.NotesEntry.Text, r.QuantityEntries.ToDictionary(kv => kv.Key, kv => kv.Value.Text)));
+
+    private void RestoreInspectionEntries(Dictionary<int, (string Notes, Dictionary<string, string> Quantities)> snapshot)
+    {
+        foreach (var row in _inspectionRows)
+        {
+            if (!snapshot.TryGetValue(row.Line.Id, out var saved))
+            {
+                continue;
+            }
+
+            row.NotesEntry.Text = saved.Notes;
+            foreach (var (condition, text) in saved.Quantities)
+            {
+                if (row.QuantityEntries.TryGetValue(condition, out var entry))
+                {
+                    entry.Text = text;
+                }
+            }
         }
     }
 

@@ -98,4 +98,12 @@ public record OutwardJobDto(
     List<LoadLineDto> LoadLines,
     OutwardDispatchNoteDto? DispatchNote,
     int LoadPlanTotalSteps,
-    int LoadPlanResolvedSteps);
+    int LoadPlanResolvedSteps,
+    // Only ever populated by GetByIdAsync/GetByIdForOfficeAsync (single-job fetch) - null for list
+    // views, which don't need this level of detail. A SKU the DESTINATION discovered only during
+    // receiving inspection, never expected/loaded at all ("Mismatch SKU Details" /
+    // UnplannedReceiptLine) - bridged back to this Outward job via the shared VehicleLogisticsRecord
+    // rows, see OutwardService.ResolveMismatchReceiptsAsync.
+    List<UnplannedReceiptAtDestinationDto>? MismatchReceiptsAtDestination = null);
+
+public record UnplannedReceiptAtDestinationDto(string ProductName, string? SkuCode, decimal Quantity, string? Notes);

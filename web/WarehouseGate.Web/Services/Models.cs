@@ -91,7 +91,7 @@ public record VehicleLogisticsRecordDto(
     decimal? PickListQty, decimal? LoadedQty, decimal? PhysicalQty,
     DateTime? DepartureDate, DateTime? EtaDateTime,
     int FromWarehouseId, string FromWarehouseName, int ToWarehouseId, string ToWarehouseName,
-    string Status, DateTime CreatedAtUtc, bool IsExtra = false);
+    string Status, DateTime CreatedAtUtc, bool IsExtra = false, bool IsUnplannedReceipt = false);
 
 public record UpsertVehicleLogisticsRecordRequest(
     string VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,
@@ -168,7 +168,10 @@ public record OutwardJobDto(
     DateTime CreatedTime, DateTime? GateInTime, string? DriverName, string? DriverMobile, string? TransporterName,
     string? GateName, DateTime? GateOutTime, string? AssignedSupervisorUserId, DateTime? AssignedTime,
     string? VehicleNumber, string? BayName, DateTime? DockInTime, DateTime? LoadingStartTime, DateTime? DockOutTime,
-    List<OutwardLineDto> Lines, List<PhotoDto> Photos, List<OutwardLoadLineDto> LoadLines);
+    List<OutwardLineDto> Lines, List<PhotoDto> Photos, List<OutwardLoadLineDto> LoadLines,
+    List<UnplannedReceiptAtDestinationDto>? MismatchReceiptsAtDestination = null);
+
+public record UnplannedReceiptAtDestinationDto(string ProductName, string? SkuCode, decimal Quantity, string? Notes);
 
 public record SupervisorOptionDto(string Id, string DisplayName);
 public record AssignSupervisorRequest(string SupervisorUserId);

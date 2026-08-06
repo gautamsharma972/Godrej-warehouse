@@ -320,7 +320,34 @@ public class OutwardService
         }
 
         var progress = await GetLoadPlanProgressAsync(new[] { id });
-        return MapToDto(transaction, progress);
+        var dto = MapToDto(transaction, progress);
+        return dto with { MismatchReceiptsAtDestination = await ResolveMismatchReceiptsAsync(id) };
+    }
+
+    // Bridges back from this Outward job to whatever it was received against at the destination -
+    // via the same VehicleLogisticsRecord rows InwardService uses for the reverse direction
+    // (ConsumedByOutwardTransactionId/ConsumedByInwardTransactionId) - and surfaces any SKU the
+    // destination discovered only during receiving inspection ("Mismatch SKU Details" /
+    // UnplannedReceiptLine), never expected/loaded here at all, so the source warehouse's Office
+    // can see the full picture of what actually arrived, not just what was dispatched.
+    private async Task<List<UnplannedReceiptAtDestinationDto>> ResolveMismatchReceiptsAsync(int outwardTransactionId)
+    {
+        var inwardTransactionId = await _db.VehicleLogisticsRecords
+            .Where(r => r.ConsumedByOutwardTransactionId == outwardTransactionId && r.ConsumedByInwardTransactionId != null)
+            .Select(r => r.ConsumedByInwardTransactionId!.Value)
+            .Distinct()
+            .FirstOrDefaultAsync();
+
+        if (inwardTransactionId == 0)
+        {
+            return new List<UnplannedReceiptAtDestinationDto>();
+        }
+
+        return await _db.UnplannedReceiptLines
+            .Include(l => l.Product)
+            .Where(l => l.InwardTransactionId == inwardTransactionId)
+            .Select(l => new UnplannedReceiptAtDestinationDto(l.Product!.Name, l.Product.SkuCode, l.Quantity, l.Notes))
+            .ToListAsync();
     }
 
     // Runs the real rule-engine (same one the standalone Load Planner uses) against this job's
@@ -422,7 +449,8 @@ public class OutwardService
         }
 
         var progress = await GetLoadPlanProgressAsync(new[] { id });
-        return MapToDto(transaction, progress);
+        var dto = MapToDto(transaction, progress);
+        return dto with { MismatchReceiptsAtDestination = await ResolveMismatchReceiptsAsync(id) };
     }
 
     // Office-driven assignment, distinct from the supervisor self-claim above (ClaimAsync): it can
@@ -633,7 +661,8 @@ public class OutwardService
             ProductName = product.Name,
             OrderedQty = request.Quantity,
             UnitOfMeasure = "PCS",
-            DeliveryLocation = deliveryLocation
+            DeliveryLocation = deliveryLocation,
+            IsExtra = true
         };
         _db.DispatchOrderLines.Add(line);
         await _db.SaveChangesAsync();

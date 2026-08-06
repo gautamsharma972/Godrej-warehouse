@@ -12,13 +12,17 @@ namespace WarehouseGate.Api.Dtos;
 // warehouse's supervisor added during loading (beyond the original Dispatch Plan) - see
 // LogisticsController.ResolveLiveDispatchDataAsync. Its Id is a negative placeholder purely for
 // UI list-keying; it must never be sent to the vehicle-records PUT/DELETE endpoints.
+// IsUnplannedReceipt marks a different kind of synthetic row: a SKU the DESTINATION discovered
+// during receiving inspection that was never expected at all (an UnplannedReceiptLine / "Mismatch
+// SKU Details") - unlike IsExtra rows, it was never loaded/ordered anywhere, so PickListQty/
+// LoadedQty stay null and PhysicalQty is just that line's own recorded receipt quantity.
 public record VehicleLogisticsRecordDto(
     int Id, string? VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,
     string? DriverName, string? DriverPhone, string? VehicleType, string Sku, string? SkuCode, int BoxQuantity,
     decimal? PickListQty, decimal? LoadedQty, decimal? PhysicalQty,
     DateTime? DepartureDate, DateTime? EtaDateTime,
     int FromWarehouseId, string FromWarehouseName, int ToWarehouseId, string ToWarehouseName,
-    string Status, DateTime CreatedAtUtc, bool IsExtra = false);
+    string Status, DateTime CreatedAtUtc, bool IsExtra = false, bool IsUnplannedReceipt = false);
 
 public record UpsertVehicleLogisticsRecordRequest(
     string? VehicleNumber, string? PoNumber, string? InwardTransactionId, string? TransporterName,

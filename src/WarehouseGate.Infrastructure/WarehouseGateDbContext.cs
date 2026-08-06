@@ -532,11 +532,17 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Restrict);
 
         // Filtered (not plain) unique index - SkuCode defaults to "" for un-configured Products,
-        // and a plain unique index would only ever allow one such row per organization.
+        // and a plain unique index would only ever allow one such row per organization. MySQL has
+        // no partial/filtered unique index syntax, so a generated column that's NULL whenever
+        // SkuCode is empty stands in for the filter - unique indexes already allow unlimited NULLs
+        // in both SQL Server and MySQL, which is exactly the "un-configured Products never collide"
+        // behavior the SQL Server filter existed for.
         builder.Entity<Product>()
-            .HasIndex(p => new { p.OrganizationId, p.SkuCode })
-            .IsUnique()
-            .HasFilter("[SkuCode] <> ''");
+            .Property<string?>("SkuCodeForUniqueness")
+            .HasComputedColumnSql("(CASE WHEN `SkuCode` <> '' THEN `SkuCode` ELSE NULL END)", stored: true);
+        builder.Entity<Product>()
+            .HasIndex("OrganizationId", "SkuCodeForUniqueness")
+            .IsUnique();
 
         ConfigureTenantScoping(builder);
     }
