@@ -142,16 +142,16 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    await SeedData.InitializeAsync(scope.ServiceProvider);
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    await SeedData.InitializeAsync(scope.ServiceProvider);
+//}
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+app.UseSwagger();
+app.UseSwaggerUI();
+//}
 
 // Local Android emulators call the dev API over HTTP via 10.0.2.2. Redirecting that
 // request to HTTPS breaks on the emulator because the localhost dev certificate is not trusted.
