@@ -41,10 +41,16 @@ public class VehicleLogisticsSyncService
             return;
         }
 
+        // .AsEnumerable() forces the classic IEnumerable<T>.Contains overload rather than the
+        // newer ReadOnlySpan<T>-based one arrays now also match on .NET 9+ - EF Core 8's expression
+        // interpreter can't evaluate a captured ReadOnlySpan<T> (a ref struct) as a generic
+        // argument and throws ArgumentException/TypeLoadException deep in
+        // ParameterExtractingExpressionVisitor if the span overload gets picked here.
+        var fromEnumerable = from.AsEnumerable();
         var records = await _db.VehicleLogisticsRecords
             .Where(r => r.VehicleNumber == vehicleNumber &&
                 (r.FromWarehouseId == warehouseId || r.ToWarehouseId == warehouseId) &&
-                from.Contains(r.Status))
+                fromEnumerable.Contains(r.Status))
             .ToListAsync();
 
         if (records.Count == 0)
