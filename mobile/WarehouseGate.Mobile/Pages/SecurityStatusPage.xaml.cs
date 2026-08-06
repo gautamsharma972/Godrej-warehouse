@@ -505,8 +505,11 @@ public partial class SecurityStatusPage : ContentPage
     private List<InwardJob> ApplyCurrentInwardFilters(IEnumerable<InwardJob> jobs)
     {
         var query = VehicleSearchBar.Text?.Trim();
-        var poNumber = PoNumberSearchEntry.Text?.Trim();
-        var date = HistoryDatePicker.Date.Date;
+        var poNumber = PoNumberSearchEntry?.Text?.Trim();
+        // DatePicker.Date became DateTime? in .NET MAUI 10 (was a non-nullable DateTime before) -
+        // this page always sets it to DateTime.Today on load (see below), so null in practice only
+        // means "not yet initialized"; fall back to today rather than propagate a null date filter.
+        var date = (HistoryDatePicker.Date ?? DateTime.Today).Date;
 
         return jobs.Where(job =>
             MatchesSearch(job, query) &&
