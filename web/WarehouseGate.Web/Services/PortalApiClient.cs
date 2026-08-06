@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -15,11 +16,13 @@ public class PortalApiClient
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly AuthenticationStateProvider _authStateProvider;
+    private readonly ILogger<PortalApiClient> _logger;
 
-    public PortalApiClient(IHttpClientFactory httpClientFactory, AuthenticationStateProvider authStateProvider)
+    public PortalApiClient(IHttpClientFactory httpClientFactory, AuthenticationStateProvider authStateProvider, ILogger<PortalApiClient> logger)
     {
         _httpClientFactory = httpClientFactory;
         _authStateProvider = authStateProvider;
+        _logger = logger;
     }
 
     private async Task<HttpClient> CreateClientAsync()
@@ -44,21 +47,31 @@ public class PortalApiClient
 
     public async Task<T> PostFormAsync<T>(string path, MultipartFormDataContent content)
     {
+        var stopwatch = Stopwatch.StartNew();
+        _logger.LogInformation("API call {Method} {Path} starting", "POST(form)", path);
+
         var client = await CreateClientAsync();
         HttpResponseMessage response;
         try
         {
             response = await client.PostAsync(path, content);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "API call {Method} {Path} failed after {ElapsedMs}ms", "POST(form)", path, stopwatch.ElapsedMilliseconds);
             throw new ApiException("Could not reach the server. Check your connection and try again.");
         }
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new ApiException(await ExtractErrorMessageAsync(response));
+            var errorMessage = await ExtractErrorMessageAsync(response);
+            _logger.LogError("API call {Method} {Path} failed {StatusCode} in {ElapsedMs}ms: {ErrorMessage}",
+                "POST(form)", path, (int)response.StatusCode, stopwatch.ElapsedMilliseconds, errorMessage);
+            throw new ApiException(errorMessage);
         }
+
+        _logger.LogInformation("API call {Method} {Path} completed {StatusCode} in {ElapsedMs}ms",
+            "POST(form)", path, (int)response.StatusCode, stopwatch.ElapsedMilliseconds);
 
         var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions);
         return result is null ? default! : result;
@@ -70,6 +83,9 @@ public class PortalApiClient
         object? body,
         CancellationToken cancellationToken = default)
     {
+        var stopwatch = Stopwatch.StartNew();
+        _logger.LogInformation("API call {Method} {Path} starting", method, path);
+
         var client = await CreateClientAsync();
         var request = new HttpRequestMessage(method, path);
         if (body is not null)
@@ -82,19 +98,27 @@ public class PortalApiClient
         {
             response = await client.SendAsync(request, cancellationToken);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
+            _logger.LogError(ex, "API call {Method} {Path} was cancelled after {ElapsedMs}ms", method, path, stopwatch.ElapsedMilliseconds);
             throw;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "API call {Method} {Path} failed after {ElapsedMs}ms", method, path, stopwatch.ElapsedMilliseconds);
             throw new ApiException("Could not reach the server. Check your connection and try again.");
         }
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new ApiException(await ExtractErrorMessageAsync(response));
+            var errorMessage = await ExtractErrorMessageAsync(response);
+            _logger.LogError("API call {Method} {Path} failed {StatusCode} in {ElapsedMs}ms: {ErrorMessage}",
+                method, path, (int)response.StatusCode, stopwatch.ElapsedMilliseconds, errorMessage);
+            throw new ApiException(errorMessage);
         }
+
+        _logger.LogInformation("API call {Method} {Path} completed {StatusCode} in {ElapsedMs}ms",
+            method, path, (int)response.StatusCode, stopwatch.ElapsedMilliseconds);
 
         if (typeof(T) == typeof(object))
         {
