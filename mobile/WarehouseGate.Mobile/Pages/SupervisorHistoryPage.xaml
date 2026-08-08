@@ -8,7 +8,6 @@
              Title="History"
              Shell.BackButtonBehavior="{x:Null}"
              Shell.TabBarIsVisible="False"
-             Shell.FlyoutBehavior="Locked"
              BackgroundColor="#F8FAFC">
 
     <ContentPage.Resources>

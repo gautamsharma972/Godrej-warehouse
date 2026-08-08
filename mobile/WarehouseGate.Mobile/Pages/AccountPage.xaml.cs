@@ -20,9 +20,6 @@ public partial class AccountPage : ContentPage
         HeaderView.AccountRoute = Session.IsSupervisor
             ? "//SupervisorTabs/SupervisorAccountPage"
             : "//SecurityTabs/SecurityAccountPage";
-
-        Shell.SetFlyoutBehavior(this, Session.IsSecurity || Session.IsSupervisor ? FlyoutBehavior.Locked : FlyoutBehavior.Disabled);
-        SupervisorNavBar.IsVisible = false;
     }
 
     private async void OnLogoutClicked(object? sender, EventArgs e)

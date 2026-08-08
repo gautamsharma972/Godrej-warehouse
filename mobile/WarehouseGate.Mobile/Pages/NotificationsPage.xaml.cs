@@ -18,8 +18,6 @@ public partial class NotificationsPage : ContentPage
     {
         base.OnAppearing();
 
-        Shell.SetFlyoutBehavior(this, Session.IsSecurity || Session.IsSupervisor ? FlyoutBehavior.Locked : FlyoutBehavior.Disabled);
-        SupervisorNavBar.IsVisible = false;
         HeaderView.AccountRoute = Session.IsSupervisor
             ? "//SupervisorTabs/SupervisorAccountPage"
             : "//SecurityTabs/SecurityAccountPage";

@@ -61,8 +61,6 @@ public partial class OutwardJobDetailPage : ContentPage
     {
         base.OnAppearing();
         SupervisorHubClient.OutwardJobUpdated += OnHubOutwardJobUpdated;
-        Shell.SetFlyoutBehavior(this, Session.IsSecurity || Session.IsSupervisor ? FlyoutBehavior.Locked : FlyoutBehavior.Disabled);
-        SupervisorNavBar.IsVisible = false;
         _ = LoadAsync();
     }
 

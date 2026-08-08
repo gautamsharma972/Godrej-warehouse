@@ -9,6 +9,7 @@ public partial class SupervisorHomePage : ContentPage
     private int _inwardJobCount;
     private int _outwardJobCount;
     private bool _isLoading;
+    private bool? _isWideLayout;
 
     public SupervisorHomePage()
     {
@@ -27,6 +28,20 @@ public partial class SupervisorHomePage : ContentPage
 
         UpdateTabStyles();
         _ = LoadJobsAsync();
+    }
+
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+
+        var wide = ResponsiveHelper.IsWide(width);
+        if (_isWideLayout == wide)
+        {
+            return;
+        }
+
+        _isWideLayout = wide;
+        PageContent.Padding = wide ? new Thickness(30, 26, 30, 30) : new Thickness(16, 18, 16, 24);
     }
 
     protected override void OnDisappearing()

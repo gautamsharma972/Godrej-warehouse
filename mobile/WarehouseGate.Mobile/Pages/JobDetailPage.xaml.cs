@@ -23,6 +23,10 @@ public partial class JobDetailPage : ContentPage
     private bool _outwardReferenceFetched;
     private string? _lastOutwardReferenceVizPayload;
     private bool _outwardReferenceVizResendStarted;
+    private InwardOutwardReference? _lastOutwardReference;
+    // The origin warehouse's 3D load plan is a heavy WebGL view shown purely for reference -
+    // hidden by default, revealed with the header's eye icon.
+    private bool _referenceSimulationVisible;
     private bool _baysFetched;
     private string? _selectedBayName;
     private bool? _isWideLayout;
@@ -78,8 +82,6 @@ public partial class JobDetailPage : ContentPage
     {
         base.OnAppearing();
         SupervisorHubClient.JobUpdated += OnHubJobUpdated;
-        Shell.SetFlyoutBehavior(this, Session.IsSecurity || Session.IsSupervisor ? FlyoutBehavior.Locked : FlyoutBehavior.Disabled);
-        SupervisorNavBar.IsVisible = false;
 
         if (_suppressNextAppearingReload)
         {
@@ -122,7 +124,7 @@ public partial class JobDetailPage : ContentPage
         ConfigureStepCardGrid(StartUnloadingCardGrid, wide);
         ConfigureTwoColumnAction(StartUnloadingActionGrid, StartUnloadingButton, wide, 240);
         ConfigureSectionHeader(PhotoHeaderGrid, wide);
-        ConfigureSectionHeader(OutwardReferenceHeaderGrid, wide, hasTrailing: false);
+        ConfigureSectionHeader(OutwardReferenceHeaderGrid, wide, hasTrailing: true);
         ConfigureOutwardReferenceLayout(wide);
         ConfigureSectionHeader(InspectionHeaderGrid, wide);
         ConfigureTwoColumnAction(InspectionFooterGrid, SubmitInspectionButton, wide, 220);
@@ -359,7 +361,10 @@ public partial class JobDetailPage : ContentPage
 
     private void ConfigureOutwardReferenceLayout(bool wide)
     {
-        if (wide)
+        // Simulation hidden (the default) collapses to a single column regardless of width - the
+        // viz card (Grid.Children[0]) is a heavy WebGL view with nothing to show while hidden, so
+        // the sequence list (Grid.Children[1]) takes the full row instead of leaving a gap.
+        if (_referenceSimulationVisible && wide)
         {
             OutwardReferenceContentGrid.ColumnDefinitions = new ColumnDefinitionCollection
             {
@@ -574,13 +579,8 @@ public partial class JobDetailPage : ContentPage
                 OutwardReferenceSequenceContainer.Children.Add(BuildOutwardReferenceSequenceRow(group));
             }
 
-            var hasVehicleDims = reference.VehicleWidthCm is > 0 && reference.VehicleLengthCm is > 0 && reference.VehicleHeightCm is > 0;
-            ReferenceLoadVizWebView.IsVisible = hasVehicleDims;
-            ReferenceLoadVizUnavailableLabel.IsVisible = !hasVehicleDims;
-            if (hasVehicleDims)
-            {
-                SendOutwardReferenceToViewer(reference);
-            }
+            _lastOutwardReference = reference;
+            ApplyReferenceSimulationVisibility();
 
             OutwardReferenceSection.IsVisible = true;
         }
@@ -588,6 +588,34 @@ public partial class JobDetailPage : ContentPage
         {
             OutwardReferenceSection.IsVisible = false;
         }
+    }
+
+    // Only actually shows the WebView (and sends it data) once the supervisor opts in via the
+    // eye icon - collapsed by default, same as it never having vehicle dimensions on file.
+    private void ApplyReferenceSimulationVisibility()
+    {
+        var reference = _lastOutwardReference;
+        var hasVehicleDims = reference is not null
+            && reference.VehicleWidthCm is > 0 && reference.VehicleLengthCm is > 0 && reference.VehicleHeightCm is > 0;
+        var showViz = _referenceSimulationVisible && hasVehicleDims;
+
+        ReferenceLoadVizWebView.IsVisible = showViz;
+        ReferenceLoadVizUnavailableLabel.IsVisible = _referenceSimulationVisible && !hasVehicleDims;
+        if (showViz && reference is not null)
+        {
+            SendOutwardReferenceToViewer(reference);
+        }
+
+        ConfigureOutwardReferenceLayout(_isWideLayout ?? false);
+    }
+
+    private void OnToggleReferenceSimulationClicked(object? sender, EventArgs e)
+    {
+        _referenceSimulationVisible = !_referenceSimulationVisible;
+        ToggleReferenceSimulationIcon.Text = _referenceSimulationVisible ? IconGlyphs.EyeSlash : IconGlyphs.Eye;
+        SemanticProperties.SetDescription(ToggleReferenceSimulationButton,
+            _referenceSimulationVisible ? "Hide simulation" : "Show simulation");
+        ApplyReferenceSimulationVisibility();
     }
 
     private static Border BuildOutwardReferenceSequenceRow(LoadPlanGroup group)
@@ -1100,11 +1128,16 @@ public partial class JobDetailPage : ContentPage
                 }
             }
 
-            var exceptionsGrid = new Grid { ColumnSpacing = 8 };
-            for (var c = 0; c < Conditions.Length; c++)
+            // 5 fixed-width cards that wrap onto a second row instead of squeezing into equal
+            // Star columns - on a phone, 5-abreast left each card's condition-name label and
+            // quantity Entry too narrow to render on one line (word-wrap degenerating into
+            // near character-per-line).
+            var exceptionsGrid = new FlexLayout
             {
-                exceptionsGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            }
+                Wrap = Microsoft.Maui.Layouts.FlexWrap.Wrap,
+                Direction = Microsoft.Maui.Layouts.FlexDirection.Row,
+                JustifyContent = Microsoft.Maui.Layouts.FlexJustify.Start
+            };
 
             View BuildConditionCard(string condition, int index)
             {
@@ -1121,7 +1154,9 @@ public partial class JobDetailPage : ContentPage
                     FontSize = 13,
                     FontFamily = "PoppinsSemiBold",
                     TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
-                    VerticalOptions = LayoutOptions.Center
+                    VerticalOptions = LayoutOptions.Center,
+                    LineBreakMode = LineBreakMode.TailTruncation,
+                    MaxLines = 1
                 };
 
                 var qtyInput = new Entry
@@ -1144,6 +1179,8 @@ public partial class JobDetailPage : ContentPage
                     BackgroundColor = (Color)Application.Current.Resources["CardLight"],
                     StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
                     Padding = new Thickness(12, 8),
+                    WidthRequest = 108,
+                    Margin = new Thickness(0, 0, 8, 8),
                     Content = new VerticalStackLayout
                     {
                         Spacing = 2,
@@ -1227,7 +1264,6 @@ public partial class JobDetailPage : ContentPage
             for (var i = 0; i < Conditions.Length; i++)
             {
                 var conditionCard = BuildConditionCard(Conditions[i], i);
-                conditionCard.SetValue(Microsoft.Maui.Controls.Grid.ColumnProperty, i);
                 exceptionsGrid.Children.Add(conditionCard);
             }
 

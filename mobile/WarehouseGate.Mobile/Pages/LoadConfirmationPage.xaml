@@ -20,19 +20,19 @@
                     <Border.Shadow>
                         <Shadow Brush="#DCEAE8" Offset="0,8" Radius="18" Opacity="0.36" />
                     </Border.Shadow>
-                    <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" RowSpacing="12" ColumnSpacing="14">
-                        <Border Grid.Row="0" Grid.Column="0" WidthRequest="46" HeightRequest="46" StrokeThickness="0"
+                    <Grid x:Name="HeaderCardGrid" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" RowSpacing="12" ColumnSpacing="14">
+                        <Border x:Name="HeaderIconBorder" Grid.Row="0" Grid.Column="0" WidthRequest="46" HeightRequest="46" StrokeThickness="0"
                                 BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 14"
                                 VerticalOptions="Start">
                             <Label Text="{x:Static services:IconGlyphs.ClipboardCheck}" Style="{StaticResource IconLabel}"
                                    FontSize="18" TextColor="{StaticResource Primary}"
                                    HorizontalOptions="Center" VerticalOptions="Center" />
                         </Border>
-                        <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="3">
-                            <Label x:Name="HeaderLabel" Style="{StaticResource CardTitleLabel}" FontSize="18" />
-                            <Label Text="Start Loading confirms every pending group at once." Style="{StaticResource MetaLabel}" />
+                        <VerticalStackLayout x:Name="HeaderMessageStack" Grid.Row="0" Grid.Column="1" Spacing="3">
+                            <Label x:Name="HeaderLabel" Style="{StaticResource CardTitleLabel}" FontSize="18" LineBreakMode="WordWrap" />
+                            <Label Text="Start Loading confirms every pending group at once." Style="{StaticResource MetaLabel}" LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
-                        <VerticalStackLayout Grid.Row="0" Grid.Column="2" Spacing="8" HorizontalOptions="End" VerticalOptions="Center">
+                        <VerticalStackLayout x:Name="HeaderButtonStack" Grid.Row="0" Grid.Column="2" Spacing="8" HorizontalOptions="End" VerticalOptions="Center">
                             <Button x:Name="StartLoadingAllButton" Text="Start Loading  0%" Clicked="OnStartLoadingAllClicked"
                                     Style="{StaticResource PrimaryActionButton}" HeightRequest="46" CornerRadius="15"
                                     FontSize="12" Padding="18,0" MinimumWidthRequest="156">
@@ -170,7 +170,7 @@
                         </Grid>
                     </Border>
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Grid x:Name="FinalActionsGrid" ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="12">
                         <Border Grid.Column="0" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" BackgroundColor="{StaticResource CardLight}"
                                 StrokeShape="RoundRectangle 22" Padding="16">
                             <VerticalStackLayout Spacing="10" VerticalOptions="Center">

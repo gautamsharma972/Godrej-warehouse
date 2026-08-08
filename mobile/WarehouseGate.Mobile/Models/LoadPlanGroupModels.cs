@@ -44,6 +44,19 @@ public class LoadGroupPreview
     public List<string> Warnings { get; set; } = new();
 }
 
+// A native (non-WebView) view of one pick-list line for LoadPlanEditorPage's SKU list -
+// mirrors the "remaining to place" calc the viewport's own JS-rendered SKU rail already uses,
+// so the two entry points into StartPlacingNew always agree on what's placeable.
+public class PickListSkuRow
+{
+    public int LineId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string SkuCode { get; set; } = string.Empty;
+    public int Remaining { get; set; }
+    public bool IsEnabled { get; set; }
+    public string RemainingCaption => IsEnabled ? $"{Remaining} remaining to place" : "Fully placed";
+}
+
 public class LoadPlanGroup
 {
     public int Id { get; set; }

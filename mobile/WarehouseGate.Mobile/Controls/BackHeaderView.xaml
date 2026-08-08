@@ -18,7 +18,8 @@
             <Label x:Name="PageTitleLabel" Text="{Binding PageTitle, Source={x:Reference Root}}" IsVisible="False"
                    FontFamily="PoppinsBold" FontSize="17" TextColor="{StaticResource TextPrimaryLight}"
                    LineBreakMode="TailTruncation" MaxLines="1" />
-            <Label Text="{Binding Title, Source={x:Reference Root}}" Style="{StaticResource MetaLabel}" />
+            <Label Text="{Binding Title, Source={x:Reference Root}}" Style="{StaticResource MetaLabel}"
+                   LineBreakMode="TailTruncation" MaxLines="1" />
         </VerticalStackLayout>
         <ContentView Grid.Column="2" x:Name="TrailingContentHost" VerticalOptions="Center" />
     </Grid>

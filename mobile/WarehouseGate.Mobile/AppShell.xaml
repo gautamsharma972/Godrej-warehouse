@@ -6,14 +6,16 @@
     xmlns:pages="clr-namespace:WarehouseGate.Mobile.Pages"
     xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
     xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
-    FlyoutBehavior="Disabled"
+    FlyoutBehavior="Flyout"
     FlyoutWidth="252"
     FlyoutBackgroundColor="Transparent"
     Shell.NavBarIsVisible="False"
     Title="WarehouseGate.Mobile">
 
-    <!-- The security section's persistent sidebar: locked open (FlyoutBehavior=Locked) on
-         every security page, disabled everywhere else - one control shared by all pages. -->
+    <!-- Default for every page is a hamburger-triggered overlay drawer (FlyoutBehavior=Flyout,
+         toggled by AppHeaderView's menu icon) - one control shared by all Security/Supervisor
+         pages. LoginPage explicitly overrides this to Disabled (nothing to navigate to yet), and
+         LoadPlanEditorPage overrides it to Disabled while its own full-screen drawer is open. -->
     <Shell.FlyoutContent>
         <controls:AppSideNav />
     </Shell.FlyoutContent>

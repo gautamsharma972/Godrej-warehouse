@@ -4,6 +4,7 @@
 // Values sourced from the official metadata/icons.json to guarantee correct glyph mapping.
 public static class IconGlyphs
 {
+    public const string Bars = "";
     public const string Bell = "";
     public const string Gear = "";
     public const string ChevronRight = "";

@@ -44,8 +44,5 @@
             <Label x:Name="LiveBannerLabel" TextColor="{StaticResource PrimaryDarkText}" FontFamily="PoppinsSemiBold"
                    FontSize="13" HorizontalOptions="Center" />
         </Border>
-
-        <controls:SecurityBottomNavBar x:Name="SecurityNavBar" Grid.Row="1" ActiveTab="Dashboard" IsVisible="False" />
-        <controls:SupervisorBottomNavBar x:Name="SupervisorNavBar" Grid.Row="1" IsVisible="False" />
     </Grid>
 </ContentPage>

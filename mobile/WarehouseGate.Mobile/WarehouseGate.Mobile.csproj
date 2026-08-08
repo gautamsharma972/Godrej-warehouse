@@ -77,7 +77,8 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.90" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.10" />
-		<PackageReference Include="ZXing.Net.MAUI.Controls" Version="0.6.0" />
+		<!--<PackageReference Include="ZXing.Net.MAUI.Controls" Version="0.6.0" />-->
+		<PackageReference Include="ZXing.Net.MAUI.Controls" Version="0.10.3" />
 	</ItemGroup>
 
 </Project>

@@ -13,6 +13,7 @@
 
             <conv:StatusToColorConverter x:Key="StatusToColorConverter" />
             <conv:StatusToDisplayTextConverter x:Key="StatusToDisplayTextConverter" />
+            <conv:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

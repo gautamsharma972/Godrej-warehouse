@@ -39,7 +39,17 @@ public partial class SupervisorSideNav : ContentView
         NotificationCenter.CountChanged -= OnNotificationCountChanged;
     }
 
-    private void OnShellNavigated(object? sender, ShellNavigatedEventArgs e) => UpdateActiveState();
+    // Custom flyout content (not native FlyoutItem/MenuItem elements) doesn't auto-dismiss the
+    // drawer on navigation the way Shell's own flyout items would - close it manually here so
+    // tapping any nav row on a phone-width drawer behaves like every other hamburger menu.
+    private void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
+    {
+        UpdateActiveState();
+        if (Shell.Current is not null)
+        {
+            Shell.Current.FlyoutIsPresented = false;
+        }
+    }
 
     private void OnNotificationCountChanged(int count) => MainThread.BeginInvokeOnMainThread(() =>
     {

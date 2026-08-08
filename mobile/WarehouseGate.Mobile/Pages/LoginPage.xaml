@@ -5,119 +5,13 @@
              x:Class="WarehouseGate.Mobile.Pages.LoginPage"
              Title="WarehouseGate"
              Shell.NavBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
              BackgroundColor="#F6F8F7">
 
     <Grid BackgroundColor="#F6F8F7">
         <Grid x:Name="RootGrid" ColumnSpacing="0" RowSpacing="0" VerticalOptions="Fill">
 
-                <Border x:Name="LeftPanel" Grid.Row="0" Grid.Column="0"
-                        StrokeThickness="0" Padding="46,34" VerticalOptions="Fill"
-                        BackgroundColor="#183F3D">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                            <GradientStop Color="#102C34" Offset="0" />
-                            <GradientStop Color="#18453E" Offset="1" />
-                        </LinearGradientBrush>
-                    </Border.Background>
-
-                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="20">
-                        <Border Grid.Row="0" WidthRequest="58" HeightRequest="58"
-                                Stroke="#66FFFFFF" StrokeThickness="1"
-                                StrokeShape="RoundRectangle 12"
-                                BackgroundColor="#22FFFFFF"
-                                HorizontalOptions="Start">
-                            <Label Text="WG" TextColor="White" FontFamily="PoppinsSemiBold" FontSize="15"
-                                   HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-
-                        <VerticalStackLayout Grid.Row="1" Spacing="16" VerticalOptions="Center">
-                            <VerticalStackLayout Spacing="10">
-                                <Label Text="GODREJ WAREHOUSE OPERATIONS"
-                                       TextColor="#D7ECE6" FontFamily="PoppinsSemiBold"
-                                       FontSize="12" CharacterSpacing="1.1" />
-                                <Label Text="WarehouseGate&#10;Portal"
-                                       TextColor="White" FontFamily="PoppinsRegular"
-                                       FontSize="50" LineHeight="0.95" />
-                                <Label Text="Secure access for management, logistics, and office teams coordinating gated warehouse movement."
-                                       TextColor="#C9D8D5" FontFamily="PoppinsSemiBold"
-                                       FontSize="15" LineHeight="1.45" MaxLines="2" />
-                            </VerticalStackLayout>
-
-                            <GraphicsView x:Name="HeroGraphicsView" HeightRequest="0" IsVisible="False" />
-                        </VerticalStackLayout>
-
-                        <Border Grid.Row="2" Stroke="#2EFFFFFF" StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8" Padding="16"
-                                BackgroundColor="#1AFFFFFF">
-                            <VerticalStackLayout Spacing="12">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0" Text="Operations Console"
-                                           TextColor="#C9D8D5" FontFamily="PoppinsSemiBold"
-                                           FontSize="13" VerticalOptions="Center" />
-                                    <Border Grid.Column="1" StrokeThickness="0"
-                                            StrokeShape="RoundRectangle 13" Padding="12,6"
-                                            BackgroundColor="#D9F99D">
-                                        <Label Text="LIVE" TextColor="#234018" FontFamily="PoppinsSemiBold"
-                                               FontSize="11" />
-                                    </Border>
-                                </Grid>
-
-                                <Grid ColumnDefinitions="*,*,*,*,*,*" ColumnSpacing="8">
-                                    <Border Grid.Column="0" HeightRequest="50" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="#2DFFFFFF" />
-                                    <Border Grid.Column="1" HeightRequest="50" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="#B8C52D21" />
-                                    <Border Grid.Column="2" HeightRequest="50" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="#A65EEAD4" />
-                                    <Border Grid.Column="3" HeightRequest="50" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="#2DFFFFFF" />
-                                    <Border Grid.Column="4" HeightRequest="50" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="#B8C52D21" />
-                                    <Border Grid.Column="5" HeightRequest="50" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="#2DFFFFFF" />
-                                </Grid>
-
-                                <VerticalStackLayout Spacing="8">
-                                    <Grid ColumnDefinitions="26,120,*" ColumnSpacing="10">
-                                        <Label Grid.Column="0" Text="{x:Static services:IconGlyphs.ListCheck}" Style="{StaticResource IconLabel}"
-                                               FontSize="15" TextColor="White" VerticalOptions="Center" />
-                                        <Label Grid.Column="1" Text="WORKFLOW PACE" TextColor="#95AAA5"
-                                               FontFamily="PoppinsSemiBold" FontSize="11" VerticalOptions="Center" />
-                                        <Label Grid.Column="2" Text="Balanced daily movement planning" TextColor="White"
-                                               FontFamily="PoppinsSemiBold" FontSize="12" VerticalOptions="Center" />
-                                    </Grid>
-                                    <Grid ColumnDefinitions="26,120,*" ColumnSpacing="10">
-                                        <Label Grid.Column="0" Text="{x:Static services:IconGlyphs.Eye}" Style="{StaticResource IconLabel}"
-                                               FontSize="15" TextColor="White" VerticalOptions="Center" />
-                                        <Label Grid.Column="1" Text="YARD VISIBILITY" TextColor="#95AAA5"
-                                               FontFamily="PoppinsSemiBold" FontSize="11" VerticalOptions="Center" />
-                                        <Label Grid.Column="2" Text="Clear context across active gates" TextColor="White"
-                                               FontFamily="PoppinsSemiBold" FontSize="12" VerticalOptions="Center" />
-                                    </Grid>
-                                    <Grid ColumnDefinitions="26,120,*" ColumnSpacing="10">
-                                        <Label Grid.Column="0" Text="{x:Static services:IconGlyphs.User}" Style="{StaticResource IconLabel}"
-                                               FontSize="15" TextColor="White" VerticalOptions="Center" />
-                                        <Label Grid.Column="1" Text="TEAM HANDOFF" TextColor="#95AAA5"
-                                               FontFamily="PoppinsSemiBold" FontSize="11" VerticalOptions="Center" />
-                                        <Label Grid.Column="2" Text="Smoother coordination between shifts" TextColor="White"
-                                               FontFamily="PoppinsSemiBold" FontSize="12" VerticalOptions="Center" />
-                                    </Grid>
-                                </VerticalStackLayout>
-                            </VerticalStackLayout>
-                        </Border>
-                    </Grid>
-                </Border>
-
-                <VerticalStackLayout x:Name="CompactHeader" Grid.Row="0" Grid.Column="0"
-                                     Spacing="12" Padding="22,26,22,18" IsVisible="False"
-                                     BackgroundColor="#183F3D">
-                    <Border x:Name="CompactLogo" WidthRequest="58" HeightRequest="58" HorizontalOptions="Center"
-                            StrokeShape="RoundRectangle 12" Stroke="#66FFFFFF"
-                            BackgroundColor="#22FFFFFF">
-                        <Label Text="WG" TextColor="White" FontFamily="PoppinsSemiBold" FontSize="18"
-                               HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-                    <Label x:Name="CompactTitle" Text="WarehouseGate Portal" TextColor="White" FontFamily="PoppinsSemiBold"
-                           FontSize="27" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
-                    <Label x:Name="CompactSubtitle" Text="Secure warehouse operations access" TextColor="#C9D8D5"
-                           FontSize="13" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-
-                <Grid x:Name="RightPanel" Grid.Row="0" Grid.Column="1" Padding="46" BackgroundColor="#F6F8F7">
+                <Grid x:Name="RightPanel" Padding="24,20,24,24" BackgroundColor="#F6F8F7">
                     <Border x:Name="SignInCard"
                             Padding="40" MaximumWidthRequest="520"
                             HorizontalOptions="Center" VerticalOptions="Center"

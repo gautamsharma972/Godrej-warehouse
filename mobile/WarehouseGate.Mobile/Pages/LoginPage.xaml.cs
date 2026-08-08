@@ -8,14 +8,11 @@ public partial class LoginPage : ContentPage
     private const string RememberKey = "login.remember";
     private const string RememberedUserKey = "login.username";
 
-    private bool? _isWide;
-    private bool? _isCompact;
     private bool? _isVeryCompact;
 
     public LoginPage()
     {
         InitializeComponent();
-        HeroGraphicsView.Drawable = new LoginHeroDrawable();
 
         if (Preferences.Get(RememberKey, false))
         {
@@ -28,93 +25,37 @@ public partial class LoginPage : ContentPage
     {
         base.OnSizeAllocated(width, height);
 
-        var wide = width >= 900 && width >= height;
-        var compact = !wide;
-        var veryCompact = compact && (width < 390 || height < 700);
-
-        if (_isWide == wide && _isCompact == compact && _isVeryCompact == veryCompact)
+        var veryCompact = width < 390 || height < 700;
+        if (_isVeryCompact == veryCompact)
         {
             return;
         }
 
-        _isWide = wide;
-        _isCompact = compact;
         _isVeryCompact = veryCompact;
-        ApplyResponsiveLayout(wide, veryCompact);
+        ApplyResponsiveLayout(veryCompact);
     }
 
-    // Tablet: brand/illustration panel on the left, sign-in card on the right.
-    // Phone: compact brand header stacked above the card.
-    private void ApplyResponsiveLayout(bool wide, bool veryCompact)
+    // Mobile app - unlike the Web portal, there's no desktop-style branding panel here at any
+    // width: the sign-in card is the whole screen. veryCompact just tightens padding/spacing/font
+    // sizes further for small phones so the card and its footer fit without scrolling.
+    private void ApplyResponsiveLayout(bool veryCompact)
     {
-        LeftPanel.IsVisible = wide;
-        CompactHeader.IsVisible = !wide;
-        SecureBadge.IsVisible = wide || !veryCompact;
+        SecureBadge.IsVisible = !veryCompact;
         FooterDivider.IsVisible = !veryCompact;
         CardFooter.IsVisible = !veryCompact;
 
-        if (wide)
-        {
-            RootGrid.RowDefinitions = new RowDefinitionCollection { new RowDefinition(GridLength.Star) };
-            RootGrid.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition(new GridLength(55, GridUnitType.Star)),
-                new ColumnDefinition(new GridLength(45, GridUnitType.Star))
-            };
-            Grid.SetRow(LeftPanel, 0);
-            Grid.SetColumn(LeftPanel, 0);
-            Grid.SetRow(RightPanel, 0);
-            Grid.SetColumn(RightPanel, 1);
-
-            RightPanel.Padding = new Thickness(46);
-            SignInCard.Padding = new Thickness(40);
-            SignInCard.MaximumWidthRequest = 520;
-            CardStack.Spacing = 18;
-            FormStack.Spacing = 14;
-            WelcomeLabel.FontSize = 34;
-            EyebrowLabel.FontSize = 13;
-            IntroLabel.FontSize = 13;
-            UserNameFieldBorder.HeightRequest = 54;
-            PasswordFieldBorder.HeightRequest = 54;
-            LoginButton.HeightRequest = 54;
-            CompactHeader.Padding = new Thickness(22, 26, 22, 18);
-            CompactHeader.Spacing = 12;
-            CompactLogo.WidthRequest = 58;
-            CompactLogo.HeightRequest = 58;
-            CompactTitle.FontSize = 27;
-            CompactSubtitle.FontSize = 13;
-        }
-        else
-        {
-            RootGrid.ColumnDefinitions = new ColumnDefinitionCollection { new ColumnDefinition(GridLength.Star) };
-            RootGrid.RowDefinitions = new RowDefinitionCollection
-            {
-                new RowDefinition(GridLength.Auto),
-                new RowDefinition(GridLength.Star)
-            };
-            Grid.SetRow(CompactHeader, 0);
-            Grid.SetColumn(CompactHeader, 0);
-            Grid.SetRow(RightPanel, 1);
-            Grid.SetColumn(RightPanel, 0);
-
-            RightPanel.Padding = veryCompact ? new Thickness(14, 8, 14, 12) : new Thickness(20, 14, 20, 18);
-            SignInCard.Padding = veryCompact ? new Thickness(18, 15) : new Thickness(24, 22);
-            SignInCard.MaximumWidthRequest = 460;
-            CardStack.Spacing = veryCompact ? 10 : 13;
-            FormStack.Spacing = veryCompact ? 10 : 12;
-            WelcomeLabel.FontSize = veryCompact ? 25 : 28;
-            EyebrowLabel.FontSize = veryCompact ? 10 : 11;
-            IntroLabel.FontSize = veryCompact ? 11 : 12;
-            UserNameFieldBorder.HeightRequest = veryCompact ? 46 : 50;
-            PasswordFieldBorder.HeightRequest = veryCompact ? 46 : 50;
-            LoginButton.HeightRequest = veryCompact ? 48 : 52;
-            CompactHeader.Padding = veryCompact ? new Thickness(16, 12, 16, 8) : new Thickness(22, 20, 22, 14);
-            CompactHeader.Spacing = veryCompact ? 6 : 10;
-            CompactLogo.WidthRequest = veryCompact ? 42 : 52;
-            CompactLogo.HeightRequest = veryCompact ? 42 : 52;
-            CompactTitle.FontSize = veryCompact ? 21 : 24;
-            CompactSubtitle.FontSize = veryCompact ? 11 : 12;
-        }
+        RightPanel.Padding = veryCompact ? new Thickness(14, 8, 14, 12) : new Thickness(24, 20, 24, 24);
+        SignInCard.Padding = veryCompact ? new Thickness(18, 15) : new Thickness(28, 26);
+        SignInCard.MaximumWidthRequest = 460;
+        CardStack.Spacing = veryCompact ? 10 : 16;
+        FormStack.Spacing = veryCompact ? 10 : 14;
+        WelcomeLabel.FontSize = veryCompact ? 25 : 30;
+        EyebrowLabel.FontSize = veryCompact ? 10 : 12;
+        IntroLabel.FontSize = veryCompact ? 11 : 13;
+        OrgCodeFieldBorder.HeightRequest = veryCompact ? 46 : 52;
+        UserNameFieldBorder.HeightRequest = veryCompact ? 46 : 52;
+        PasswordFieldBorder.HeightRequest = veryCompact ? 46 : 52;
+        LoginButton.HeightRequest = veryCompact ? 48 : 54;
     }
 
     private void OnUserNameChanged(object? sender, TextChangedEventArgs e) =>
