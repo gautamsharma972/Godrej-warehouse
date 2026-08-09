@@ -545,6 +545,13 @@ public class WarehouseGateDbContext : IdentityDbContext<ApplicationUser>
             .IsUnique();
 
         ConfigureTenantScoping(builder);
+
+        // Table names are deliberately left at EF Core's default (PascalCase, matching each entity
+        // class name) rather than lowercased - a lowercase-everywhere rename (via SetTableName on
+        // every entity here, plus a corresponding RenameTable migration) was drafted and verified
+        // safe against the live MySQL server, then deferred: migrations against that server are
+        // applied by hand, not by this codebase automatically, so the actual rename is intentionally
+        // left for whoever runs it next rather than baked in here.
     }
 
     // Applies a global query filter, an FK relationship to Organization, and an indexed

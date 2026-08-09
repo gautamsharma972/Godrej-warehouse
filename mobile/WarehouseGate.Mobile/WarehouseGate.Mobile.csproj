@@ -35,7 +35,7 @@
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
 
 		<!-- Native Material 3 theming for stock Android controls (ripple/elevation feel). Most of
 		     this app's screens use custom Border-wrapped controls rather than bare stock ones, so
@@ -49,10 +49,12 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android36.0|AnyCPU'">
 	  <AndroidPackageFormat>apk</AndroidPackageFormat>
+	  <AndroidCreatePackagePerAbi>True</AndroidCreatePackagePerAbi>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android36.0|AnyCPU'">
 	  <DebugSymbols>True</DebugSymbols>
+	  <AndroidCreatePackagePerAbi>True</AndroidCreatePackagePerAbi>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -77,7 +79,13 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.90" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.10" />
-		<PackageReference Include="ZXing.Net.MAUI.Controls" Version="0.6.0" />
+		<!-- Was pinned at 0.6.0, several releases behind - that old version's own AndroidX.Tracing.Ktx
+		     dependency (1.2.0.x) conflicted with the newer AndroidX.Tracing (1.3.0.1) that
+		     Microsoft.Maui.Controls 10.0.90 resolves elsewhere, producing a duplicate-class D8/R8
+		     dexing failure ("Type androidx.tracing...TraceKt$traceAsync$1 is defined multiple
+		     times"). Bumping to the latest release realigns its own AndroidX dependency graph with
+		     net10.0-android36.0/MAUI 10 instead of pinning individual transitive packages by hand. -->
+		<PackageReference Include="ZXing.Net.MAUI.Controls" Version="0.10.3" />
 	</ItemGroup>
 
 </Project>

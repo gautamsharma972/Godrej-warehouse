@@ -2,8 +2,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Shell's TabBar renders as Android's BottomNavigationView (a Material Components widget),
          which throws "This component requires... Theme.MaterialComponents" at startup if the
-         activity theme doesn't descend from Theme.MaterialComponents - AppCompat isn't enough. -->
-    <style name="Maui.SplashTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+         activity theme doesn't descend from Theme.MaterialComponents - AppCompat isn't enough.
+
+         Light, not DayNight: App.xaml.cs already forces UserAppTheme = AppTheme.Light, but that
+         only governs MAUI's own AppThemeBinding resources - it has no effect on this native Android
+         theme, which a DayNight parent still lets the OS's system dark-mode setting drive. On a
+         device/emulator with system dark mode on, Material's native EditText resolved its default
+         text color from the dark variant (light/white) while the app's own card stayed hard-coded
+         light, making typed text invisible against the light field background - reported directly
+         from a real device. Forcing Light here makes the native widget defaults match the app's
+         already-declared, always-light intent regardless of the device's system theme. -->
+    <style name="Maui.SplashTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@drawable/splash</item>
         <item name="windowActionBar">false</item>

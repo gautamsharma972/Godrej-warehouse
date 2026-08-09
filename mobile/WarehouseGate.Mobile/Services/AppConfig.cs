@@ -6,8 +6,11 @@ public static class AppConfig
     // A physical device would need the dev machine's LAN IP instead; see README.
     public static string ApiBaseUrl =>
 #if ANDROID
-        "http://10.0.2.2:5080";
+        "https://gcplapi.logivue.in";
+    //"http://10.0.2.2:5080";
 #else
-        "https://localhost:7174";
+        
+"https://gcplapi.logivue.in";
+//"https://localhost:7174";
 #endif
 }
