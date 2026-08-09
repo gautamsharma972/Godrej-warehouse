@@ -665,8 +665,5 @@
 
         </VerticalStackLayout>
     </ScrollView>
-
-    <controls:SecurityBottomNavBar x:Name="SecurityNavBar" Grid.Row="1" ActiveTab="Status" IsVisible="False" />
-    <controls:SupervisorBottomNavBar x:Name="SupervisorNavBar" Grid.Row="1" IsVisible="False" />
     </Grid>
 </ContentPage>

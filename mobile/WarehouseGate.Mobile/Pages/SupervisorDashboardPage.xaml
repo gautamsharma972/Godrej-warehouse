@@ -7,13 +7,12 @@
              Title="Dashboard"
              Shell.BackButtonBehavior="{x:Null}"
              Shell.TabBarIsVisible="False"
-             Shell.FlyoutBehavior="Locked"
              BackgroundColor="#F8FAFC">
 
     <Grid>
         <RefreshView x:Name="RefreshViewControl" Refreshing="OnRefreshing">
             <ScrollView>
-                <VerticalStackLayout Padding="30,26,30,30" Spacing="18">
+                <VerticalStackLayout x:Name="PageContent" Padding="30,26,30,30" Spacing="18">
                     <controls:AppHeaderView AccountRoute="//SupervisorTabs/SupervisorAccountPage" />
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20" Margin="0,4,0,2">
@@ -38,7 +37,7 @@
                         </Border>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                    <Grid x:Name="StatsGrid" ColumnDefinitions="*,*" ColumnSpacing="16" RowSpacing="16">
                         <Border Grid.Column="0" Stroke="#E4E9F1" StrokeThickness="1"
                                 StrokeShape="RoundRectangle 18" BackgroundColor="White" Padding="22">
                             <Border.Shadow>
@@ -91,7 +90,7 @@
                         </Border>
                     </Grid>
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                    <Grid x:Name="QuickActionsGrid" ColumnDefinitions="*,*" ColumnSpacing="14" RowSpacing="14">
                         <Border Grid.Column="0" Stroke="#E4E9F1" StrokeThickness="1"
                                 BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="16">
                             <Border.GestureRecognizers>

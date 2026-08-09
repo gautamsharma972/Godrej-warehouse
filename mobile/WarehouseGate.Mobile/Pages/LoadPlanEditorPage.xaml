@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
              xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             xmlns:models="clr-namespace:WarehouseGate.Mobile.Models"
              x:Class="WarehouseGate.Mobile.Pages.LoadPlanEditorPage"
              Title="Plan &amp; Load (3D)"
              Shell.BackButtonBehavior="{x:Null}"
@@ -10,9 +11,18 @@
              Shell.FlyoutBehavior="Disabled">
 
     <Grid x:Name="PageDrawer" RowDefinitions="Auto,*,Auto" BackgroundColor="{StaticResource SurfaceLight}">
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Padding="28,22,28,14" ColumnSpacing="18">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Padding="28,22,28,14" ColumnSpacing="12">
             <controls:BackHeaderView x:Name="PageHeaderView" Grid.Column="0" Title="Back to jobs" />
-            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+            <Border Grid.Column="1" x:Name="ToggleSimulationButton" WidthRequest="42" HeightRequest="42"
+                    StrokeShape="RoundRectangle 12" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                    BackgroundColor="{StaticResource CardLight}" SemanticProperties.Description="Show simulation">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnToggleSimulationClicked" />
+                </Border.GestureRecognizers>
+                <Label x:Name="ToggleSimulationIcon" Text="{x:Static services:IconGlyphs.Eye}" Style="{StaticResource IconLabel}"
+                       FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+            <HorizontalStackLayout Grid.Column="2" Spacing="8" VerticalOptions="Center">
                 <Border Padding="10,5" StrokeThickness="0" BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 12">
                     <HorizontalStackLayout Spacing="6">
                         <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource StatusSuccess}" VerticalOptions="Center" />
@@ -28,8 +38,8 @@
             </HorizontalStackLayout>
         </Grid>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="18" Padding="28,0,28,18">
-            <Border Grid.Column="0" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+        <Grid x:Name="WorkspaceGrid" Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="18" Padding="28,0,28,18">
+            <Border x:Name="VisualizationCard" Grid.Column="0" IsVisible="False" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
                     StrokeShape="RoundRectangle 24" BackgroundColor="{StaticResource CardLight}" Padding="0">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="14" Padding="18,16">
@@ -67,6 +77,48 @@
                 <VerticalStackLayout x:Name="CenterColumn" Spacing="14">
                     <Grid x:Name="MainGrid" IsVisible="False" />
 
+                    <Border x:Name="SkuListCard" Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource CardTint}">
+                                    <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
+                                           FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="Pick a SKU to place" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
+                                    <Label Text="Tap a line from the pick list to start placing it." Style="{StaticResource MetaLabel}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                            <CollectionView x:Name="SkuPickListCollectionView">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PickListSkuRow">
+                                        <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                                                StrokeShape="RoundRectangle 16" BackgroundColor="{StaticResource CardLight}"
+                                                Padding="14" Margin="0,0,0,10" Opacity="{Binding IsEnabled, Converter={StaticResource BoolToOpacityConverter}}">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnSkuPickListItemTapped" />
+                                            </Border.GestureRecognizers>
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                                                    <Label Text="{Binding Name}" FontFamily="PoppinsSemiBold" FontSize="14"
+                                                           TextColor="{StaticResource TextPrimaryLight}" LineBreakMode="TailTruncation" />
+                                                    <Label Text="{Binding RemainingCaption}" Style="{StaticResource MetaLabel}" />
+                                                </VerticalStackLayout>
+                                                <Label Grid.Column="1" Text="{x:Static services:IconGlyphs.ChevronRight}"
+                                                       Style="{StaticResource IconLabel}" FontSize="12"
+                                                       TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                                <CollectionView.EmptyView>
+                                    <Label Text="No SKUs on this job's pick list yet." Style="{StaticResource EmptyStateLabel}" />
+                                </CollectionView.EmptyView>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+
                     <VerticalStackLayout x:Name="PlacementPanel" Spacing="12" IsVisible="False">
                         <Border x:Name="PlacementCardBorder" Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
                             <VerticalStackLayout Spacing="13">
@@ -78,45 +130,58 @@
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                         <Label x:Name="PlacementSkuLabel" Style="{StaticResource CardTitleLabel}" FontSize="15" />
-                                        <Label Text="Tune group placement" Style="{StaticResource MetaLabel}" />
+                                        <Label Text="Place this SKU on the vehicle" Style="{StaticResource MetaLabel}" />
                                     </VerticalStackLayout>
                                     <Button Grid.Column="2" Text="Cancel" Clicked="OnCancelPlacementClicked" Style="{StaticResource ChipButton}" FontSize="11" />
                                 </Grid>
 
-                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                                    <Button Grid.Column="0" Text="-" FontFamily="FaSolid" WidthRequest="40" HeightRequest="40"
-                                            Clicked="OnPlacementQtyMinusClicked" Style="{StaticResource ChipButton}" />
-                                    <Entry Grid.Column="1" x:Name="PlacementQtyEntry" Keyboard="Numeric" HorizontalTextAlignment="Center"
-                                           Placeholder="Quantity" TextChanged="OnPlacementFieldChanged" />
-                                    <Button Grid.Column="2" Text="+" FontFamily="FaSolid" WidthRequest="40" HeightRequest="40"
-                                            Clicked="OnPlacementQtyPlusClicked" Style="{StaticResource ChipButton}" />
-                                </Grid>
-
-                                <VerticalStackLayout Spacing="6">
-                                    <Label Text="Section" FontFamily="PoppinsSemiBold" FontSize="13" />
+                                <!-- Step 1: location. Shown first - picking a section auto-advances to Step 2. -->
+                                <VerticalStackLayout x:Name="LocationStepSection" Spacing="6">
+                                    <Label Text="1. Choose a location" FontFamily="PoppinsSemiBold" FontSize="13" />
                                     <Border Padding="4" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 16">
                                         <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="4" ColumnSpacing="4">
                                             <Button Grid.Row="0" Grid.Column="0" x:Name="ZoneFrontLeftButton" Text="Front-Left"
-                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" MinimumHeightRequest="46" />
                                             <Button Grid.Row="0" Grid.Column="1" x:Name="ZoneFrontRightButton" Text="Front-Right"
-                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" MinimumHeightRequest="46" />
                                             <Button Grid.Row="1" Grid.Column="0" x:Name="ZoneMiddleLeftButton" Text="Middle-Left"
-                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" MinimumHeightRequest="46" />
                                             <Button Grid.Row="1" Grid.Column="1" x:Name="ZoneMiddleRightButton" Text="Middle-Right"
-                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" MinimumHeightRequest="46" />
                                             <Button Grid.Row="2" Grid.Column="0" x:Name="ZoneBackLeftButton" Text="Back-Left"
-                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" MinimumHeightRequest="46" />
                                             <Button Grid.Row="2" Grid.Column="1" x:Name="ZoneBackRightButton" Text="Back-Right"
-                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" />
+                                                    Clicked="OnZoneButtonClicked" Style="{StaticResource ChipButton}" FontSize="11" MinimumHeightRequest="46" />
                                         </Grid>
                                     </Border>
                                 </VerticalStackLayout>
 
-                                <Label x:Name="PlacementSummaryLabel" Style="{StaticResource MetaLabel}" />
-                                <VerticalStackLayout x:Name="PlacementWarningsContainer" Spacing="6" />
+                                <!-- Step 2: quantity. Hidden until a location is picked. -->
+                                <VerticalStackLayout x:Name="QuantityStepSection" Spacing="13" IsVisible="False">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                            <Label Text="2. Choose a quantity" FontFamily="PoppinsSemiBold" FontSize="13" />
+                                            <Label x:Name="SelectedLocationLabel" Style="{StaticResource MetaLabel}" />
+                                        </VerticalStackLayout>
+                                        <Button Grid.Column="1" Text="Change location" Clicked="OnChangeLocationClicked"
+                                                Style="{StaticResource ChipButton}" FontSize="11" VerticalOptions="Center" />
+                                    </Grid>
 
-                                <Button x:Name="ConfirmPlacementButton" Text="Confirm placement"
-                                        Clicked="OnConfirmPlacementClicked" Style="{StaticResource PrimaryActionButton}" IsEnabled="False" />
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                        <Button Grid.Column="0" Text="-" FontFamily="FaSolid" WidthRequest="44" HeightRequest="44"
+                                                Clicked="OnPlacementQtyMinusClicked" Style="{StaticResource ChipButton}" />
+                                        <Entry Grid.Column="1" x:Name="PlacementQtyEntry" Keyboard="Numeric" HorizontalTextAlignment="Center"
+                                               Placeholder="Quantity" TextChanged="OnPlacementFieldChanged" />
+                                        <Button Grid.Column="2" Text="+" FontFamily="FaSolid" WidthRequest="44" HeightRequest="44"
+                                                Clicked="OnPlacementQtyPlusClicked" Style="{StaticResource ChipButton}" />
+                                    </Grid>
+
+                                    <Label x:Name="PlacementSummaryLabel" Style="{StaticResource MetaLabel}" />
+                                    <VerticalStackLayout x:Name="PlacementWarningsContainer" Spacing="6" />
+
+                                    <Button x:Name="ConfirmPlacementButton" Text="Confirm placement"
+                                            Clicked="OnConfirmPlacementClicked" Style="{StaticResource PrimaryActionButton}" IsEnabled="False" />
+                                </VerticalStackLayout>
                             </VerticalStackLayout>
                         </Border>
                     </VerticalStackLayout>

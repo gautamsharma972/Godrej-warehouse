@@ -5,6 +5,12 @@ namespace WarehouseGate.Mobile.Controls;
 
 public partial class AppHeaderView : ContentView
 {
+    // Below this, the row of 4 fixed-size icon buttons (menu/notifications/account) plus the
+    // Live badge leaves too little of the Star column for the greeting/name text - narrower than
+    // ResponsiveHelper.TabletBreakpoint because this header is one embedded row, not a whole page.
+    private const double CompactBreakpoint = 420;
+    private bool? _isCompact;
+
     public static readonly BindableProperty AccountRouteProperty =
         BindableProperty.Create(nameof(AccountRoute), typeof(string), typeof(AppHeaderView));
 
@@ -31,6 +37,25 @@ public partial class AppHeaderView : ContentView
         Unloaded += OnUnloaded;
     }
 
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+
+        var compact = width > 0 && width < CompactBreakpoint;
+        if (_isCompact == compact)
+        {
+            return;
+        }
+
+        _isCompact = compact;
+
+        // Drop the "Live" badge first - it's the least essential element - to give the
+        // greeting/name column enough room to truncate cleanly instead of wrapping character by
+        // character. The WG mark stays; the hamburger already makes it a real (tappable) icon.
+        LiveStatusBadge.IsVisible = !compact;
+        HeaderGrid.ColumnSpacing = compact ? 8 : 12;
+    }
+
     private void OnLoaded(object? sender, EventArgs e)
     {
         SetNotificationBadge(NotificationCenter.Count);
@@ -54,6 +79,14 @@ public partial class AppHeaderView : ContentView
         if (!string.IsNullOrEmpty(AccountRoute))
         {
             await Shell.Current.GoToAsync(AccountRoute);
+        }
+    }
+
+    private void OnMenuIconTapped(object? sender, EventArgs e)
+    {
+        if (Shell.Current is not null)
+        {
+            Shell.Current.FlyoutIsPresented = !Shell.Current.FlyoutIsPresented;
         }
     }
 

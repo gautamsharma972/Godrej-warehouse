@@ -372,7 +372,7 @@
                     BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0"
                     VerticalOptions="Start">
                 <VerticalStackLayout Spacing="16">
-                    <Grid x:Name="OutwardReferenceHeaderGrid" ColumnDefinitions="Auto,*" ColumnSpacing="14"
+                    <Grid x:Name="OutwardReferenceHeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14"
                           Padding="18,16" BackgroundColor="#FBFCFE">
                         <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
                                 StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
@@ -383,6 +383,16 @@
                             <Label Text="Original dispatch load plan" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
                             <Label x:Name="OutwardReferenceSubtitleLabel" Style="{StaticResource MetaLabel}" />
                         </VerticalStackLayout>
+                        <Border Grid.Column="2" x:Name="ToggleReferenceSimulationButton" WidthRequest="40" HeightRequest="40"
+                                StrokeShape="RoundRectangle 12" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                                BackgroundColor="{StaticResource CardLight}" VerticalOptions="Center"
+                                SemanticProperties.Description="Show simulation">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnToggleReferenceSimulationClicked" />
+                            </Border.GestureRecognizers>
+                            <Label x:Name="ToggleReferenceSimulationIcon" Text="{x:Static services:IconGlyphs.Eye}" Style="{StaticResource IconLabel}"
+                                   FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
                     </Grid>
 
                     <Border x:Name="OutwardReferenceEmptyBorder" StrokeThickness="0" BackgroundColor="{StaticResource SurfaceLight}"
@@ -515,8 +525,5 @@
 
         </VerticalStackLayout>
     </ScrollView>
-
-    <controls:SecurityBottomNavBar x:Name="SecurityNavBar" Grid.Row="1" ActiveTab="Status" IsVisible="False" />
-    <controls:SupervisorBottomNavBar x:Name="SupervisorNavBar" Grid.Row="1" IsVisible="False" />
     </Grid>
 </ContentPage>

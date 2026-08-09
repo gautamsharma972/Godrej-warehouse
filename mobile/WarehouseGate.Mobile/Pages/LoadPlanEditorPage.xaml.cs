@@ -49,6 +49,13 @@ public partial class LoadPlanEditorPage : ContentPage
     private string _pendingZoneWidth = "Left";
     private LoadGroupPreview? _lastPreview;
 
+    private enum PlacementStep { SelectLocation, SelectQuantity }
+    private PlacementStep _placementStep = PlacementStep.SelectLocation;
+
+    // The 3D simulation is a heavy WebGL view and its only placement entry point
+    // (SkuPickListCollectionView below is the phone-friendly alternative) - hidden by default.
+    private bool _simulationVisible;
+
     private LoadPlanGroup? _selectedGroup;
     private bool _ruleValidationExpanded = true;
 
@@ -88,8 +95,45 @@ public partial class LoadPlanEditorPage : ContentPage
 
     // Full-screen drawer layout: the WebView fills the main panel, so only keep a practical
     // minimum height for narrow devices.
-    private void ApplyResponsiveLayout(bool wide) =>
+    private void ApplyResponsiveLayout(bool wide)
+    {
         LoadVizWebView.MinimumHeightRequest = wide ? 640 : 520;
+        WorkspaceGrid.Padding = wide ? new Thickness(28, 0, 28, 18) : new Thickness(14, 0, 14, 14);
+        UpdateWorkspaceLayout();
+    }
+
+    // Two columns (viz | side panel) only when both the window is wide AND the simulation is
+    // actually shown - otherwise a single stacked column, so the fixed 340px side panel never
+    // squeezes a phone-width viewport and never reserves space for a hidden viz card.
+    private void UpdateWorkspaceLayout()
+    {
+        var twoColumns = (_isWide ?? false) && _simulationVisible;
+
+        WorkspaceGrid.ColumnDefinitions = twoColumns
+            ? new ColumnDefinitionCollection { new ColumnDefinition(GridLength.Star), new ColumnDefinition(new GridLength(340, GridUnitType.Absolute)) }
+            : new ColumnDefinitionCollection { new ColumnDefinition(GridLength.Star) };
+        // CenterScrollView's row must be Star, never Auto - an Auto row sizes to fit ALL of the
+        // ScrollView's content instead of clipping it to the space actually available, which
+        // silently defeats scrolling entirely (the view just grows past the bottom of the screen).
+        WorkspaceGrid.RowDefinitions = twoColumns
+            ? new RowDefinitionCollection { new RowDefinition(GridLength.Star) }
+            : new RowDefinitionCollection { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star) };
+
+        VisualizationCard.IsVisible = _simulationVisible;
+        Grid.SetRow(VisualizationCard, 0);
+        Grid.SetColumn(VisualizationCard, 0);
+
+        Grid.SetRow(CenterScrollView, twoColumns ? 0 : 1);
+        Grid.SetColumn(CenterScrollView, twoColumns ? 1 : 0);
+    }
+
+    private void OnToggleSimulationClicked(object? sender, EventArgs e)
+    {
+        _simulationVisible = !_simulationVisible;
+        ToggleSimulationIcon.Text = _simulationVisible ? IconGlyphs.EyeSlash : IconGlyphs.Eye;
+        SemanticProperties.SetDescription(ToggleSimulationButton, _simulationVisible ? "Hide simulation" : "Show simulation");
+        UpdateWorkspaceLayout();
+    }
 
     protected override void OnAppearing()
     {
@@ -102,10 +146,7 @@ public partial class LoadPlanEditorPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        if (Session.IsSupervisor)
-        {
-            Shell.SetFlyoutBehavior(this, FlyoutBehavior.Locked);
-        }
+        Shell.SetFlyoutBehavior(this, FlyoutBehavior.Flyout);
     }
 
     private async Task AnimateDrawerInAsync()
@@ -367,19 +408,32 @@ public partial class LoadPlanEditorPage : ContentPage
     // the same popup with THAT section pre-selected instead.
     public Task OnSkuChipTapped(int lineId)
     {
-        MainThread.BeginInvokeOnMainThread(() => StartPlacingNew(lineId, "Front", "Left"));
+        MainThread.BeginInvokeOnMainThread(() => StartPlacingNew(lineId, "Front", "Left", locationPreSelected: false));
         return Task.CompletedTask;
     }
 
     public Task OnSkuChipDropped(int lineId, string zoneLength, string zoneWidth)
     {
-        MainThread.BeginInvokeOnMainThread(() => StartPlacingNew(lineId, zoneLength, zoneWidth));
+        // A drag-drop already told us where - skip straight to the quantity step.
+        MainThread.BeginInvokeOnMainThread(() => StartPlacingNew(lineId, zoneLength, zoneWidth, locationPreSelected: true));
         return Task.CompletedTask;
+    }
+
+    // Native list entry point (SkuPickListCollectionView) - the always-available way to start a
+    // placement when the 3D viewport (and its own JS-rendered SKU chips) is hidden.
+    private void OnSkuPickListItemTapped(object? sender, EventArgs e)
+    {
+        if (sender is not Border { BindingContext: PickListSkuRow row } || !row.IsEnabled)
+        {
+            return;
+        }
+
+        StartPlacingNew(row.LineId, "Front", "Left", locationPreSelected: false);
     }
 
     // ---------- Placing a new group ----------
 
-    private void StartPlacingNew(int lineId, string zoneLength, string zoneWidth)
+    private void StartPlacingNew(int lineId, string zoneLength, string zoneWidth, bool locationPreSelected)
     {
         if (_selectedOptionId is null || _job is null)
         {
@@ -398,18 +452,34 @@ public partial class LoadPlanEditorPage : ContentPage
         _pendingZoneLength = zoneLength;
         _pendingZoneWidth = zoneWidth;
         _lastPreview = null;
+        _placementStep = locationPreSelected ? PlacementStep.SelectQuantity : PlacementStep.SelectLocation;
 
         PlacementSkuLabel.Text = line.ProductName;
         PlacementQtyEntry.Text = remaining.ToString();
         RestyleZoneButtons();
-        PlacementSummaryLabel.Text = "Pick a section and quantity, then confirm.";
+        PlacementSummaryLabel.Text = "Pick a quantity, then confirm.";
         PlacementWarningsContainer.Children.Clear();
         ConfirmPlacementButton.IsEnabled = false;
 
         PlacementPanel.IsVisible = true;
         ViewportHintLabel.IsVisible = false;
+        ApplyPlacementStepVisibility();
         _ = RefreshPlacementPreviewAsync();
         _ = HighlightPlacementCardAsync();
+    }
+
+    private void ApplyPlacementStepVisibility()
+    {
+        var selectingLocation = _placementStep == PlacementStep.SelectLocation;
+        LocationStepSection.IsVisible = selectingLocation;
+        QuantityStepSection.IsVisible = !selectingLocation;
+        SelectedLocationLabel.Text = $"Location: {_pendingZoneLength}-{_pendingZoneWidth}";
+    }
+
+    private void OnChangeLocationClicked(object? sender, EventArgs e)
+    {
+        _placementStep = PlacementStep.SelectLocation;
+        ApplyPlacementStepVisibility();
     }
 
     // Draws the eye to the quantity-entry card the moment it appears from a SKU drag/drop or
@@ -450,6 +520,7 @@ public partial class LoadPlanEditorPage : ContentPage
         _placementActive = false;
         _pendingLineId = null;
         _lastPreview = null;
+        _placementStep = PlacementStep.SelectLocation;
         PlacementPanel.IsVisible = false;
         ViewportHintLabel.IsVisible = true;
         _ = RefreshViewportAndWarningsAsync();
@@ -493,6 +564,14 @@ public partial class LoadPlanEditorPage : ContentPage
             }
         }
         RestyleZoneButtons();
+
+        // Picking a location while on Step 1 auto-advances to Step 2 (quantity) - re-tapping a
+        // different zone from "Change location" on Step 2 just updates the selection in place.
+        if (_placementStep == PlacementStep.SelectLocation)
+        {
+            _placementStep = PlacementStep.SelectQuantity;
+        }
+        ApplyPlacementStepVisibility();
         _ = RefreshPlacementPreviewAsync();
     }
 
@@ -885,12 +964,38 @@ public partial class LoadPlanEditorPage : ContentPage
         }
     }
 
+    // Mirrors the "remaining" calc the viewport's own JS SKU rail uses (see the skus projection
+    // below) so the native list and the 3D chips never disagree on what's still placeable.
+    private List<PickListSkuRow> BuildSkuPickList()
+    {
+        if (_job is null)
+        {
+            return new List<PickListSkuRow>();
+        }
+
+        return _job.Lines.Select(line =>
+        {
+            var placedQty = _groups.Where(g => g.DispatchOrderLineId == line.Id).Sum(g => g.Quantity);
+            var remaining = (int)Math.Max(0, line.OrderedQty - placedQty);
+            return new PickListSkuRow
+            {
+                LineId = line.Id,
+                Name = line.ProductName,
+                SkuCode = line.SkuCode ?? "",
+                Remaining = remaining,
+                IsEnabled = _selectedOptionId is not null && remaining > 0
+            };
+        }).ToList();
+    }
+
     private async Task RefreshViewportAndWarningsAsync(LoadPlanValidation? prefetchedValidation = null)
     {
         if (_job is null)
         {
             return;
         }
+
+        SkuPickListCollectionView.ItemsSource = BuildSkuPickList();
 
         object? preview = null;
         if (_placementActive && _lastPreview is { PlacedCount: > 0 })

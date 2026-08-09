@@ -12,6 +12,7 @@ public partial class LoadConfirmationPage : ContentPage
     private readonly Dictionary<int, string> _localPhotoPaths = new();
     private readonly List<LoadLineRow> _loadLineRows = new();
     private List<LoadConfirmationStep> _lastSteps = new();
+    private bool? _isWide;
 
     private static readonly string[] ShortReasons =
     {
@@ -44,8 +45,82 @@ public partial class LoadConfirmationPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        Shell.SetFlyoutBehavior(this, Session.IsSupervisor ? FlyoutBehavior.Locked : FlyoutBehavior.Disabled);
         _ = LoadAsync();
+    }
+
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+
+        var wide = ResponsiveHelper.IsWide(width);
+        if (_isWide == wide)
+        {
+            return;
+        }
+
+        _isWide = wide;
+        ApplyResponsiveLayout(wide);
+    }
+
+    // Header card: icon+message+"Start Loading" button share one row on tablet; on a phone the
+    // button (MinimumWidthRequest 156) left the message column too narrow to hold even the header
+    // title, so it drops to its own full-width row instead of squeezing beside the message.
+    private void ApplyResponsiveLayout(bool wide)
+    {
+        ResponsiveHelper.ConfigureStackableGrid(FinalActionsGrid, wide, wideColumnCount: 2);
+
+        if (wide)
+        {
+            HeaderCardGrid.ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)
+            };
+            HeaderCardGrid.RowDefinitions = new RowDefinitionCollection
+            {
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)
+            };
+            Grid.SetRow(HeaderIconBorder, 0);
+            Grid.SetColumn(HeaderIconBorder, 0);
+            Grid.SetRow(HeaderMessageStack, 0);
+            Grid.SetColumn(HeaderMessageStack, 1);
+            Grid.SetRow(HeaderButtonStack, 0);
+            Grid.SetColumn(HeaderButtonStack, 2);
+            HeaderButtonStack.HorizontalOptions = LayoutOptions.End;
+            StartLoadingAllButton.HorizontalOptions = LayoutOptions.End;
+            Grid.SetRow(ProgressLabel, 1);
+            Grid.SetColumn(ProgressLabel, 1);
+            Grid.SetColumnSpan(ProgressLabel, 2);
+            Grid.SetRow(ProgressBar, 2);
+            Grid.SetColumn(ProgressBar, 1);
+            Grid.SetColumnSpan(ProgressBar, 2);
+        }
+        else
+        {
+            HeaderCardGrid.ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Star)
+            };
+            HeaderCardGrid.RowDefinitions = new RowDefinitionCollection
+            {
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)
+            };
+            Grid.SetRow(HeaderIconBorder, 0);
+            Grid.SetColumn(HeaderIconBorder, 0);
+            Grid.SetRow(HeaderMessageStack, 0);
+            Grid.SetColumn(HeaderMessageStack, 1);
+            Grid.SetRow(HeaderButtonStack, 1);
+            Grid.SetColumn(HeaderButtonStack, 0);
+            Grid.SetColumnSpan(HeaderButtonStack, 2);
+            HeaderButtonStack.HorizontalOptions = LayoutOptions.Fill;
+            StartLoadingAllButton.HorizontalOptions = LayoutOptions.Fill;
+            Grid.SetRow(ProgressLabel, 2);
+            Grid.SetColumn(ProgressLabel, 0);
+            Grid.SetColumnSpan(ProgressLabel, 2);
+            Grid.SetRow(ProgressBar, 3);
+            Grid.SetColumn(ProgressBar, 0);
+            Grid.SetColumnSpan(ProgressBar, 2);
+        }
     }
 
     private async Task LoadAsync()
@@ -245,12 +320,6 @@ public partial class LoadConfirmationPage : ContentPage
             .ThenBy(x => x.Index)
             .ToList();
 
-        var cardRail = new HorizontalStackLayout
-        {
-            Spacing = 14,
-            Padding = new Thickness(0, 0, 4, 4)
-        };
-
         foreach (var item in orderedLines)
         {
             confirmedByLine.TryGetValue(item.Line.Id, out var confirmed);
@@ -260,10 +329,13 @@ public partial class LoadConfirmationPage : ContentPage
             var lineIsResolved = lineSteps is { Count: > 0 } && lineSteps.All(IsResolvedStep);
             var lineIsLocked = !readOnly && lineIsResolved;
 
+            // Cartons are always whole units - format/parse as integers everywhere (entry text,
+            // +/- stepper, Picklist Qty display) even though the underlying values are decimal on
+            // the wire (OrderedQty/LoadedQty), so a supervisor never sees "500.00".
             var qtyEntry = new Entry
             {
                 Keyboard = Keyboard.Numeric,
-                Text = loadedQty.ToString(CultureInfo.InvariantCulture),
+                Text = Math.Round(loadedQty, 0).ToString("0", CultureInfo.InvariantCulture),
                 IsEnabled = !readOnly && !lineIsLocked,
                 BackgroundColor = Colors.Transparent,
                 FontFamily = "PoppinsSemiBold",
@@ -271,6 +343,7 @@ public partial class LoadConfirmationPage : ContentPage
                 TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"],
                 Margin = new Thickness(0, -4, 0, -6)
             };
+            qtyEntry.TextChanged += OnIntegerQtyTextChanged;
 
             var notesEntry = new Entry
             {
@@ -300,7 +373,7 @@ public partial class LoadConfirmationPage : ContentPage
             };
             var subtitle = new Label
             {
-                Text = $"Picklist {item.Line.OrderedQty:0.##} {item.Line.UnitOfMeasure}",
+                Text = $"Picklist {item.Line.OrderedQty:0} {item.Line.UnitOfMeasure}",
                 Style = (Style)Application.Current.Resources["MetaLabel"]
             };
             Button? editButton = null;
@@ -313,12 +386,22 @@ public partial class LoadConfirmationPage : ContentPage
                 editButton.Padding = new Thickness(10, 4);
             }
 
+            var chevron = new Label
+            {
+                Text = IconGlyphs.ChevronDown,
+                Style = (Style)Application.Current!.Resources["IconLabel"],
+                FontSize = 13,
+                TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
+                VerticalOptions = LayoutOptions.Center
+            };
+
             var header = new Grid
             {
                 ColumnDefinitions = new ColumnDefinitionCollection
                 {
                     new(GridLength.Auto),
                     new(GridLength.Star),
+                    new(GridLength.Auto),
                     new(GridLength.Auto)
                 },
                 ColumnSpacing = 12
@@ -345,6 +428,7 @@ public partial class LoadConfirmationPage : ContentPage
             {
                 header.Add(editButton, 2);
             }
+            header.Add(chevron, 3);
 
             var qtyValueStack = new VerticalStackLayout
             {
@@ -414,7 +498,7 @@ public partial class LoadConfirmationPage : ContentPage
                         },
                         new Label
                         {
-                            Text = item.Line.OrderedQty.ToString("0.##", CultureInfo.InvariantCulture),
+                            Text = item.Line.OrderedQty.ToString("0", CultureInfo.InvariantCulture),
                             FontFamily = "PoppinsBold",
                             FontSize = 16,
                             TextColor = (Color)Application.Current.Resources["TextPrimaryLight"],
@@ -445,8 +529,6 @@ public partial class LoadConfirmationPage : ContentPage
             };
             fields.Add(BuildInlineField("Notes", notesEntry, IconGlyphs.ClipboardList), 0);
 
-            var cardContent = new VerticalStackLayout { Spacing = 14, Children = { header, quantitiesRow } };
-
             // Loaded/Short is confirmed ONCE for the whole SKU here, not per zone - internally
             // it still updates every underlying 3D-placement group (see ConfirmLineLoadedAsync/
             // ConfirmLineShortAsync), but the supervisor only ever taps one set of controls.
@@ -455,7 +537,6 @@ public partial class LoadConfirmationPage : ContentPage
             {
                 lineActionsHost.Children.Add(BuildLineActionsSection(item.Line, lineSteps, qtyEntry, notesEntry));
             }
-            cardContent.Children.Add(lineActionsHost);
 
             // Read-only per-zone breakdown - usually just one zone, but a large quantity can be
             // split across multiple sections, each shown as its own status row.
@@ -463,7 +544,6 @@ public partial class LoadConfirmationPage : ContentPage
             if (lineSteps is { Count: > 0 })
             {
                 groupHost.Children.Add(BuildGroupsSection(lineSteps));
-                cardContent.Children.Add(groupHost);
             }
 
             if (editButton is not null)
@@ -483,17 +563,33 @@ public partial class LoadConfirmationPage : ContentPage
                 };
             }
 
-            cardContent.Children.Add(BuildLinePhotoSection(job, item.Line.Id, readOnly));
-            cardContent.Children.Add(fields);
+            // Everything except the header starts collapsed - tapping the header (or its chevron)
+            // is what reveals the qty stepper, reason chips, zone breakdown, and photo capture,
+            // instead of the old "swipe sideways between fixed-width cards" layout.
+            var detailContent = new VerticalStackLayout
+            {
+                Spacing = 14,
+                IsVisible = false,
+                Children = { quantitiesRow, lineActionsHost, groupHost, BuildLinePhotoSection(job, item.Line.Id, readOnly), fields }
+            };
 
-            cardRail.Children.Add(new Border
+            var headerTap = new TapGestureRecognizer();
+            headerTap.Tapped += (_, _) =>
+            {
+                detailContent.IsVisible = !detailContent.IsVisible;
+                chevron.Text = detailContent.IsVisible ? IconGlyphs.ChevronUp : IconGlyphs.ChevronDown;
+            };
+            header.GestureRecognizers.Add(headerTap);
+
+            var cardContent = new VerticalStackLayout { Spacing = 14, Children = { header, detailContent } };
+
+            LoadLinesContainer.Children.Add(new Border
             {
                 Stroke = (Color)Application.Current.Resources["CardBorderLight"],
                 StrokeThickness = 1,
                 BackgroundColor = (Color)Application.Current.Resources["CardLight"],
                 StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 22 },
                 Padding = new Thickness(14),
-                WidthRequest = 344,
                 Content = cardContent,
                 Shadow = new Shadow
                 {
@@ -511,13 +607,6 @@ public partial class LoadConfirmationPage : ContentPage
                 NotesEntry = notesEntry
             });
         }
-
-        LoadLinesContainer.Children.Add(new ScrollView
-        {
-            Orientation = ScrollOrientation.Horizontal,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Never,
-            Content = cardRail
-        });
     }
 
     // One read-only status row per underlying 3D-placement group (zone) for this line, always
@@ -862,7 +951,24 @@ public partial class LoadConfirmationPage : ContentPage
         }
 
         qty = Math.Max(0, qty + delta);
-        entry.Text = qty.ToString(CultureInfo.InvariantCulture);
+        entry.Text = qty.ToString("0", CultureInfo.InvariantCulture);
+    }
+
+    // Keyboard.Numeric still lets some platforms' soft keyboards type a decimal point - cartons
+    // are always whole units, so strip anything that isn't a digit as the supervisor types rather
+    // than only formatting on the way out (which would let "500.5" sit in the field unnoticed).
+    private static void OnIntegerQtyTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not Entry entry || string.IsNullOrEmpty(e.NewTextValue))
+        {
+            return;
+        }
+
+        var digitsOnly = new string(e.NewTextValue.Where(char.IsDigit).ToArray());
+        if (digitsOnly != e.NewTextValue)
+        {
+            entry.Text = digitsOnly;
+        }
     }
 
     private void RenderPhotos(OutwardJob job)

@@ -6,6 +6,7 @@ namespace WarehouseGate.Mobile.Pages;
 public partial class SupervisorDashboardPage : ContentPage
 {
     private bool _isLoading;
+    private bool? _isWideLayout;
 
     public SupervisorDashboardPage()
     {
@@ -23,6 +24,22 @@ public partial class SupervisorDashboardPage : ContentPage
         SupervisorHubClient.OutwardJobAssignedToYou += OnHubOutwardJobChanged;
 
         _ = LoadAsync();
+    }
+
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+
+        var wide = ResponsiveHelper.IsWide(width);
+        if (_isWideLayout == wide)
+        {
+            return;
+        }
+
+        _isWideLayout = wide;
+        PageContent.Padding = wide ? new Thickness(30, 26, 30, 30) : new Thickness(16, 18, 16, 24);
+        ResponsiveHelper.ConfigureStackableGrid(StatsGrid, wide, wideColumnCount: 2);
+        ResponsiveHelper.ConfigureStackableGrid(QuickActionsGrid, wide, wideColumnCount: 2);
     }
 
     protected override void OnDisappearing()

@@ -51,3 +51,14 @@ public class StatusToDisplayTextConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+
+// Dims an already-fully-placed pick-list row (LoadPlanEditorPage's native SKU list) without
+// needing a second DataTemplate just for the disabled state.
+public class BoolToOpacityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is true ? 1.0 : 0.45;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

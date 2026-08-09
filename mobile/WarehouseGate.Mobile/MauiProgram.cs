@@ -53,12 +53,18 @@ public static class MauiProgram
 					handler.PlatformView.Background = null;
 				});
 
-				// Same clipping issue as Entry above, for Editor (multi-line text, used on
-				// SecurityHomePage's remarks field) - same "TextColor" anchor for the same reason.
-				Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("TextColor", (handler, _) =>
+				// Every Entry already has its own custom clear/reveal icon and the login form has
+				// its own "Remember username" checkbox - Android/the keyboard's own autofill
+				// overlay (suggestion strip, a second native password-reveal eye) only duplicates
+				// that and covers our fields, so opt every Entry out of the OS autofill pass.
+				// ImportantForAutofill needs API 26+; the app supports back to API 21, so older
+				// devices just keep the (harmless, if slightly noisier) native autofill behavior.
+				Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("NoAutofill", (handler, _) =>
 				{
-					handler.PlatformView.SetTextColor(Android.Graphics.Color.ParseColor("#20232B"));
-					handler.PlatformView.SetHintTextColor(Android.Graphics.Color.ParseColor("#6B7280"));
+					if (OperatingSystem.IsAndroidVersionAtLeast(26))
+					{
+						handler.PlatformView.ImportantForAutofill = Android.Views.ImportantForAutofill.No;
+					}
 				});
 #endif
 			});

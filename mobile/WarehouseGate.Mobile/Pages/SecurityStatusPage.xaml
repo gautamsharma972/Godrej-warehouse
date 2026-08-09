@@ -7,8 +7,7 @@
              x:Class="WarehouseGate.Mobile.Pages.SecurityStatusPage"
              Title="Vehicle Status"
              Shell.BackButtonBehavior="{x:Null}"
-             Shell.TabBarIsVisible="False"
-             Shell.FlyoutBehavior="Locked">
+             Shell.TabBarIsVisible="False">
 
     <ContentPage.Resources>
         <DataTemplate x:Key="SecurityJobRowTemplate" x:DataType="models:InwardJob">
@@ -565,6 +564,5 @@
             <Label x:Name="LiveBannerLabel" TextColor="{StaticResource PrimaryDarkText}" FontFamily="PoppinsSemiBold"
                    FontSize="13" HorizontalOptions="Center" />
         </Border>
-
     </Grid>
 </ContentPage>
