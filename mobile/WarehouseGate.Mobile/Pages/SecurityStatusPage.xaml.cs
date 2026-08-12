@@ -234,7 +234,7 @@ public partial class SecurityStatusPage : ContentPage
             {
                 _ = SearchReadyToExitAsync();
             }
-            _ = ShowLiveBannerAsync($"Update: {job.VehicleNumber} â€” {job.Status}");
+            _ = ShowLiveBannerAsync($"Update: {job.VehicleNumber} - {job.Status}");
         });
     }
 
@@ -246,7 +246,7 @@ public partial class SecurityStatusPage : ContentPage
             {
                 _ = SearchOutwardAsync();
             }
-            _ = ShowLiveBannerAsync($"Update: {job.VehicleNumber} â€” {job.Status}");
+            _ = ShowLiveBannerAsync($"Update: {job.VehicleNumber} - {job.Status}");
         });
     }
 
@@ -413,7 +413,7 @@ public partial class SecurityStatusPage : ContentPage
         OutwardStatusConfirmExitButton.IsEnabled = false;
 
         OutwardConfirmVehicleLabel.Text = job.VehicleNumber;
-        OutwardConfirmSubtitleLabel.Text = $"DO {job.DispatchOrderNumber} Â· {job.CustomerName}";
+        OutwardConfirmSubtitleLabel.Text = $"DO {job.DispatchOrderNumber} · {job.CustomerName}";
         OutwardConfirmDriverLabel.Text = string.IsNullOrWhiteSpace(job.DriverName) ? "Driver not recorded" : $"Driver: {job.DriverName}";
         OutwardConfirmDispatchNoteLabel.Text = job.DispatchNote is null ? string.Empty : $"Dispatch Note {job.DispatchNote.DispatchNoteNumber}";
 
@@ -454,7 +454,7 @@ public partial class SecurityStatusPage : ContentPage
         try
         {
             var job = await ApiClient.RecordOutwardExitAsync(_selectedOutwardExitJob.Id, _outwardExitPhotoLocalPath);
-            OutwardStatusResultVehicleLabel.Text = $"{job.VehicleNumber} Â· DO {job.DispatchOrderNumber}";
+            OutwardStatusResultVehicleLabel.Text = $"{job.VehicleNumber} · DO {job.DispatchOrderNumber}";
             OutwardStatusGatePassTokenLabel.Text = job.GatePassToken;
 
             ShowOutwardExitResultState();
@@ -1051,7 +1051,7 @@ public partial class SecurityStatusPage : ContentPage
         try
         {
             var job = await ApiClient.RecordExitAsync(_selectedExitJob.Id, _exitPhotoLocalPath);
-            StatusResultVehicleLabel.Text = string.IsNullOrWhiteSpace(job.PONumber) ? job.VehicleNumber : $"{job.VehicleNumber} Â· PO {job.PONumber}";
+            StatusResultVehicleLabel.Text = string.IsNullOrWhiteSpace(job.PONumber) ? job.VehicleNumber : $"{job.VehicleNumber} · PO {job.PONumber}";
             StatusGatePassTokenLabel.Text = job.GatePassToken;
 
             ShowExitResultState();
