@@ -40,7 +40,6 @@ public partial class SecurityDashboardPage : ContentPage
 
         _isWideLayout = wide;
         PageContent.Padding = wide ? new Thickness(30, 26, 30, 30) : new Thickness(16, 18, 16, 24);
-        ResponsiveHelper.ConfigureStackableGrid(StatsGrid, wide, wideColumnCount: 2);
         ResponsiveHelper.ConfigureStackableGrid(QuickActionsGrid, wide, wideColumnCount: 3);
     }
 
@@ -91,9 +90,6 @@ public partial class SecurityDashboardPage : ContentPage
             var pendingExit = pendingExitTask.Result;
             var completedToday = completedTodayTask.Result;
 
-            ActiveCountLabel.Text = active.Count.ToString();
-            ReadyToExitCountLabel.Text = pendingExit.Count.ToString();
-
             var waitingTooLong = active.Count(j =>
                 j.Status == "GateIn" && (DateTime.UtcNow - j.GateInTime).TotalMinutes > GateWaitAlertThresholdMinutes);
             var readyToExit = pendingExit.Count;
@@ -137,35 +133,35 @@ public partial class SecurityDashboardPage : ContentPage
         {
             AddAttentionRow(IconGlyphs.Clock, "StatusException", waitingTooLong,
                 waitingTooLong == 1 ? "vehicle waiting over 30 min at the gate" : "vehicles waiting over 30 min at the gate",
-                "//SecurityTabs/SecurityStatusPage");
+                nameof(SecurityStatusPage));
         }
 
         if (readyToExit > 0)
         {
             AddAttentionRow(IconGlyphs.RightFromBracket, "StatusSuccess", readyToExit,
                 readyToExit == 1 ? "vehicle ready to exit" : "vehicles ready to exit",
-                "//SecurityTabs/VehicleExitPage");
+                "//SecurityTabs/SecurityExitPage");
         }
 
         if (newVehicles > 0)
         {
             AddAttentionRow(IconGlyphs.TriangleExclamation, "StatusAssigned", newVehicles,
                 newVehicles == 1 ? "new vehicle flagged for office review" : "new vehicles flagged for office review",
-                "//SecurityTabs/SecurityStatusPage");
+                nameof(SecurityStatusPage));
         }
 
         if (deliveryMismatches > 0)
         {
             AddAttentionRow(IconGlyphs.CalendarDays, "StatusException", deliveryMismatches,
                 deliveryMismatches == 1 ? "vehicle outside expected delivery window" : "vehicles outside expected delivery window",
-                "//SecurityTabs/SecurityStatusPage");
+                nameof(SecurityStatusPage));
         }
 
         if (exceptionsToday > 0)
         {
             AddAttentionRow(IconGlyphs.TriangleExclamation, "StatusException", exceptionsToday,
                 exceptionsToday == 1 ? "vehicle completed with exceptions today — needs follow-up" : "vehicles completed with exceptions today — needs follow-up",
-                "//SecurityTabs/SecurityStatusPage");
+                nameof(SecurityStatusPage));
         }
 
         if (AttentionContainer.Children.Count == 0)
@@ -180,10 +176,10 @@ public partial class SecurityDashboardPage : ContentPage
         await Shell.Current.GoToAsync("//SecurityTabs/SecurityHomePage");
 
     private async void OnStatusQuickActionClicked(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync("//SecurityTabs/SecurityStatusPage");
+        await Shell.Current.GoToAsync(nameof(SecurityStatusPage));
 
     private async void OnExitQuickActionClicked(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync("//SecurityTabs/VehicleExitPage");
+        await Shell.Current.GoToAsync("//SecurityTabs/SecurityExitPage");
 
     private async void OnViewAllAttentionTapped(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("NotificationsPage");

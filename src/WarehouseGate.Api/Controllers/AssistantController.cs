@@ -70,12 +70,6 @@ public class AssistantController : ControllerBase
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     private string CurrentUserName => User.FindFirstValue("displayName") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
 
-    // Same null-means-unscoped convention as everywhere else - SuperAdmin gets an unscoped import
-    // (matching DispatchPlanCreationPlugin's own scoping), LogisticsManager gets their own region.
-    private async Task<int?> GetCallerRegionIdAsync() =>
-        User.IsInRole("SuperAdmin")
-            ? null
-            : await _db.Users.Where(u => u.Id == CurrentUserId).Select(u => u.RegionId).FirstOrDefaultAsync();
 
     [HttpGet("capabilities")]
     public ActionResult<IReadOnlyList<AssistantCapabilityDto>> GetCapabilities([FromQuery] string? pagePath) =>
@@ -155,8 +149,7 @@ public class AssistantController : ControllerBase
             plugins.Add(logisticsPlugin);
             dispatchPlanPlugin = new DispatchPlanCreationPlugin(_db, _pendingActions, _hub, _audit, warehouseScope, CurrentUserId);
             plugins.Add(dispatchPlanPlugin);
-            var callerRegionId = await GetCallerRegionIdAsync();
-            excelImportPlugin = new DispatchPlanExcelImportPlugin(_db, _pendingActions, _hub, _audit, callerRegionId, CurrentUserId);
+            excelImportPlugin = new DispatchPlanExcelImportPlugin(_db, _pendingActions, _hub, _audit, warehouseScope, CurrentUserId);
             plugins.Add(excelImportPlugin);
         }
 
@@ -1321,8 +1314,8 @@ public class AssistantController : ControllerBase
             return BadRequest(new { message = "File is empty." });
         }
 
-        var callerRegionId = await GetCallerRegionIdAsync();
-        var plugin = new DispatchPlanExcelImportPlugin(_db, _pendingActions, _hub, _audit, callerRegionId, CurrentUserId);
+        var warehouseScope = await _scopeResolver.ResolveAsync(User);
+        var plugin = new DispatchPlanExcelImportPlugin(_db, _pendingActions, _hub, _audit, warehouseScope, CurrentUserId);
 
         string reply;
         await using (var stream = file.OpenReadStream())
@@ -1465,8 +1458,7 @@ public class AssistantController : ControllerBase
                 {
                     return StatusCode(StatusCodes.Status403Forbidden, new { message = "Not authorized for this action." });
                 }
-                var excelImportRegionId = await GetCallerRegionIdAsync();
-                var excelImportPlugin = new DispatchPlanExcelImportPlugin(_db, _pendingActions, _hub, _audit, excelImportRegionId, CurrentUserId);
+                var excelImportPlugin = new DispatchPlanExcelImportPlugin(_db, _pendingActions, _hub, _audit, warehouseScope, CurrentUserId);
                 result = await excelImportPlugin.ExecuteConfirmedAsync(token, CurrentUserId, CurrentUserName);
                 break;
 

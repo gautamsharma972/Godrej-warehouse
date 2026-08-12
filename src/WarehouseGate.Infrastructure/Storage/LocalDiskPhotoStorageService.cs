@@ -29,4 +29,30 @@ public class LocalDiskPhotoStorageService : IPhotoStorageService
 
         return Path.Combine(transactionKey, safeFileName).Replace('\\', '/');
     }
+
+    public Task<FileServeResult> GetForServingAsync(string relativePath, CancellationToken ct = default)
+    {
+        var root = Path.GetFullPath(_options.RootPath);
+        if (!root.EndsWith(Path.DirectorySeparatorChar))
+        {
+            root += Path.DirectorySeparatorChar;
+        }
+
+        var fullPath = Path.GetFullPath(Path.Combine(root, relativePath));
+
+        // The resolved path must stay inside the photo storage root - blocks "../../" traversal.
+        if (!fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath))
+        {
+            return Task.FromResult(FileServeResult.NotFound);
+        }
+
+        var contentType = Path.GetExtension(fullPath).ToLowerInvariant() switch
+        {
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            _ => "image/jpeg"
+        };
+
+        return Task.FromResult(FileServeResult.Stream(File.OpenRead(fullPath), contentType));
+    }
 }

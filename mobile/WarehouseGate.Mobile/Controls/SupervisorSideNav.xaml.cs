@@ -6,8 +6,6 @@ namespace WarehouseGate.Mobile.Controls;
 public partial class SupervisorSideNav : ContentView
 {
     private const double ExpandedFlyoutWidth = 252;
-    private const double CollapsedFlyoutWidth = 96;
-    private bool _isCollapsed;
 
     public SupervisorSideNav()
     {
@@ -25,7 +23,10 @@ public partial class SupervisorSideNav : ContentView
 
         NotificationCenter.CountChanged += OnNotificationCountChanged;
         OnNotificationCountChanged(NotificationCenter.Count);
-        ApplyCollapsedState();
+        if (Shell.Current is not null)
+        {
+            Shell.Current.FlyoutWidth = ExpandedFlyoutWidth;
+        }
         UpdateActiveState();
     }
 
@@ -102,7 +103,7 @@ public partial class SupervisorSideNav : ContentView
             return "Alerts";
         }
 
-        if (location.Contains("SupervisorAccountPage"))
+        if (location.Contains("AccountPage"))
         {
             return "Settings";
         }
@@ -126,66 +127,10 @@ public partial class SupervisorSideNav : ContentView
     {
         var activeColor = (Color)Application.Current!.Resources["Primary"];
         var inactiveColor = (Color)Application.Current.Resources["TextSecondaryLight"];
-        pill.BackgroundColor = active ? Color.FromArgb("#E9FBF8") : Colors.Transparent;
+        pill.BackgroundColor = active ? Color.FromArgb("#EAF1FF") : Colors.Transparent;
         icon.TextColor = active ? activeColor : inactiveColor;
         label.TextColor = active ? activeColor : (Color)Application.Current.Resources["TextPrimaryLight"];
         label.FontFamily = active ? "PoppinsSemiBold" : "PoppinsRegular";
-    }
-
-    private void OnToggleCollapseTapped(object? sender, EventArgs e)
-    {
-        _isCollapsed = !_isCollapsed;
-        ApplyCollapsedState();
-    }
-
-    private void ApplyCollapsedState()
-    {
-        if (Shell.Current is not null)
-        {
-            Shell.Current.FlyoutWidth = _isCollapsed ? CollapsedFlyoutWidth : ExpandedFlyoutWidth;
-        }
-
-        SidebarRoot.Padding = _isCollapsed
-            ? new Thickness(14, 24)
-            : new Thickness(20, 24);
-        NavStack.Spacing = _isCollapsed ? 8 : 6;
-        CollapseIcon.Text = _isCollapsed ? IconGlyphs.ChevronRight : IconGlyphs.ChevronLeft;
-        BrandCopy.IsVisible = !_isCollapsed;
-        LogoutLabel.IsVisible = !_isCollapsed;
-        LogoutPill.Padding = _isCollapsed ? new Thickness(0, 13) : new Thickness(14, 13);
-
-        SetLabelVisibility(!_isCollapsed);
-        SetNavPadding(_isCollapsed ? new Thickness(0, 13) : new Thickness(14, 13));
-        SetNavAlignment(_isCollapsed);
-    }
-
-    private void SetLabelVisibility(bool visible)
-    {
-        HomeLabel.IsVisible = visible;
-        JobsLabel.IsVisible = visible;
-        HistoryLabel.IsVisible = visible;
-        AlertsLabel.IsVisible = visible;
-        SettingsLabel.IsVisible = visible;
-    }
-
-    private void SetNavPadding(Thickness padding)
-    {
-        HomePill.Padding = padding;
-        JobsPill.Padding = padding;
-        HistoryPill.Padding = padding;
-        AlertsPill.Padding = padding;
-        SettingsPill.Padding = padding;
-    }
-
-    private void SetNavAlignment(bool collapsed)
-    {
-        var rowAlignment = collapsed ? LayoutOptions.Center : LayoutOptions.Start;
-        HomeRow.HorizontalOptions = rowAlignment;
-        JobsRow.HorizontalOptions = rowAlignment;
-        HistoryRow.HorizontalOptions = rowAlignment;
-        AlertsRow.HorizontalOptions = rowAlignment;
-        SettingsRow.HorizontalOptions = rowAlignment;
-        LogoutRow.HorizontalOptions = LayoutOptions.Center;
     }
 
     private async void OnHomeTapped(object? sender, EventArgs e) =>
@@ -201,7 +146,7 @@ public partial class SupervisorSideNav : ContentView
         await Shell.Current.GoToAsync(nameof(NotificationsPage));
 
     private async void OnSettingsTapped(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync("//SupervisorTabs/SupervisorAccountPage");
+        await Shell.Current.GoToAsync(nameof(AccountPage));
 
     private async void OnLogoutTapped(object? sender, EventArgs e)
     {

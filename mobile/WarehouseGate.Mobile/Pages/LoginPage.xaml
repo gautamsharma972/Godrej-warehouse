@@ -3,161 +3,189 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
              x:Class="WarehouseGate.Mobile.Pages.LoginPage"
-             Title="WarehouseGate"
+             Title="LogiFlow"
              Shell.NavBarIsVisible="False"
              Shell.FlyoutBehavior="Disabled"
-             BackgroundColor="#F6F8F7">
+             BackgroundColor="{StaticResource SurfaceLight}">
 
-    <Grid BackgroundColor="#F6F8F7">
-        <Grid x:Name="RootGrid" ColumnSpacing="0" RowSpacing="0" VerticalOptions="Fill">
+    <Grid x:Name="RootGrid" RowDefinitions="180,*,Auto" RowSpacing="0" BackgroundColor="{StaticResource SurfaceLight}">
+        <!-- Brand hero -->
+        <Grid Grid.Row="0" Padding="20,12,20,26">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#E8F2FB" Offset="0" />
+                    <GradientStop Color="#F8FBFE" Offset="0.58" />
+                    <GradientStop Color="#EEF5FC" Offset="1" />
+                </LinearGradientBrush>
+            </Grid.Background>
+            <VerticalStackLayout Spacing="5" HorizontalOptions="Center" VerticalOptions="Center">
+                <Image Source="logiflow_brand_lockup.png" WidthRequest="210" HeightRequest="88"
+                       Aspect="AspectFit" HorizontalOptions="Center" />
+                <Label x:Name="EyebrowLabel" Text="MOBILE OPERATIONS"
+                       FontFamily="PoppinsSemiBold" FontSize="9" CharacterSpacing="1.5"
+                       TextColor="{StaticResource Primary}" HorizontalOptions="Center" />
+                <Label Text="Secure warehouse movement, made simple."
+                       Margin="0,2,0,0" FontSize="11" TextColor="#687387"
+                       HorizontalOptions="Center" />
+            </VerticalStackLayout>
+        </Grid>
 
-                <Grid x:Name="RightPanel" Padding="24,20,24,24" BackgroundColor="#F6F8F7">
-                    <Border x:Name="SignInCard"
-                            Padding="40" MaximumWidthRequest="520"
-                            HorizontalOptions="Center" VerticalOptions="Center"
-                            Stroke="#DFE7E4" StrokeThickness="1"
-                            StrokeShape="RoundRectangle 8" BackgroundColor="White">
-                        <Border.Shadow>
-                            <Shadow Brush="#162426" Offset="0,18" Radius="44" Opacity="0.13" />
-                        </Border.Shadow>
+        <!-- Form sheet -->
+        <Border x:Name="SignInCard" Grid.Row="1" Margin="12,-18,12,10" Padding="0"
+                MaximumWidthRequest="560" HorizontalOptions="Fill"
+                Stroke="#D7E4F2" StrokeThickness="1" StrokeShape="RoundRectangle 22"
+                BackgroundColor="#FFFFFF">
+            <Border.Shadow>
+                <Shadow Brush="#2B5C99" Offset="0,5" Radius="18" Opacity="0.08" />
+            </Border.Shadow>
+            <Grid RowDefinitions="*,Auto">
+            <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
+                <Grid x:Name="RightPanel" Padding="16,18,16,16">
+                    <VerticalStackLayout x:Name="CardStack" Spacing="18" MaximumWidthRequest="420"
+                                         HorizontalOptions="Fill">
+                        <VerticalStackLayout Spacing="3">
+                            <Label x:Name="WelcomeLabel" Text="Welcome back" FontFamily="PoppinsSemiBold"
+                                   FontSize="19" TextColor="#172033" />
+                            <Label x:Name="IntroLabel" Text="Sign in with your assigned account."
+                                   FontSize="12" TextColor="#687387" />
+                        </VerticalStackLayout>
 
-                        <VerticalStackLayout x:Name="CardStack" Spacing="18">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
-                                <VerticalStackLayout Grid.Column="0" Spacing="8">
-                                    <Label x:Name="EyebrowLabel" Text="ENTERPRISE SIGN IN"
-                                           TextColor="#537069" FontFamily="PoppinsRegular"
-                                           FontSize="13" CharacterSpacing="1.2" />
-                                    <Label x:Name="WelcomeLabel" Text="Welcome back" FontFamily="PoppinsRegular" FontSize="34"
-                                           TextColor="#152024" />
-                                </VerticalStackLayout>
-
-                                <Border x:Name="SecureBadge" Grid.Column="1" Stroke="#BFE4D5" StrokeThickness="1"
-                                        StrokeShape="RoundRectangle 18" Padding="12,7"
-                                        BackgroundColor="#EFFBF5" VerticalOptions="Start">
-                                    <HorizontalStackLayout Spacing="8">
-                                        <Ellipse WidthRequest="7" HeightRequest="7" Fill="#21A66A"
-                                                 VerticalOptions="Center" />
-                                        <Label Text="Secure" TextColor="#17633F"
-                                               FontFamily="PoppinsRegular" FontSize="13" />
-                                    </HorizontalStackLayout>
-                                </Border>
-                            </Grid>
-
-                            <Label x:Name="IntroLabel" Text="Use your assigned WarehouseGate account to continue."
-                                   TextColor="#5D6B70" FontSize="13" LineHeight="1.35" />
-
-                            <VerticalStackLayout x:Name="FormStack" Spacing="14">
-                                <VerticalStackLayout Spacing="8">
-                                    <Label Text="Organization Code" FontSize="14" FontFamily="PoppinsRegular"
-                                           TextColor="#263238" />
-                                    <Border x:Name="OrgCodeFieldBorder" Stroke="#CFDAD6" StrokeThickness="1"
-                                            StrokeShape="RoundRectangle 6" Padding="15,0" HeightRequest="54"
-                                            BackgroundColor="#FBFDFC">
-                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                            <Label Grid.Column="0" Text="{x:Static services:IconGlyphs.Building}" Style="{StaticResource IconLabel}"
-                                                   FontSize="16" TextColor="#6C7A80" VerticalOptions="Center" />
-                                            <Entry Grid.Column="1" x:Name="OrgCodeEntry" Placeholder="e.g. GCPL"
-                                                   ClearButtonVisibility="WhileEditing"
-                                                   VerticalOptions="Center"
-                                                   Focused="OnFieldFocused" Unfocused="OnFieldUnfocused" />
-                                        </Grid>
-                                    </Border>
-                                </VerticalStackLayout>
-
-                                <VerticalStackLayout Spacing="8">
-                                    <Label Text="Username" FontSize="14" FontFamily="PoppinsRegular"
-                                           TextColor="#263238" />
-                                    <Border x:Name="UserNameFieldBorder" Stroke="#CFDAD6" StrokeThickness="1"
-                                            StrokeShape="RoundRectangle 6" Padding="15,0" HeightRequest="54"
-                                            BackgroundColor="#FBFDFC">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                            <Label Grid.Column="0" Text="{x:Static services:IconGlyphs.User}" Style="{StaticResource IconLabel}"
-                                                   FontSize="16" TextColor="#6C7A80" VerticalOptions="Center" />
-                                            <Entry Grid.Column="1" x:Name="UserNameEntry" Placeholder="Enter your username"
-                                                   ClearButtonVisibility="WhileEditing"
-                                                   VerticalOptions="Center" TextChanged="OnUserNameChanged"
-                                                   Focused="OnFieldFocused" Unfocused="OnFieldUnfocused" />
-                                            <Label Grid.Column="2" x:Name="UserNameCheckLabel" Text="{x:Static services:IconGlyphs.CircleCheck}"
-                                                   Style="{StaticResource IconLabel}" FontSize="17" TextColor="{StaticResource Primary}"
-                                                   VerticalOptions="Center" IsVisible="False" />
-                                        </Grid>
-                                    </Border>
-                                </VerticalStackLayout>
-
-                                <VerticalStackLayout Spacing="8">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <Label Grid.Column="0" Text="Password" FontSize="14" FontFamily="PoppinsRegular"
-                                               TextColor="#263238" />
-                                        <Label Grid.Column="1" Text="Forgot password?" FontSize="14" FontFamily="PoppinsRegular"
-                                               TextColor="#0F766E" VerticalOptions="Center">
-                                            <Label.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnForgotPasswordTapped" />
-                                            </Label.GestureRecognizers>
-                                        </Label>
-                                    </Grid>
-                                    <Border x:Name="PasswordFieldBorder" Stroke="#CFDAD6" StrokeThickness="1"
-                                            StrokeShape="RoundRectangle 6" Padding="15,0" HeightRequest="54"
-                                            BackgroundColor="#FBFDFC">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                            <Label Grid.Column="0" Text="{x:Static services:IconGlyphs.Lock}" Style="{StaticResource IconLabel}"
-                                                   FontSize="16" TextColor="#6C7A80" VerticalOptions="Center" />
-                                            <Entry Grid.Column="1" x:Name="PasswordEntry" Placeholder="Enter your password" IsPassword="True"
-                                                   VerticalOptions="Center" Completed="OnLoginClicked"
-                                                   Focused="OnFieldFocused" Unfocused="OnFieldUnfocused" />
-                                            <Label Grid.Column="2" x:Name="PasswordEyeLabel" Text="{x:Static services:IconGlyphs.Eye}"
-                                                   Style="{StaticResource IconLabel}" FontSize="16" TextColor="#6C7A80"
-                                                   VerticalOptions="Center" Padding="8,12">
-                                                <Label.GestureRecognizers>
-                                                    <TapGestureRecognizer Tapped="OnTogglePasswordVisibility" />
-                                                </Label.GestureRecognizers>
-                                            </Label>
-                                        </Grid>
-                                    </Border>
-                                </VerticalStackLayout>
-
-                                <Grid ColumnDefinitions="Auto,*" Margin="0,2,0,0">
-                                    <HorizontalStackLayout Grid.Column="0" Spacing="4">
-                                        <CheckBox x:Name="RememberMeCheckBox" Color="{StaticResource Primary}" VerticalOptions="Center" />
-                                        <Label Text="Remember username" FontSize="14" TextColor="#263238" VerticalOptions="Center">
-                                            <Label.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnRememberMeLabelTapped" />
-                                            </Label.GestureRecognizers>
-                                        </Label>
-                                    </HorizontalStackLayout>
+                        <VerticalStackLayout x:Name="FormStack" Spacing="14">
+                            <VerticalStackLayout Spacing="7">
+                                <Label Text="Organization code" FontSize="11"
+                                       FontFamily="PoppinsMedium" TextColor="#344054" />
+                                <Grid HeightRequest="50" ColumnDefinitions="42,*">
+                                    <!-- The outline is a sibling behind the Entry, so Android text cannot be clipped by it. -->
+                                    <Border x:Name="OrgCodeFieldBorder" Grid.ColumnSpan="2"
+                                            Stroke="#D7E4F2" StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12" BackgroundColor="#F8FBFE" />
+                                    <Image Grid.Column="0" Source="login_building.svg" WidthRequest="17" HeightRequest="17"
+                                           HorizontalOptions="Center" VerticalOptions="Center" />
+                                    <Entry Grid.Column="1" x:Name="OrgCodeEntry" Margin="0,0,14,0"
+                                           Text="GCPL" Placeholder="e.g. GCPL" ClearButtonVisibility="Never"
+                                           TextColor="#172033" PlaceholderColor="#8A9895"
+                                           BackgroundColor="Transparent" FontSize="14"
+                                           TranslationY="2"
+                                           VerticalTextAlignment="Center" VerticalOptions="Fill"
+                                           Focused="OnFieldFocused" Unfocused="OnFieldUnfocused"
+                                           HandlerChanged="OnEntryHandlerChanged" Loaded="OnEntryLoaded" />
                                 </Grid>
-
-                                <Button x:Name="LoginButton" Text="Log in" Clicked="OnLoginClicked"
-                                        HeightRequest="54" CornerRadius="6" Margin="0,4,0,0"
-                                        BackgroundColor="#B91C1C" TextColor="White"
-                                        FontFamily="PoppinsSemiBold" FontSize="14">
-                                    <Button.ImageSource>
-                                        <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ArrowRight}" Color="White" Size="14" />
-                                    </Button.ImageSource>
-                                </Button>
                             </VerticalStackLayout>
 
-                            <ActivityIndicator x:Name="Spinner" IsRunning="False" IsVisible="False" Color="{StaticResource Primary}" />
-
-                            <Border x:Name="ErrorBorder" IsVisible="False" Padding="13,11" StrokeThickness="0"
-                                    BackgroundColor="{StaticResource StatusExceptionTint}" StrokeShape="RoundRectangle 8">
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
-                                    <Label Grid.Column="0" Text="{x:Static services:IconGlyphs.TriangleExclamation}" Style="{StaticResource IconLabel}"
-                                           FontSize="14" TextColor="{StaticResource StatusException}" VerticalOptions="Center" />
-                                    <Label Grid.Column="1" x:Name="ErrorLabel" TextColor="{StaticResource StatusException}"
-                                           VerticalOptions="Center" LineBreakMode="WordWrap" FontSize="12" />
+                            <VerticalStackLayout Spacing="7">
+                                <Label Text="Username" FontSize="11"
+                                       FontFamily="PoppinsMedium" TextColor="#344054" />
+                                <Grid HeightRequest="50" ColumnDefinitions="42,*,38">
+                                    <Border x:Name="UserNameFieldBorder" Grid.ColumnSpan="3"
+                                            Stroke="#D7E4F2" StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12" BackgroundColor="#F8FBFE" />
+                                    <Image Grid.Column="0" Source="login_user.svg" WidthRequest="17" HeightRequest="17"
+                                           HorizontalOptions="Center" VerticalOptions="Center" />
+                                    <Entry Grid.Column="1" x:Name="UserNameEntry"
+                                           Placeholder="Enter your username" ClearButtonVisibility="Never"
+                                           TextColor="#172033" PlaceholderColor="#8A9895"
+                                           BackgroundColor="Transparent" FontSize="14"
+                                           TranslationY="2"
+                                           VerticalTextAlignment="Center" VerticalOptions="Fill"
+                                           TextChanged="OnUserNameChanged" Focused="OnFieldFocused"
+                                           Unfocused="OnFieldUnfocused" HandlerChanged="OnEntryHandlerChanged"
+                                           Loaded="OnEntryLoaded" />
+                                    <Image Grid.Column="2" x:Name="UserNameCheckLabel" Source="login_check.svg"
+                                           WidthRequest="17" HeightRequest="17" HorizontalOptions="Center"
+                                           VerticalOptions="Center" IsVisible="False" />
                                 </Grid>
-                            </Border>
+                            </VerticalStackLayout>
 
-                            <BoxView x:Name="FooterDivider" HeightRequest="1" Color="#E5ECE9" Margin="0,6,0,0" />
+                            <VerticalStackLayout Spacing="7">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Text="Password" FontSize="11"
+                                           FontFamily="PoppinsMedium" TextColor="#344054" />
+                                    <Label Grid.Column="1" Text="Forgot password?" FontSize="12"
+                                           FontFamily="PoppinsMedium" TextColor="{StaticResource Primary}">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnForgotPasswordTapped" />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </Grid>
+                                <Grid HeightRequest="50" ColumnDefinitions="42,*,42">
+                                    <Border x:Name="PasswordFieldBorder" Grid.ColumnSpan="3"
+                                            Stroke="#D7E4F2" StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12" BackgroundColor="#F8FBFE" />
+                                    <Image Grid.Column="0" Source="login_lock.svg" WidthRequest="17" HeightRequest="17"
+                                           HorizontalOptions="Center" VerticalOptions="Center" />
+                                    <Entry Grid.Column="1" x:Name="PasswordEntry"
+                                           Placeholder="Enter your password" IsPassword="True"
+                                           TextColor="#172033" PlaceholderColor="#8A9895"
+                                           BackgroundColor="Transparent" FontSize="14"
+                                           TranslationY="2"
+                                           VerticalTextAlignment="Center" VerticalOptions="Fill"
+                                           Completed="OnLoginClicked" Focused="OnFieldFocused"
+                                           Unfocused="OnFieldUnfocused" HandlerChanged="OnEntryHandlerChanged"
+                                           Loaded="OnEntryLoaded" />
+                                    <Image Grid.Column="2" x:Name="PasswordEyeLabel" Source="login_eye.svg"
+                                           WidthRequest="40" HeightRequest="40" HorizontalOptions="Center"
+                                           VerticalOptions="Center" Aspect="Center">
+                                        <Image.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnTogglePasswordVisibility" />
+                                        </Image.GestureRecognizers>
+                                    </Image>
+                                </Grid>
+                            </VerticalStackLayout>
 
-                            <Grid x:Name="CardFooter" ColumnDefinitions="*,Auto">
-                                <Label Grid.Column="0" Text="Need access?" TextColor="#627278" FontSize="14" />
-                                <Label Grid.Column="1" Text="Contact IT support" TextColor="#0F766E"
-                                       FontSize="14" FontFamily="PoppinsRegular" />
+                            <Grid ColumnDefinitions="*,Auto" Margin="-5,-3,0,0">
+                                <HorizontalStackLayout Spacing="5">
+                                    <CheckBox x:Name="RememberMeCheckBox" Color="{StaticResource Primary}"
+                                              VerticalOptions="Center" />
+                                    <Label Text="Remember username" FontSize="12"
+                                           TextColor="#536078" VerticalOptions="Center">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnRememberMeLabelTapped" />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </HorizontalStackLayout>
+                                <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                    <Ellipse WidthRequest="6" HeightRequest="6" Fill="#18A06A" />
+                                    <Label Text="Secure access" FontSize="11" TextColor="#5B6980" />
+                                </HorizontalStackLayout>
                             </Grid>
+
+                            <Button x:Name="LoginButton" Text="Sign in" Clicked="OnLoginClicked"
+                                    HeightRequest="50" CornerRadius="12" Margin="0,2,0,0"
+                                    BackgroundColor="{StaticResource Primary}" TextColor="White"
+                                    FontFamily="PoppinsSemiBold" FontSize="14" />
                         </VerticalStackLayout>
-                    </Border>
+
+                        <ActivityIndicator x:Name="Spinner" IsRunning="False" IsVisible="False"
+                                           Color="{StaticResource Primary}" />
+
+                        <Border x:Name="ErrorBorder" IsVisible="False" Padding="13,11"
+                                StrokeThickness="0" BackgroundColor="{StaticResource StatusExceptionTint}"
+                                StrokeShape="RoundRectangle 12">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                                <Label Text="{x:Static services:IconGlyphs.TriangleExclamation}"
+                                       Style="{StaticResource IconLabel}" FontSize="14"
+                                       TextColor="{StaticResource StatusException}" VerticalOptions="Center" />
+                                <Label Grid.Column="1" x:Name="ErrorLabel" FontSize="12"
+                                       TextColor="{StaticResource StatusException}"
+                                       VerticalOptions="Center" LineBreakMode="WordWrap" />
+                            </Grid>
+                        </Border>
+
+                        <BoxView x:Name="FooterDivider" HeightRequest="1" Color="#E4EAF5" />
+
+                        <Grid x:Name="CardFooter" ColumnDefinitions="*,Auto">
+                            <Label Text="Need an account?" TextColor="#687387" FontSize="12" />
+                            <Label Grid.Column="1" Text="Contact IT support" TextColor="{StaticResource Primary}"
+                                   FontSize="12" FontFamily="PoppinsMedium" />
+                        </Grid>
+                    </VerticalStackLayout>
                 </Grid>
-        </Grid>
+            </ScrollView>
+            </Grid>
+        </Border>
+
+        <Image Grid.Row="2" Source="powered_by_logivue.png"
+               WidthRequest="76" HeightRequest="31" Aspect="AspectFit"
+               Margin="0,1,0,6" HorizontalOptions="Center" />
     </Grid>
 </ContentPage>

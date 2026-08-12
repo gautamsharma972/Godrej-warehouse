@@ -22,14 +22,10 @@ public partial class JobDetailPage : ContentPage
     private string? _photoFilterType;
     private bool _outwardReferenceFetched;
     private string? _lastOutwardReferenceVizPayload;
-    private bool _outwardReferenceVizResendStarted;
     private InwardOutwardReference? _lastOutwardReference;
-    // The origin warehouse's 3D load plan is a heavy WebGL view shown purely for reference -
-    // hidden by default, revealed with the header's eye icon.
-    private bool _referenceSimulationVisible;
     private bool _baysFetched;
     private string? _selectedBayName;
-    private bool? _isWideLayout;
+    private bool _isLoadingJob;
 
     // OnAppearing fires again the moment a modal WE pushed (SkuPickerPage, PhotoViewerPage) pops
     // back to this page - its unconditional LoadAsync() would otherwise reload from the server and
@@ -78,6 +74,22 @@ public partial class JobDetailPage : ContentPage
         InitializeComponent();
     }
 
+    private void OnPhotoSectionHeaderTapped(object? sender, TappedEventArgs e)
+    {
+        PhotoSectionContent.IsVisible = !PhotoSectionContent.IsVisible;
+        PhotoSectionChevron.Text = PhotoSectionContent.IsVisible
+            ? IconGlyphs.ChevronUp
+            : IconGlyphs.ChevronDown;
+    }
+
+    private void OnInspectionSectionHeaderTapped(object? sender, TappedEventArgs e)
+    {
+        InspectionSectionContent.IsVisible = !InspectionSectionContent.IsVisible;
+        InspectionSectionChevron.Text = InspectionSectionContent.IsVisible
+            ? IconGlyphs.ChevronUp
+            : IconGlyphs.ChevronDown;
+    }
+
     protected override void OnAppearing()
     {
         base.OnAppearing();
@@ -90,321 +102,6 @@ public partial class JobDetailPage : ContentPage
         }
 
         _ = LoadAsync();
-    }
-
-    protected override void OnSizeAllocated(double width, double height)
-    {
-        base.OnSizeAllocated(width, height);
-
-        var wide = ResponsiveHelper.IsWide(width);
-        if (_isWideLayout == wide)
-        {
-            return;
-        }
-
-        _isWideLayout = wide;
-        ApplyResponsiveLayout(wide);
-    }
-
-    private void ApplyResponsiveLayout(bool wide)
-    {
-        PageContent.Padding = wide ? new Thickness(30, 24, 30, 32) : new Thickness(16, 18, 16, 24);
-
-        ConfigureHeroLayout(wide);
-        ConfigureWorkflowEvidenceLayout(wide);
-        // The workflow rail occupies the left half of the tablet composition.
-        // Keep its cards stacked at every breakpoint instead of flattening them
-        // into the legacy full-width three-column summary.
-        ConfigureSummaryGrid(HeroSummaryGrid, false);
-        Grid.SetRow(HeroSummaryGrid, 0);
-        Grid.SetColumn(HeroSummaryGrid, 0);
-        Grid.SetColumnSpan(HeroSummaryGrid, 1);
-        ConfigureStepCardGrid(DockInCardGrid, wide);
-        ConfigureTwoColumnAction(DockInActionGrid, DockInButton, wide, 220);
-        ConfigureStepCardGrid(StartUnloadingCardGrid, wide);
-        ConfigureTwoColumnAction(StartUnloadingActionGrid, StartUnloadingButton, wide, 240);
-        ConfigureSectionHeader(PhotoHeaderGrid, wide);
-        ConfigureSectionHeader(OutwardReferenceHeaderGrid, wide, hasTrailing: true);
-        ConfigureOutwardReferenceLayout(wide);
-        ConfigureSectionHeader(InspectionHeaderGrid, wide);
-        ConfigureTwoColumnAction(InspectionFooterGrid, SubmitInspectionButton, wide, 220);
-        ConfigureSimpleIconGrid(GrnGrid, wide);
-    }
-
-    private void ConfigureWorkflowEvidenceLayout(bool wide)
-    {
-        WorkflowEvidenceGrid.ColumnDefinitions = wide
-            ? new ColumnDefinitionCollection { new(GridLength.Star), new(GridLength.Star) }
-            : new ColumnDefinitionCollection { new(GridLength.Star) };
-        WorkflowEvidenceGrid.RowDefinitions = wide
-            ? new RowDefinitionCollection { new(GridLength.Auto), new(GridLength.Auto) }
-            : new RowDefinitionCollection { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto) };
-
-        Grid.SetRow(HeroSummaryGrid, 0);
-        Grid.SetColumn(HeroSummaryGrid, 0);
-        Grid.SetColumnSpan(HeroSummaryGrid, 1);
-
-        Grid.SetRow(PhotoSection, wide ? 0 : 1);
-        Grid.SetColumn(PhotoSection, wide ? 1 : 0);
-        Grid.SetColumnSpan(PhotoSection, 1);
-
-        foreach (var stepSection in new View[] { DockInSection, StartUnloadingSection })
-        {
-            Grid.SetRow(stepSection, wide ? 1 : 2);
-            Grid.SetColumn(stepSection, 0);
-            Grid.SetColumnSpan(stepSection, wide ? 2 : 1);
-        }
-    }
-
-    private void ConfigureHeroLayout(bool wide)
-    {
-        if (wide)
-        {
-            HeroGrid.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new(GridLength.Auto),
-                new(GridLength.Star),
-                new(GridLength.Auto)
-            };
-            HeroGrid.RowDefinitions = new RowDefinitionCollection
-            {
-                new(GridLength.Auto),
-                new(GridLength.Auto)
-            };
-
-            Grid.SetRow(HeroTextStack, 0);
-            Grid.SetColumn(HeroTextStack, 1);
-            Grid.SetColumnSpan(HeroTextStack, 1);
-            Grid.SetRow(HeroMetaChips, 0);
-            Grid.SetColumn(HeroMetaChips, 2);
-            Grid.SetColumnSpan(HeroMetaChips, 1);
-            HeroMetaChips.HorizontalOptions = LayoutOptions.End;
-            return;
-        }
-
-        HeroGrid.ColumnDefinitions = new ColumnDefinitionCollection
-        {
-            new(GridLength.Auto),
-            new(GridLength.Star)
-        };
-        HeroGrid.RowDefinitions = new RowDefinitionCollection
-        {
-            new(GridLength.Auto),
-            new(GridLength.Auto),
-            new(GridLength.Auto)
-        };
-
-        Grid.SetRow(HeroTextStack, 0);
-        Grid.SetColumn(HeroTextStack, 1);
-        Grid.SetColumnSpan(HeroTextStack, 1);
-        Grid.SetRow(HeroMetaChips, 1);
-        Grid.SetColumn(HeroMetaChips, 0);
-        Grid.SetColumnSpan(HeroMetaChips, 2);
-        HeroMetaChips.HorizontalOptions = LayoutOptions.Start;
-    }
-
-    private static void ConfigureSummaryGrid(Grid grid, bool wide)
-    {
-        if (wide)
-        {
-            grid.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new(GridLength.Star),
-                new(GridLength.Star),
-                new(GridLength.Star)
-            };
-            grid.RowDefinitions = new RowDefinitionCollection { new(GridLength.Auto) };
-
-            for (var i = 0; i < grid.Children.Count; i++)
-            {
-                var child = (BindableObject)grid.Children[i];
-                Grid.SetRow(child, 0);
-                Grid.SetColumn(child, i);
-                Grid.SetColumnSpan(child, 1);
-            }
-            return;
-        }
-
-        grid.ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star) };
-        grid.RowDefinitions = new RowDefinitionCollection
-        {
-            new(GridLength.Auto),
-            new(GridLength.Auto),
-            new(GridLength.Auto)
-        };
-
-        for (var i = 0; i < grid.Children.Count; i++)
-        {
-            var child = (BindableObject)grid.Children[i];
-            Grid.SetRow(child, i);
-            Grid.SetColumn(child, 0);
-            Grid.SetColumnSpan(child, 1);
-        }
-    }
-
-    private static void ConfigureSectionHeader(Grid grid, bool wide, bool hasTrailing = true)
-    {
-        if (wide)
-        {
-            grid.ColumnDefinitions = hasTrailing
-                ? new ColumnDefinitionCollection { new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto) }
-                : new ColumnDefinitionCollection { new(GridLength.Auto), new(GridLength.Star) };
-            grid.RowDefinitions = new RowDefinitionCollection { new(GridLength.Auto) };
-
-            for (var i = 0; i < grid.Children.Count; i++)
-            {
-                var child = (BindableObject)grid.Children[i];
-                Grid.SetRow(child, 0);
-                Grid.SetColumn(child, i);
-                Grid.SetColumnSpan(child, 1);
-            }
-            return;
-        }
-
-        grid.ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Auto), new(GridLength.Star) };
-        grid.RowDefinitions = hasTrailing
-            ? new RowDefinitionCollection { new(GridLength.Auto), new(GridLength.Auto) }
-            : new RowDefinitionCollection { new(GridLength.Auto) };
-
-        for (var i = 0; i < grid.Children.Count; i++)
-        {
-            var child = (BindableObject)grid.Children[i];
-            if (i < 2)
-            {
-                Grid.SetRow(child, 0);
-                Grid.SetColumn(child, i);
-                Grid.SetColumnSpan(child, 1);
-            }
-            else
-            {
-                Grid.SetRow(child, 1);
-                Grid.SetColumn(child, 0);
-                Grid.SetColumnSpan(child, 2);
-                if (child is View view)
-                {
-                    view.HorizontalOptions = LayoutOptions.Start;
-                }
-            }
-        }
-    }
-
-    private static void ConfigureStepCardGrid(Grid grid, bool wide)
-    {
-        if (wide)
-        {
-            grid.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new(GridLength.Auto),
-                new(GridLength.Star),
-                new(GridLength.Auto)
-            };
-            grid.RowDefinitions = new RowDefinitionCollection
-            {
-                new(GridLength.Auto),
-                new(GridLength.Auto)
-            };
-
-            SetChildPosition(grid, 0, 0, 0);
-            SetChildPosition(grid, 1, 0, 1);
-            SetChildPosition(grid, 2, 0, 2);
-            SetChildPosition(grid, 3, 1, 0);
-            Grid.SetColumnSpan((BindableObject)grid.Children[3], 3);
-            if (grid.Children[2] is View wideStepBadge)
-            {
-                wideStepBadge.HorizontalOptions = LayoutOptions.End;
-            }
-            return;
-        }
-
-        grid.ColumnDefinitions = new ColumnDefinitionCollection
-        {
-            new(GridLength.Auto),
-            new(GridLength.Star)
-        };
-        grid.RowDefinitions = new RowDefinitionCollection
-        {
-            new(GridLength.Auto),
-            new(GridLength.Auto),
-            new(GridLength.Auto)
-        };
-
-        SetChildPosition(grid, 0, 0, 0);
-        SetChildPosition(grid, 1, 0, 1);
-        SetChildPosition(grid, 2, 1, 0);
-        Grid.SetColumnSpan((BindableObject)grid.Children[2], 2);
-        SetChildPosition(grid, 3, 2, 0);
-        Grid.SetColumnSpan((BindableObject)grid.Children[3], 2);
-        if (grid.Children[2] is View narrowStepBadge)
-        {
-            narrowStepBadge.HorizontalOptions = LayoutOptions.Start;
-        }
-    }
-
-    private static void ConfigureTwoColumnAction(Grid grid, Button button, bool wide, double buttonWidth)
-    {
-        if (wide)
-        {
-            grid.ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star), new(GridLength.Auto) };
-            grid.RowDefinitions = new RowDefinitionCollection { new(GridLength.Auto) };
-            Grid.SetRow(button, 0);
-            Grid.SetColumn(button, 1);
-            button.WidthRequest = buttonWidth;
-            return;
-        }
-
-        grid.ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star) };
-        grid.RowDefinitions = new RowDefinitionCollection { new(GridLength.Auto), new(GridLength.Auto) };
-        Grid.SetRow(button, 1);
-        Grid.SetColumn(button, 0);
-        button.WidthRequest = -1;
-    }
-
-    private void ConfigureOutwardReferenceLayout(bool wide)
-    {
-        // Simulation hidden (the default) collapses to a single column regardless of width - the
-        // viz card (Grid.Children[0]) is a heavy WebGL view with nothing to show while hidden, so
-        // the sequence list (Grid.Children[1]) takes the full row instead of leaving a gap.
-        if (_referenceSimulationVisible && wide)
-        {
-            OutwardReferenceContentGrid.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new(new GridLength(2, GridUnitType.Star)),
-                new(GridLength.Star)
-            };
-            OutwardReferenceContentGrid.RowDefinitions = new RowDefinitionCollection { new(GridLength.Auto) };
-            SetChildPosition(OutwardReferenceContentGrid, 0, 0, 0);
-            SetChildPosition(OutwardReferenceContentGrid, 1, 0, 1);
-            return;
-        }
-
-        OutwardReferenceContentGrid.ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star) };
-        OutwardReferenceContentGrid.RowDefinitions = new RowDefinitionCollection
-        {
-            new(GridLength.Auto),
-            new(GridLength.Auto)
-        };
-        SetChildPosition(OutwardReferenceContentGrid, 0, 0, 0);
-        SetChildPosition(OutwardReferenceContentGrid, 1, 1, 0);
-    }
-
-    private static void ConfigureSimpleIconGrid(Grid grid, bool wide)
-    {
-        grid.ColumnDefinitions = wide
-            ? new ColumnDefinitionCollection { new(GridLength.Auto), new(GridLength.Star) }
-            : new ColumnDefinitionCollection { new(GridLength.Auto), new(GridLength.Star) };
-    }
-
-    private static void SetChildPosition(Grid grid, int childIndex, int row, int column)
-    {
-        if (grid.Children.Count <= childIndex)
-        {
-            return;
-        }
-
-        var child = (BindableObject)grid.Children[childIndex];
-        Grid.SetRow(child, row);
-        Grid.SetColumn(child, column);
-        Grid.SetColumnSpan(child, 1);
     }
 
     protected override void OnDisappearing()
@@ -437,11 +134,17 @@ public partial class JobDetailPage : ContentPage
 
     private async Task LoadAsync()
     {
+        if (_isLoadingJob)
+        {
+            return;
+        }
+
+        _isLoadingJob = true;
         Spinner.IsVisible = true;
         Spinner.IsRunning = true;
         try
         {
-            _job = await ApiClient.GetJobAsync(_jobId);
+            _job = await ApiClient.GetJobAsync(_jobId).WaitAsync(TimeSpan.FromSeconds(20));
             RenderJob();
         }
         catch (ApiException ex)
@@ -456,6 +159,7 @@ public partial class JobDetailPage : ContentPage
         {
             Spinner.IsVisible = false;
             Spinner.IsRunning = false;
+            _isLoadingJob = false;
         }
     }
 
@@ -472,10 +176,10 @@ public partial class JobDetailPage : ContentPage
     private void RenderJob()
     {
         var job = _job!;
-        HeaderLabel.Text = $"{job.VehicleNumber} - {job.InwardTxnNumber}";
+        PageHeaderView.PageTitle = "Inbound job";
+        PageHeaderView.Title = job.VehicleNumber;
+        HeaderLabel.Text = job.InwardTxnNumber;
         SubHeaderLabel.Text = $"PO {job.PONumber} - {job.SupplierName}";
-        BaySummaryLabel.Text = string.IsNullOrWhiteSpace(job.BayName) ? "Bay pending" : job.BayName;
-        LineSummaryLabel.Text = job.Lines.Count == 1 ? "1 line" : $"{job.Lines.Count} lines";
 
         var statusColor = (Color)ColorConverter.Convert(job.Status, typeof(Color), null, CultureInfo.CurrentCulture);
         StatusBadgeBorder.BackgroundColor = statusColor;
@@ -506,7 +210,6 @@ public partial class JobDetailPage : ContentPage
             _ = LoadOutwardReferenceAsync();
         }
 
-        PhotoCountLabel.Text = job.Photos.Count == 1 ? "1 photo" : $"{job.Photos.Count} photos";
         var readOnly = job.Status is "PendingOfficeVerification" or "Completed" || Session.IsSecurity;
         CaptureVehiclePhotoButton.IsEnabled = !readOnly && showPhotosAndInspection;
         CaptureMaterialPhotoButton.IsEnabled = !readOnly && showPhotosAndInspection;
@@ -519,6 +222,7 @@ public partial class JobDetailPage : ContentPage
         BuildUnplannedRows(job, readOnly);
 
         SubmitInspectionButton.IsVisible = !readOnly;
+        InspectionFooterGrid.IsVisible = !readOnly;
         AddUnplannedLineButton.IsVisible = !readOnly;
         CompleteButton.IsVisible = job.Status == "Inspecting" && !Session.IsSecurity;
         CompleteButton.IsEnabled = job.Photos.Count > 0;
@@ -532,7 +236,11 @@ public partial class JobDetailPage : ContentPage
             var accent = exception
                 ? (Color)Application.Current!.Resources["StatusException"]
                 : (Color)Application.Current!.Resources["StatusSuccess"];
-            GrnIconBadge.BackgroundColor = accent;
+            var tint = exception
+                ? Color.FromArgb("#FDECEF")
+                : (Color)Application.Current.Resources["StatusSuccessTint"];
+            GrnBorder.BackgroundColor = tint;
+            GrnIconBadge.BackgroundColor = Colors.White;
             GrnIconLabel.TextColor = accent;
             GrnIconLabel.Text = exception ? IconGlyphs.TriangleExclamation : IconGlyphs.ClipboardCheck;
             GrnTitleLabel.TextColor = accent;
@@ -541,6 +249,11 @@ public partial class JobDetailPage : ContentPage
                 ? $"{job.Grn.GrnNumber}, generated {job.Grn.GeneratedAt.ToLocalTime():g} - needs supplier follow-up"
                 : $"{job.Grn.GrnNumber}, generated {job.Grn.GeneratedAt.ToLocalTime():g}";
         }
+
+        // A rendered job means the current fetch/update completed successfully. Keep a stale
+        // fire-and-forget refresh from leaving the shared page loader spinning over valid data.
+        Spinner.IsRunning = false;
+        Spinner.IsVisible = false;
     }
 
     // Read-only cross-reference: how this same shipment was actually loaded at the origin
@@ -580,7 +293,6 @@ public partial class JobDetailPage : ContentPage
             }
 
             _lastOutwardReference = reference;
-            ApplyReferenceSimulationVisibility();
 
             OutwardReferenceSection.IsVisible = true;
         }
@@ -590,32 +302,34 @@ public partial class JobDetailPage : ContentPage
         }
     }
 
-    // Only actually shows the WebView (and sends it data) once the supervisor opts in via the
-    // eye icon - collapsed by default, same as it never having vehicle dimensions on file.
-    private void ApplyReferenceSimulationVisibility()
+    private async void OnToggleReferenceSimulationClicked(object? sender, EventArgs e)
     {
-        var reference = _lastOutwardReference;
-        var hasVehicleDims = reference is not null
-            && reference.VehicleWidthCm is > 0 && reference.VehicleLengthCm is > 0 && reference.VehicleHeightCm is > 0;
-        var showViz = _referenceSimulationVisible && hasVehicleDims;
-
-        ReferenceLoadVizWebView.IsVisible = showViz;
-        ReferenceLoadVizUnavailableLabel.IsVisible = _referenceSimulationVisible && !hasVehicleDims;
-        if (showViz && reference is not null)
+        if (_lastOutwardReference is null)
         {
-            SendOutwardReferenceToViewer(reference);
+            return;
         }
 
-        ConfigureOutwardReferenceLayout(_isWideLayout ?? false);
+        SendOutwardReferenceToViewer(_lastOutwardReference);
+        LoadSimulationSession.Payload = _lastOutwardReferenceVizPayload;
+        LoadSimulationSession.Title = _lastOutwardReference.DispatchOrderNumber ?? "Dispatch load plan";
+        _suppressNextAppearingReload = true;
+        await Shell.Current.GoToAsync(nameof(LoadSimulationPage));
     }
 
-    private void OnToggleReferenceSimulationClicked(object? sender, EventArgs e)
+    private void OnPhotosTabTapped(object? sender, TappedEventArgs e) => ShowEvidenceTab(showPhotos: true);
+
+    private void OnDocumentsTabTapped(object? sender, TappedEventArgs e) => ShowEvidenceTab(showPhotos: false);
+
+    private void ShowEvidenceTab(bool showPhotos)
     {
-        _referenceSimulationVisible = !_referenceSimulationVisible;
-        ToggleReferenceSimulationIcon.Text = _referenceSimulationVisible ? IconGlyphs.EyeSlash : IconGlyphs.Eye;
-        SemanticProperties.SetDescription(ToggleReferenceSimulationButton,
-            _referenceSimulationVisible ? "Hide simulation" : "Show simulation");
-        ApplyReferenceSimulationVisibility();
+        PhotosContentGrid.IsVisible = showPhotos;
+        DocumentsContentGrid.IsVisible = !showPhotos;
+
+        var primary = (Color)Application.Current!.Resources["Primary"];
+        PhotosTabButton.BackgroundColor = showPhotos ? primary : Colors.Transparent;
+        DocumentsTabButton.BackgroundColor = showPhotos ? Colors.Transparent : primary;
+        PhotosTabLabel.TextColor = showPhotos ? Colors.White : (Color)Application.Current.Resources["TextSecondaryLight"];
+        DocumentsTabLabel.TextColor = showPhotos ? (Color)Application.Current.Resources["TextSecondaryLight"] : Colors.White;
     }
 
     private static Border BuildOutwardReferenceSequenceRow(LoadPlanGroup group)
@@ -623,11 +337,11 @@ public partial class JobDetailPage : ContentPage
         var activeColor = (Color)Application.Current!.Resources["Primary"];
         var badge = new Border
         {
-            WidthRequest = 30,
-            HeightRequest = 30,
+            WidthRequest = 28,
+            HeightRequest = 28,
             StrokeThickness = 0,
             BackgroundColor = Color.TryParse(group.Color, out var parsedColor) ? parsedColor : activeColor,
-            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 15 },
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 14 },
             Content = new Label
             {
                 Text = group.LoadSequence.ToString(),
@@ -663,15 +377,17 @@ public partial class JobDetailPage : ContentPage
 
         return new Border
         {
-            Stroke = (Color)Application.Current.Resources["CardBorderLight"],
-            StrokeThickness = 1,
-            BackgroundColor = (Color)Application.Current.Resources["SurfaceLight"],
+            StrokeThickness = 0,
+            BackgroundColor = Colors.White,
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
-            Padding = new Thickness(10, 8),
+            Padding = new Thickness(12, 10),
             Content = new HorizontalStackLayout { Spacing = 10, Children = { badge, textStack } }
         };
     }
 
+    // Builds the same 3D-viewer payload used by LoadSimulationPage - the inline card only shows a
+    // flat "Loading sequence" list (see BuildOutwardReferenceSequenceRow), so this is purely staged
+    // here for the "View 3D" button to hand off via LoadSimulationSession.
     private void SendOutwardReferenceToViewer(InwardOutwardReference reference)
     {
         var visibleGroups = reference.Groups
@@ -721,45 +437,12 @@ public partial class JobDetailPage : ContentPage
         };
 
         _lastOutwardReferenceVizPayload = System.Text.Json.JsonSerializer.Serialize(payload);
-        ReferenceLoadVizWebView.SendRawMessage(_lastOutwardReferenceVizPayload);
-        StartOutwardReferenceVizResendBurst();
-    }
-
-    // Same "no reliable ready event" resend-burst workaround as OutwardJobDetailPage's identical
-    // helper - see that page's comment for the full explanation. Guarded by its own try/catch for
-    // the same reason as LoadOutwardReferenceAsync above: this timer callback runs detached from
-    // any awaiting caller, so an uncaught exception here has nowhere safe to go but down.
-    private void StartOutwardReferenceVizResendBurst()
-    {
-        if (_outwardReferenceVizResendStarted)
-        {
-            return;
-        }
-
-        _outwardReferenceVizResendStarted = true;
-        var attempts = 0;
-        Dispatcher.StartTimer(TimeSpan.FromMilliseconds(500), () =>
-        {
-            attempts++;
-            try
-            {
-                if (_lastOutwardReferenceVizPayload is not null && OutwardReferenceSection.IsVisible)
-                {
-                    ReferenceLoadVizWebView.SendRawMessage(_lastOutwardReferenceVizPayload);
-                }
-            }
-            catch
-            {
-                return false;
-            }
-
-            return attempts < 6;
-        });
     }
 
     private void RenderPhotos(InwardJob job)
     {
         var photos = BuildPhotoDisplayItems(job);
+        PhotosTabLabel.Text = $"Photos ({job.Photos.Count})";
         NoPhotosLabel.IsVisible = photos.Count == 0;
         PhotoCarousel.IsVisible = photos.Count > 0;
         PhotoCarouselIndicator.IsVisible = false;
@@ -845,7 +528,7 @@ public partial class JobDetailPage : ContentPage
         NoDocumentsLabel.IsVisible = documents.Count == 0;
         DocumentsCarousel.IsVisible = documents.Count > 0;
         DocumentsCarousel.ItemsSource = documents;
-        DocumentCountLabel.Text = documents.Count == 1 ? "1 document" : $"{documents.Count} documents";
+        DocumentsTabLabel.Text = $"Documents ({documents.Count})";
         _ = DownloadMissingDocumentsAsync(job);
     }
 
@@ -934,44 +617,6 @@ public partial class JobDetailPage : ContentPage
                 ? (Color)Application.Current!.Resources["StatusException"]
                 : (Color)ColorConverter.Convert(statusText == "Pending" ? "Assigned" : "Ok", typeof(Color), null, CultureInfo.CurrentCulture);
 
-            var productIcon = new Border
-            {
-                WidthRequest = 44,
-                HeightRequest = 44,
-                StrokeThickness = 0,
-                BackgroundColor = (Color)Application.Current!.Resources["StatusAvailableTint"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
-                VerticalOptions = LayoutOptions.Center,
-                Content = new Label
-                {
-                    Text = IconGlyphs.BoxesStacked,
-                    FontFamily = "FaSolid",
-                    FontSize = 16,
-                    TextColor = (Color)Application.Current.Resources["Primary"],
-                    HorizontalOptions = LayoutOptions.Center,
-                    VerticalOptions = LayoutOptions.Center
-                }
-            };
-
-            var indexBadge = new Border
-            {
-                WidthRequest = 34,
-                HeightRequest = 34,
-                StrokeThickness = 0,
-                BackgroundColor = Color.FromArgb("#123F3D"),
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 9 },
-                HorizontalOptions = LayoutOptions.Start,
-                Content = new Label
-                {
-                    Text = $"{lineIndex + 1:00}",
-                    FontFamily = "PoppinsSemiBold",
-                    FontSize = 11,
-                    TextColor = Colors.White,
-                    HorizontalOptions = LayoutOptions.Center,
-                    VerticalOptions = LayoutOptions.Center
-                }
-            };
-
             var titleColumn = new VerticalStackLayout
             {
                 Spacing = 2,
@@ -982,8 +627,10 @@ public partial class JobDetailPage : ContentPage
                     {
                         Text = line.ProductName,
                         FontFamily = "PoppinsSemiBold",
-                        FontSize = 15,
-                        TextColor = (Color)Application.Current.Resources["TextPrimaryLight"]
+                        FontSize = 14,
+                        TextColor = (Color)Application.Current.Resources["TextPrimaryLight"],
+                        LineBreakMode = LineBreakMode.WordWrap,
+                        MaxLines = 2
                     },
                     new Label
                     {
@@ -1023,16 +670,15 @@ public partial class JobDetailPage : ContentPage
             };
             var enteredBadge = new Border
             {
-                Padding = new Thickness(10, 5),
+                Padding = new Thickness(0),
                 StrokeThickness = 0,
-                BackgroundColor = (Color)Application.Current.Resources["CardTint"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                BackgroundColor = Colors.Transparent,
                 VerticalOptions = LayoutOptions.Center,
                 Content = enteredLabel
             };
             var chevronLabel = new Label
             {
-                Text = IconGlyphs.ChevronUp,
+                Text = IconGlyphs.ChevronDown,
                 FontFamily = "FaSolid",
                 FontSize = 12,
                 TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
@@ -1052,31 +698,37 @@ public partial class JobDetailPage : ContentPage
 
             var headerActions = new HorizontalStackLayout
             {
-                Spacing = 8,
-                HorizontalOptions = LayoutOptions.End,
+                Spacing = 10,
+                HorizontalOptions = LayoutOptions.Start,
                 VerticalOptions = LayoutOptions.Center,
-                Children = { enteredBadge, statusBadge, chevronBadge }
+                Children = { enteredBadge, statusBadge }
             };
+            statusBadge.Padding = new Thickness(0);
+            statusBadge.BackgroundColor = Colors.Transparent;
 
             var titleRow = new Grid
             {
                 ColumnDefinitions = new ColumnDefinitionCollection
                 {
-                    new(GridLength.Auto),
-                    new(GridLength.Auto),
                     new(GridLength.Star),
                     new(GridLength.Auto)
                 },
-                ColumnSpacing = 12
+                RowDefinitions = new RowDefinitionCollection
+                {
+                    new(GridLength.Auto),
+                    new(GridLength.Auto)
+                },
+                ColumnSpacing = 10,
+                RowSpacing = 5
             };
-            Grid.SetColumn(productIcon, 0);
-            Grid.SetColumn(indexBadge, 1);
-            Grid.SetColumn(titleColumn, 2);
-            Grid.SetColumn(headerActions, 3);
-            titleRow.Children.Add(productIcon);
-            titleRow.Children.Add(indexBadge);
+            Grid.SetColumn(titleColumn, 0);
+            Grid.SetColumn(chevronBadge, 1);
+            Grid.SetRowSpan(chevronBadge, 2);
+            Grid.SetRow(headerActions, 1);
+            Grid.SetColumn(headerActions, 0);
             titleRow.Children.Add(titleColumn);
             titleRow.Children.Add(headerActions);
+            titleRow.Children.Add(chevronBadge);
 
             var notesEntry = new Entry
             {
@@ -1128,18 +780,14 @@ public partial class JobDetailPage : ContentPage
                 }
             }
 
-            // 5 fixed-width cards that wrap onto a second row instead of squeezing into equal
-            // Star columns - on a phone, 5-abreast left each card's condition-name label and
-            // quantity Entry too narrow to render on one line (word-wrap degenerating into
-            // near character-per-line).
-            var exceptionsGrid = new FlexLayout
+            // A single-column form is calmer and more predictable than a dashboard of quantity
+            // tiles. Each condition gets one full-width, thumb-friendly row.
+            var exceptionsGrid = new VerticalStackLayout
             {
-                Wrap = Microsoft.Maui.Layouts.FlexWrap.Wrap,
-                Direction = Microsoft.Maui.Layouts.FlexDirection.Row,
-                JustifyContent = Microsoft.Maui.Layouts.FlexJustify.Start
+                Spacing = 8
             };
 
-            View BuildConditionCard(string condition, int index)
+            View BuildConditionCard(string condition)
             {
                 var color = (Color)ColorConverter.Convert(condition, typeof(Color), null, CultureInfo.CurrentCulture);
                 var existingQty = existingByCondition.TryGetValue(condition, out var savedQty)
@@ -1151,11 +799,11 @@ public partial class JobDetailPage : ContentPage
                 var label = new Label
                 {
                     Text = condition,
-                    FontSize = 13,
+                    FontSize = 12,
                     FontFamily = "PoppinsSemiBold",
                     TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
                     VerticalOptions = LayoutOptions.Center,
-                    LineBreakMode = LineBreakMode.TailTruncation,
+                    LineBreakMode = LineBreakMode.NoWrap,
                     MaxLines = 1
                 };
 
@@ -1167,66 +815,61 @@ public partial class JobDetailPage : ContentPage
                     IsEnabled = !readOnly,
                     HorizontalTextAlignment = TextAlignment.Center,
                     FontFamily = "PoppinsBold",
-                    FontSize = 16,
-                    HeightRequest = 38,
+                    FontSize = 14,
+                    WidthRequest = 64,
+                    HeightRequest = 40,
                     TextColor = color
                 };
 
+                var contentGrid = new Grid
+                {
+                    ColumnDefinitions = new ColumnDefinitionCollection
+                    {
+                        new(GridLength.Auto),
+                        new(GridLength.Star),
+                        new(GridLength.Auto)
+                    },
+                    RowDefinitions = new RowDefinitionCollection
+                    {
+                        new(GridLength.Star),
+                        new(new GridLength(1))
+                    },
+                    ColumnSpacing = 9
+                };
+                var marker = new Label
+                {
+                    Text = IconGlyphs.CircleCheck,
+                    FontFamily = "FaSolid",
+                    FontSize = 13,
+                    TextColor = color,
+                    VerticalOptions = LayoutOptions.Center
+                };
+                Grid.SetColumn(marker, 0);
+                Grid.SetColumn(label, 1);
+                Grid.SetColumn(qtyInput, 2);
+                contentGrid.Children.Add(marker);
+                contentGrid.Children.Add(label);
+                contentGrid.Children.Add(qtyInput);
+                var divider = new BoxView
+                {
+                    Color = Color.FromArgb("#E8EFEE"),
+                    HeightRequest = 1,
+                    VerticalOptions = LayoutOptions.End
+                };
+                Grid.SetRow(divider, 1);
+                Grid.SetColumn(divider, 0);
+                Grid.SetColumnSpan(divider, 3);
+                contentGrid.Children.Add(divider);
+
                 var card = new Border
                 {
-                    StrokeThickness = 1,
-                    Stroke = (Color)Application.Current.Resources["CardBorderLight"],
-                    BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
-                    Padding = new Thickness(12, 8),
-                    WidthRequest = 108,
-                    Margin = new Thickness(0, 0, 8, 8),
-                    Content = new VerticalStackLayout
-                    {
-                        Spacing = 2,
-                        Children =
-                        {
-                            new Grid
-                            {
-                                ColumnDefinitions = new ColumnDefinitionCollection
-                                {
-                                    new(GridLength.Auto),
-                                    new(GridLength.Star),
-                                    new(GridLength.Auto)
-                                },
-                                ColumnSpacing = 8,
-                                Children =
-                                {
-                                    new BoxView
-                                    {
-                                        WidthRequest = 8,
-                                        HeightRequest = 8,
-                                        CornerRadius = 4,
-                                        Color = color,
-                                        VerticalOptions = LayoutOptions.Center
-                                    },
-                                    label,
-                                    new Label
-                                    {
-                                        Text = line.UnitOfMeasure,
-                                        Style = (Style)Application.Current.Resources["MetaLabel"],
-                                        FontSize = 11,
-                                        HorizontalOptions = LayoutOptions.End,
-                                        VerticalOptions = LayoutOptions.Center
-                                    }
-                                }
-                            },
-                            qtyInput
-                        }
-                    }
+                    StrokeThickness = 0,
+                    BackgroundColor = Colors.Transparent,
+                    Padding = new Thickness(4, 2),
+                    HeightRequest = 46,
+                    HorizontalOptions = LayoutOptions.Fill,
+                    Content = contentGrid
                 };
-
-                label.SetValue(Microsoft.Maui.Controls.Grid.ColumnProperty, 1);
-                if (card.Content is VerticalStackLayout contentStack &&
-                    contentStack.Children[0] is Grid headerGrid)
-                {
-                    ((BindableObject)headerGrid.Children[2]).SetValue(Microsoft.Maui.Controls.Grid.ColumnProperty, 2);
-                }
 
                 row.QuantityEntries[condition] = qtyInput;
                 row.ConditionBoxes.Add(new ConditionBox
@@ -1263,7 +906,7 @@ public partial class JobDetailPage : ContentPage
 
             for (var i = 0; i < Conditions.Length; i++)
             {
-                var conditionCard = BuildConditionCard(Conditions[i], i);
+                var conditionCard = BuildConditionCard(Conditions[i]);
                 exceptionsGrid.Children.Add(conditionCard);
             }
 
@@ -1283,31 +926,20 @@ public partial class JobDetailPage : ContentPage
             var detailsStack = new VerticalStackLayout
             {
                 Spacing = 10,
+                IsVisible = false,
                 Children =
                 {
-                    new Grid
+                    new VerticalStackLayout
                     {
-                        ColumnDefinitions = new ColumnDefinitionCollection
-                        {
-                            new(GridLength.Star),
-                            new(GridLength.Auto)
-                        },
+                        Spacing = 2,
                         Children =
                         {
                             new Label
                             {
-                                Text = "Received quantity breakdown",
+                                Text = "Received quantities",
                                 FontFamily = "PoppinsSemiBold",
                                 FontSize = 14,
                                 TextColor = (Color)Application.Current.Resources["TextPrimaryLight"]
-                            },
-                            new Label
-                            {
-                                Text = "Enter received quantity by condition",
-                                Style = (Style)Application.Current.Resources["MetaLabel"],
-                                FontSize = 11,
-                                HorizontalOptions = LayoutOptions.End,
-                                VerticalOptions = LayoutOptions.Center
                             }
                         }
                     },
@@ -1317,14 +949,18 @@ public partial class JobDetailPage : ContentPage
                 }
             };
 
-            if (detailsStack.Children[0] is Grid detailsHeader)
+            var detailsDivider = new BoxView
             {
-                ((BindableObject)detailsHeader.Children[1]).SetValue(Microsoft.Maui.Controls.Grid.ColumnProperty, 1);
-            }
+                HeightRequest = 1,
+                Color = Color.FromArgb("#E8EDF3"),
+                IsVisible = false
+            };
+
             var headerTap = new TapGestureRecognizer();
             headerTap.Tapped += (_, _) =>
             {
                 detailsStack.IsVisible = !detailsStack.IsVisible;
+                detailsDivider.IsVisible = detailsStack.IsVisible;
                 chevronLabel.Text = detailsStack.IsVisible ? IconGlyphs.ChevronUp : IconGlyphs.ChevronDown;
             };
             titleRow.GestureRecognizers.Add(headerTap);
@@ -1335,17 +971,24 @@ public partial class JobDetailPage : ContentPage
                 Children =
                 {
                     titleRow,
-                    new BoxView { HeightRequest = 1, Color = Color.FromArgb("#E8EDF3") },
+                    detailsDivider,
                     detailsStack
                 }
             };
             InspectionLinesContainer.Children.Add(new Border
             {
-                Stroke = Color.FromArgb("#E4E9F1"),
+                Stroke = (Color)Application.Current.Resources["CardBorderLight"],
                 StrokeThickness = 1,
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 18 },
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 },
                 BackgroundColor = Colors.White,
-                Padding = new Thickness(16),
+                Padding = new Thickness(14),
+                Shadow = new Shadow
+                {
+                    Brush = new SolidColorBrush(Color.FromArgb("#120F3475")),
+                    Offset = new Point(0, 2),
+                    Radius = 8,
+                    Opacity = 0.22f
+                },
                 Content = card
             });
 
@@ -1472,30 +1115,60 @@ public partial class JobDetailPage : ContentPage
 
         var removeButton = new Button
         {
-            Text = "Remove",
+            Text = IconGlyphs.Xmark,
             IsVisible = !readOnly,
             Style = (Style)Application.Current!.Resources["ChipButton"],
-            FontSize = 11
+            FontFamily = "FaSolid",
+            FontSize = 11,
+            WidthRequest = 38,
+            HeightRequest = 38,
+            Padding = 0
+        };
+
+        var skuIcon = new Border
+        {
+            WidthRequest = 34,
+            HeightRequest = 34,
+            StrokeThickness = 0,
+            BackgroundColor = (Color)Application.Current.Resources["CardTint"],
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+            Content = new Label
+            {
+                Text = IconGlyphs.BoxesStacked,
+                FontFamily = "FaSolid",
+                FontSize = 12,
+                TextColor = (Color)Application.Current.Resources["Primary"],
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center
+            }
         };
 
         var grid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star), new(GridLength.Auto), new(GridLength.Auto) },
+            ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new(GridLength.Auto),
+                new(GridLength.Star),
+                new(GridLength.Auto),
+                new(GridLength.Auto)
+            },
             ColumnSpacing = 10
         };
-        Grid.SetColumn(skuLabel, 0);
-        Grid.SetColumn(qtyEntry, 1);
-        Grid.SetColumn(removeButton, 2);
+        Grid.SetColumn(skuIcon, 0);
+        Grid.SetColumn(skuLabel, 1);
+        Grid.SetColumn(qtyEntry, 2);
+        Grid.SetColumn(removeButton, 3);
+        grid.Children.Add(skuIcon);
         grid.Children.Add(skuLabel);
         grid.Children.Add(qtyEntry);
         grid.Children.Add(removeButton);
 
         var container = new Border
         {
-            Stroke = (Color)Application.Current!.Resources["CardBorderLight"],
-            StrokeThickness = 1,
+            StrokeThickness = 0,
+            BackgroundColor = Colors.White,
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
-            Padding = new Thickness(12, 10),
+            Padding = new Thickness(10, 8),
             Content = grid
         };
 
@@ -1539,35 +1212,17 @@ public partial class JobDetailPage : ContentPage
         UnplannedLinesContainer.Children.Remove(row.Container);
     }
 
-    private static Label BuildTableHeaderLabel(string text, int column)
-    {
-        var label = new Label
-        {
-            Text = text,
-            FontSize = 10,
-            FontFamily = "PoppinsBold",
-            TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"],
-            Margin = new Thickness(column == 0 ? 14 : 0, 0, 0, 0)
-        };
-        Grid.SetRow(label, 0);
-        Grid.SetColumn(label, column);
-        return label;
-    }
-
     private static void RestyleConditionBoxes(InspectionRow row)
     {
-        var mutedBorder = (Color)Application.Current!.Resources["CardBorderLight"];
         var mutedText = (Color)Application.Current.Resources["TextSecondaryLight"];
-        var activeTint = (Color)Application.Current.Resources["CardTint"];
 
         foreach (var box in row.ConditionBoxes)
         {
             var hasQty = decimal.TryParse(box.QuantityEntry.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var qty) && qty > 0;
             var activeColor = (Color)ColorConverter.Convert(box.Condition, typeof(Color), null, CultureInfo.CurrentCulture);
 
-            box.Background.Stroke = hasQty ? activeColor : mutedBorder;
-            box.Background.StrokeThickness = hasQty ? 2 : 1;
-            box.Background.BackgroundColor = hasQty ? activeTint : (Color)Application.Current.Resources["CardLight"];
+            box.Background.StrokeThickness = 0;
+            box.Background.BackgroundColor = Colors.Transparent;
             box.Label.TextColor = hasQty ? activeColor : mutedText;
             box.Label.FontFamily = hasQty ? "PoppinsBold" : "PoppinsSemiBold";
         }

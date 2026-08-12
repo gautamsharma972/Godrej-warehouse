@@ -1,0 +1,45 @@
+﻿erDiagram
+    Organization {
+        int Id PK
+    }
+    Warehouse {
+        int Id PK
+    }
+    InwardTransaction {
+        int Id PK
+    }
+    OutwardTransaction {
+        int Id PK
+    }
+    VehicleLogisticsRecord {
+        int Id PK
+        int OrganizationId FK
+        int FromWarehouseId FK
+        int ToWarehouseId FK
+        int ConsumedByInwardTransactionId FK "nullable"
+        int ConsumedByOutwardTransactionId FK "nullable"
+    }
+    FollowUpTask {
+        int Id PK
+        int OrganizationId FK
+        int WarehouseId FK "nullable"
+        string EntityName "logical reference type"
+        int EntityId "logical reference id"
+    }
+    AuditLog {
+        int Id PK
+        int OrganizationId FK "nullable"
+        string EntityName "logical reference type"
+        int EntityId "logical reference id"
+        string ChangedByUserId "logical user id"
+    }
+
+    Organization ||--o{ VehicleLogisticsRecord : owns
+    Warehouse ||--o{ VehicleLogisticsRecord : origin
+    Warehouse ||--o{ VehicleLogisticsRecord : destination
+    InwardTransaction o|--o{ VehicleLogisticsRecord : consumes
+    OutwardTransaction o|--o{ VehicleLogisticsRecord : consumes
+    Organization ||--o{ FollowUpTask : owns
+    Warehouse o|--o{ FollowUpTask : scoped_to
+    Organization o|--o{ AuditLog : owns
+

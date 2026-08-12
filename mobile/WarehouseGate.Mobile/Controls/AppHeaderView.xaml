@@ -6,18 +6,15 @@
              x:Class="WarehouseGate.Mobile.Controls.AppHeaderView"
              x:Name="Root">
 
-    <Border Stroke="#E4E9F1" StrokeThickness="1"
-            StrokeShape="RoundRectangle 18"
-            BackgroundColor="#FDFEFE"
-            Padding="18,14">
-        <Border.Shadow>
-            <Shadow Brush="#23344F" Offset="0,6" Radius="18" Opacity="0.05" />
-        </Border.Shadow>
+    <Border x:Name="HeaderSurface" StrokeThickness="0"
+            StrokeShape="RoundRectangle 0"
+            BackgroundColor="Transparent"
+            Padding="18,8,18,3">
 
-        <Grid x:Name="HeaderGrid" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
+        <Grid x:Name="HeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
             <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeShape="RoundRectangle 12"
                     Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                    SemanticProperties.Description="Menu">
+                    SemanticProperties.Description="Menu" IsVisible="False">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnMenuIconTapped" />
                 </Border.GestureRecognizers>
@@ -25,25 +22,21 @@
                        FontSize="16" TextColor="#344054" HorizontalOptions="Center" VerticalOptions="Center" />
             </Border>
 
-            <Border Grid.Column="1" WidthRequest="46" HeightRequest="46"
-                    StrokeShape="RoundRectangle 12" StrokeThickness="0"
-                    BackgroundColor="{StaticResource CardTint}">
-                <Label Text="WG" TextColor="{StaticResource Primary}" FontFamily="PoppinsSemiBold"
-                       FontSize="15" HorizontalOptions="Center" VerticalOptions="Center" />
-            </Border>
+            <Image Grid.Column="0" Source="logiflow_brand_mark.png" WidthRequest="42" HeightRequest="42"
+                   Aspect="AspectFit" VerticalOptions="Center" />
 
-            <VerticalStackLayout Grid.Column="2" Spacing="3" VerticalOptions="Center">
-                <Label x:Name="GreetingLabel" FontFamily="PoppinsRegular" FontSize="12"
+            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                <Label x:Name="GreetingLabel" FontFamily="PoppinsRegular" FontSize="10"
                        TextColor="#687387" LineBreakMode="TailTruncation" MaxLines="1" />
-                <Label x:Name="UserNameLabel" FontFamily="PoppinsSemiBold" FontSize="16"
+                <Label x:Name="UserNameLabel" FontFamily="PoppinsSemiBold" FontSize="14"
                        TextColor="#172033" LineBreakMode="TailTruncation" MaxLines="1" />
             </VerticalStackLayout>
 
-            <controls:LiveBadge x:Name="LiveStatusBadge" Grid.Column="3" VerticalOptions="Center" />
+            <controls:LiveBadge x:Name="LiveStatusBadge" Grid.Column="1" VerticalOptions="Center" IsVisible="False" />
 
-            <Grid Grid.Column="4" VerticalOptions="Center">
-                <Border WidthRequest="42" HeightRequest="42" StrokeShape="RoundRectangle 12"
-                        Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
+            <Grid Grid.Column="2" VerticalOptions="Center">
+                <Border WidthRequest="40" HeightRequest="40" StrokeShape="RoundRectangle 20"
+                        Stroke="#C9DDF1" StrokeThickness="1" BackgroundColor="#EEF5FC"
                         SemanticProperties.Description="Notifications">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnNotificationsIconTapped" />
@@ -53,15 +46,15 @@
                 </Border>
                 <Border x:Name="NotificationCountBadge" WidthRequest="20" HeightRequest="20" StrokeShape="RoundRectangle 10"
                         StrokeThickness="0" BackgroundColor="{StaticResource StatusException}"
-                        HorizontalOptions="End" VerticalOptions="Start" Margin="0,-6,-4,0" IsVisible="False" InputTransparent="True">
-                    <Label x:Name="NotificationCountLabel" FontSize="10" FontFamily="PoppinsBold" TextColor="White"
-                           HorizontalOptions="Center" VerticalOptions="Center" />
+                        HorizontalOptions="End" VerticalOptions="Start" Margin="0,0,-4,0" IsVisible="False" InputTransparent="True">
+                    <Label x:Name="NotificationCountLabel" FontSize="9" FontFamily="PoppinsBold" TextColor="White"
+                           HorizontalOptions="Center" VerticalOptions="Center" Padding="0,1,0,0" />
                 </Border>
             </Grid>
 
-            <Border Grid.Column="5" WidthRequest="42" HeightRequest="42" StrokeShape="RoundRectangle 12"
+            <Border Grid.Column="2" WidthRequest="42" HeightRequest="42" StrokeShape="RoundRectangle 12"
                     Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                    SemanticProperties.Description="Account">
+                    SemanticProperties.Description="Account" IsVisible="False">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnAccountIconTapped" />
                 </Border.GestureRecognizers>

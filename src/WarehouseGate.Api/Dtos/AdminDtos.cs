@@ -58,3 +58,7 @@ public record ProductDto(
 public record UpsertProductRequest(
     string Name, string SkuCode, decimal WeightKg, decimal LengthCm, decimal WidthCm, decimal HeightCm,
     string Category, bool IsStackable, int MaxStackLayers, string? ColorHex);
+
+public record ProductUploadRowErrorDto(int RowNumber, string Reason);
+
+public record ProductUploadResultDto(int InsertedCount, int DuplicateCount, List<ProductUploadRowErrorDto> Errors);

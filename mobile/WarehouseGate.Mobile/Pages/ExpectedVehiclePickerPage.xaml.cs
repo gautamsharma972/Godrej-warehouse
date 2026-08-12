@@ -28,7 +28,7 @@ public partial class ExpectedVehiclePickerPage : ContentPage
         }
 
         _opened = true;
-        DrawerPanel.TranslationX = width * 0.7;
+        DrawerPanel.TranslationX = width;
         await DrawerPanel.TranslateTo(0, 0, 180, Easing.CubicOut);
     }
 
@@ -104,7 +104,7 @@ public partial class ExpectedVehiclePickerPage : ContentPage
 
     private async Task CloseAsync()
     {
-        await DrawerPanel.TranslateTo(Width * 0.7, 0, 140, Easing.CubicIn);
+        await DrawerPanel.TranslateTo(Width, 0, 140, Easing.CubicIn);
         await Navigation.PopModalAsync();
     }
 }

@@ -1,0 +1,40 @@
+﻿erDiagram
+    AspNetUsers {
+        string Id PK
+        int OrganizationId FK "nullable"
+        int WarehouseId FK "nullable"
+        int RegionId FK "nullable"
+    }
+    AspNetRoles {
+        string Id PK
+    }
+    AspNetUserClaims {
+        int Id PK
+        string UserId FK
+    }
+    AspNetUserLogins {
+        string LoginProvider PK
+        string ProviderKey PK
+        string UserId FK
+    }
+    AspNetUserRoles {
+        string UserId PK, FK
+        string RoleId PK, FK
+    }
+    AspNetUserTokens {
+        string UserId PK, FK
+        string LoginProvider PK
+        string Name PK
+    }
+    AspNetRoleClaims {
+        int Id PK
+        string RoleId FK
+    }
+
+    AspNetUsers ||--o{ AspNetUserClaims : has
+    AspNetUsers ||--o{ AspNetUserLogins : has
+    AspNetUsers ||--o{ AspNetUserRoles : assigned
+    AspNetRoles ||--o{ AspNetUserRoles : includes
+    AspNetUsers ||--o{ AspNetUserTokens : has
+    AspNetRoles ||--o{ AspNetRoleClaims : has
+

@@ -1,0 +1,27 @@
+﻿flowchart LR
+    ORG[Organization / tenant]
+    GEO[Geography and warehouses]
+    IAM[Users and Identity]
+    MASTER[Vehicle, product and transporter masters]
+    PLAN[Vehicle logistics / dispatch plan]
+    IN[Inward receiving]
+    OUT[Outward dispatch and 3D load planning]
+    OPS[Audit and follow-up]
+
+    ORG --> GEO
+    ORG --> IAM
+    ORG --> MASTER
+    ORG --> PLAN
+    ORG --> IN
+    ORG --> OUT
+    ORG --> OPS
+    GEO --> IAM
+    GEO --> PLAN
+    GEO --> IN
+    GEO --> OUT
+    MASTER --> IN
+    MASTER --> OUT
+    PLAN --> IN
+    PLAN --> OUT
+    OUT -. creates destination receipt data .-> IN
+

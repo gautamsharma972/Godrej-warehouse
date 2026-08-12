@@ -37,8 +37,9 @@ public partial class SupervisorDashboardPage : ContentPage
         }
 
         _isWideLayout = wide;
-        PageContent.Padding = wide ? new Thickness(30, 26, 30, 30) : new Thickness(16, 18, 16, 24);
-        ResponsiveHelper.ConfigureStackableGrid(StatsGrid, wide, wideColumnCount: 2);
+        PageContent.Padding = wide ? new Thickness(30, 26, 30, 30) : new Thickness(12, 16, 12, 24);
+        // KPI tiles remain a 6/6 pair on mobile as well as tablet.
+        ResponsiveHelper.ConfigureStackableGrid(StatsGrid, true, wideColumnCount: 2);
         ResponsiveHelper.ConfigureStackableGrid(QuickActionsGrid, wide, wideColumnCount: 2);
     }
 

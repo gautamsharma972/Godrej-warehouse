@@ -17,9 +17,9 @@ public partial class AccountPage : ContentPage
         RoleDetailLabel.Text = Session.Role;
         ScopeLabel.Text = Session.ScopeLabel;
         VersionLabel.Text = $"{AppInfo.Current.VersionString} ({AppInfo.Current.BuildString})";
-        HeaderView.AccountRoute = Session.IsSupervisor
-            ? "//SupervisorTabs/SupervisorAccountPage"
-            : "//SecurityTabs/SecurityAccountPage";
+        PageHeader.BackRoute = Session.IsSupervisor
+            ? "//SupervisorTabs/SupervisorDashboardPage"
+            : "//SecurityTabs/SecurityDashboardPage";
     }
 
     private async void OnLogoutClicked(object? sender, EventArgs e)

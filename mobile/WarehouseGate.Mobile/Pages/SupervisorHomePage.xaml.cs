@@ -41,7 +41,7 @@ public partial class SupervisorHomePage : ContentPage
         }
 
         _isWideLayout = wide;
-        PageContent.Padding = wide ? new Thickness(30, 26, 30, 30) : new Thickness(16, 18, 16, 24);
+        PageContent.Padding = wide ? new Thickness(30, 26, 30, 30) : new Thickness(12, 16, 12, 24);
     }
 
     protected override void OnDisappearing()
@@ -163,8 +163,8 @@ public partial class SupervisorHomePage : ContentPage
         var selectedText = (Color)Application.Current!.Resources["Primary"];
         var unselectedText = (Color)Application.Current.Resources["TextSecondaryLight"];
 
-        InwardTabPill.BackgroundColor = _showingOutward ? Colors.Transparent : Color.FromArgb("#E9FBF8");
-        OutwardTabPill.BackgroundColor = _showingOutward ? Color.FromArgb("#E9FBF8") : Colors.Transparent;
+        InwardTabPill.BackgroundColor = _showingOutward ? Colors.Transparent : Color.FromArgb("#EAF1FF");
+        OutwardTabPill.BackgroundColor = _showingOutward ? Color.FromArgb("#EAF1FF") : Colors.Transparent;
         InwardRadioLabel.TextColor = _showingOutward ? unselectedText : selectedText;
         OutwardRadioLabel.TextColor = _showingOutward ? selectedText : unselectedText;
     }
@@ -173,9 +173,6 @@ public partial class SupervisorHomePage : ContentPage
     {
         var selectedCount = _showingOutward ? _outwardJobCount : _inwardJobCount;
         JobsCountLabel.Text = selectedCount == 1 ? "1 job" : $"{selectedCount} jobs";
-        JobsSubtitleLabel.Text = _showingOutward
-            ? "Review the outward work assigned to you."
-            : "Review the inward work assigned to you.";
     }
 
     private void OnJobsModeSwitchTapped(object? sender, EventArgs e)

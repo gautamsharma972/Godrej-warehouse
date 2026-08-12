@@ -9,8 +9,6 @@ namespace WarehouseGate.Mobile.Controls;
 public partial class SecuritySideNav : ContentView
 {
     private const double ExpandedFlyoutWidth = 252;
-    private const double CollapsedFlyoutWidth = 96;
-    private bool _isCollapsed;
 
     public SecuritySideNav()
     {
@@ -27,7 +25,10 @@ public partial class SecuritySideNav : ContentView
         }
         NotificationCenter.CountChanged += OnNotificationCountChanged;
         OnNotificationCountChanged(NotificationCenter.Count);
-        ApplyCollapsedState();
+        if (Shell.Current is not null)
+        {
+            Shell.Current.FlyoutWidth = ExpandedFlyoutWidth;
+        }
         UpdateActiveState();
     }
 
@@ -109,7 +110,7 @@ public partial class SecuritySideNav : ContentView
             return "Alerts";
         }
 
-        if (location.Contains("SecurityAccountPage"))
+        if (location.Contains("AccountPage"))
         {
             return "Settings";
         }
@@ -136,69 +137,10 @@ public partial class SecuritySideNav : ContentView
     {
         var activeColor = (Color)Application.Current!.Resources["Primary"];
         var inactiveColor = (Color)Application.Current.Resources["TextSecondaryLight"];
-        pill.BackgroundColor = active ? Color.FromArgb("#E9FBF8") : Colors.Transparent;
+        pill.BackgroundColor = active ? Color.FromArgb("#EAF1FF") : Colors.Transparent;
         icon.TextColor = active ? activeColor : inactiveColor;
         label.TextColor = active ? activeColor : (Color)Application.Current.Resources["TextPrimaryLight"];
         label.FontFamily = active ? "PoppinsSemiBold" : "PoppinsRegular";
-    }
-
-    private void OnToggleCollapseTapped(object? sender, EventArgs e)
-    {
-        _isCollapsed = !_isCollapsed;
-        ApplyCollapsedState();
-    }
-
-    private void ApplyCollapsedState()
-    {
-        if (Shell.Current is not null)
-        {
-            Shell.Current.FlyoutWidth = _isCollapsed ? CollapsedFlyoutWidth : ExpandedFlyoutWidth;
-        }
-
-        SidebarRoot.Padding = _isCollapsed
-            ? new Thickness(14, 24)
-            : new Thickness(20, 24);
-        NavStack.Spacing = _isCollapsed ? 8 : 6;
-        CollapseIcon.Text = _isCollapsed ? IconGlyphs.ChevronRight : IconGlyphs.ChevronLeft;
-        BrandCopy.IsVisible = !_isCollapsed;
-        LogoutLabel.IsVisible = !_isCollapsed;
-        LogoutPill.Padding = _isCollapsed ? new Thickness(0, 13) : new Thickness(14, 13);
-
-        SetLabelVisibility(!_isCollapsed);
-        SetNavPadding(_isCollapsed ? new Thickness(0, 13) : new Thickness(14, 13));
-        SetNavAlignment(_isCollapsed);
-    }
-
-    private void SetLabelVisibility(bool visible)
-    {
-        HomeLabel.IsVisible = visible;
-        CheckInLabel.IsVisible = visible;
-        StatusLabel.IsVisible = visible;
-        OutwardsLabel.IsVisible = visible;
-        AlertsLabel.IsVisible = visible;
-        SettingsLabel.IsVisible = visible;
-    }
-
-    private void SetNavPadding(Thickness padding)
-    {
-        HomePill.Padding = padding;
-        CheckInPill.Padding = padding;
-        StatusPill.Padding = padding;
-        OutwardsPill.Padding = padding;
-        AlertsPill.Padding = padding;
-        SettingsPill.Padding = padding;
-    }
-
-    private void SetNavAlignment(bool collapsed)
-    {
-        var rowAlignment = collapsed ? LayoutOptions.Center : LayoutOptions.Start;
-        HomeRow.HorizontalOptions = rowAlignment;
-        CheckInRow.HorizontalOptions = rowAlignment;
-        StatusRow.HorizontalOptions = rowAlignment;
-        OutwardsRow.HorizontalOptions = rowAlignment;
-        AlertsRow.HorizontalOptions = rowAlignment;
-        SettingsRow.HorizontalOptions = rowAlignment;
-        LogoutRow.HorizontalOptions = LayoutOptions.Center;
     }
 
     private async void OnHomeTapped(object? sender, EventArgs e) =>
@@ -208,16 +150,16 @@ public partial class SecuritySideNav : ContentView
         await Shell.Current.GoToAsync("//SecurityTabs/SecurityHomePage");
 
     private async void OnStatusTapped(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync("//SecurityTabs/SecurityStatusPage");
+        await Shell.Current.GoToAsync(nameof(SecurityStatusPage));
 
     private async void OnOutwardsTapped(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync("//SecurityTabs/VehicleExitPage");
+        await Shell.Current.GoToAsync("//SecurityTabs/SecurityExitPage");
 
     private async void OnAlertsTapped(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("NotificationsPage");
 
     private async void OnSettingsTapped(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync("//SecurityTabs/SecurityAccountPage");
+        await Shell.Current.GoToAsync(nameof(AccountPage));
 
     private async void OnLogoutTapped(object? sender, EventArgs e)
     {

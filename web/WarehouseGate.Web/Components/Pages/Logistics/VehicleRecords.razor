@@ -1,5 +1,5 @@
 @page "/logistics/vehicle-records"
-@attribute [Authorize(Roles = "LogisticsManager")]
+@attribute [Authorize(Roles = "LogisticsManager,Office")]
 @implements IAsyncDisposable
 @using Microsoft.AspNetCore.Components.Forms
 @inject PortalApiClient Api
@@ -7,7 +7,7 @@
 @inject IDialogService DialogService
 @inject LogisticsRealtimeClient Realtime
 
-<PageTitle>Dispatch Plan - WarehouseGate</PageTitle>
+<PageTitle>Dispatch Plan - Logiflow</PageTitle>
 
 <section class="admin-page">
     <div class="admin-page-header">
@@ -306,7 +306,7 @@
 
     private static string GroupedRoute(IGrouping<string, VehicleLogisticsRecordDto> group)
     {
-        var distinct = group.Select(r => $"{r.FromWarehouseName} → {r.ToWarehouseName}").Distinct().ToList();
+        var distinct = group.Select(r => $"{r.FromWarehouseName} â†’ {r.ToWarehouseName}").Distinct().ToList();
         return distinct.Count == 1 ? distinct[0] : "Multiple";
     }
 

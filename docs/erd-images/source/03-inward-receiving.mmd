@@ -1,0 +1,70 @@
+﻿erDiagram
+    Organization {
+        int Id PK
+    }
+    Warehouse {
+        int Id PK
+    }
+    Vehicle {
+        int Id PK
+    }
+    Product {
+        int Id PK
+    }
+    PurchaseOrder {
+        int Id PK
+        int OrganizationId FK
+        string PONumber UK
+    }
+    PurchaseOrderLine {
+        int Id PK
+        int PurchaseOrderId FK
+        int SourceDispatchOrderLineId "logical reference, nullable"
+    }
+    InwardTransaction {
+        int Id PK
+        int OrganizationId FK
+        int VehicleId FK
+        int WarehouseId FK "nullable"
+        int PurchaseOrderId FK "nullable"
+        string InwardTxnNumber UK
+    }
+    PhotoEvidence {
+        int Id PK
+        int InwardTransactionId FK
+        int PurchaseOrderLineId FK "nullable"
+    }
+    InwardDocument {
+        int Id PK
+        int InwardTransactionId FK
+    }
+    InspectionLine {
+        int Id PK
+        int InwardTransactionId FK
+        int PurchaseOrderLineId FK
+    }
+    UnplannedReceiptLine {
+        int Id PK
+        int InwardTransactionId FK
+        int ProductId FK
+    }
+    GoodsReceiptNote {
+        int Id PK
+        int InwardTransactionId FK, UK
+    }
+
+    Organization ||--o{ PurchaseOrder : owns
+    Organization ||--o{ InwardTransaction : owns
+    PurchaseOrder ||--o{ PurchaseOrderLine : contains
+    Vehicle ||--o{ InwardTransaction : arrives_as
+    Warehouse o|--o{ InwardTransaction : receives_at
+    PurchaseOrder o|--o{ InwardTransaction : linked_to
+    InwardTransaction ||--o{ PhotoEvidence : has
+    PurchaseOrderLine o|--o{ PhotoEvidence : documents_SKU
+    InwardTransaction ||--o{ InwardDocument : has
+    InwardTransaction ||--o{ InspectionLine : inspects
+    PurchaseOrderLine ||--o{ InspectionLine : categorizes
+    InwardTransaction ||--o{ UnplannedReceiptLine : receives_extra
+    Product ||--o{ UnplannedReceiptLine : identifies
+    InwardTransaction ||--o| GoodsReceiptNote : produces
+

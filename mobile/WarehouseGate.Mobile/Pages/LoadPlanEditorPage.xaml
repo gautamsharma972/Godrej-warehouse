@@ -11,31 +11,21 @@
              Shell.FlyoutBehavior="Disabled">
 
     <Grid x:Name="PageDrawer" RowDefinitions="Auto,*,Auto" BackgroundColor="{StaticResource SurfaceLight}">
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Padding="28,22,28,14" ColumnSpacing="12">
-            <controls:BackHeaderView x:Name="PageHeaderView" Grid.Column="0" Title="Back to jobs" />
-            <Border Grid.Column="1" x:Name="ToggleSimulationButton" WidthRequest="42" HeightRequest="42"
-                    StrokeShape="RoundRectangle 12" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                    BackgroundColor="{StaticResource CardLight}" SemanticProperties.Description="Show simulation">
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnToggleSimulationClicked" />
-                </Border.GestureRecognizers>
-                <Label x:Name="ToggleSimulationIcon" Text="{x:Static services:IconGlyphs.Eye}" Style="{StaticResource IconLabel}"
-                       FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
-            </Border>
-            <HorizontalStackLayout Grid.Column="2" Spacing="8" VerticalOptions="Center">
-                <Border Padding="10,5" StrokeThickness="0" BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 12">
-                    <HorizontalStackLayout Spacing="6">
-                        <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource StatusSuccess}" VerticalOptions="Center" />
-                        <Label Text="Valid" FontSize="11" FontFamily="PoppinsSemiBold" TextColor="{StaticResource StatusSuccess}" />
-                    </HorizontalStackLayout>
-                </Border>
-                <Border Padding="10,5" StrokeThickness="0" BackgroundColor="{StaticResource StatusAssignedTint}" StrokeShape="RoundRectangle 12">
-                    <HorizontalStackLayout Spacing="6">
-                        <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource StatusAssigned}" VerticalOptions="Center" />
-                        <Label Text="Warning" FontSize="11" FontFamily="PoppinsSemiBold" TextColor="{StaticResource StatusAssigned}" />
-                    </HorizontalStackLayout>
-                </Border>
-            </HorizontalStackLayout>
+        <Grid Grid.Row="0" BackgroundColor="Transparent">
+            <controls:BackHeaderView x:Name="PageHeaderView" PageTitle="Load plan" Title="Arrange and validate the shipment">
+                <controls:BackHeaderView.TrailingContent>
+                    <Border x:Name="ToggleSimulationButton" WidthRequest="40" HeightRequest="40"
+                            StrokeShape="RoundRectangle 12" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                            BackgroundColor="#F5F9FD" SemanticProperties.Description="Show simulation">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnToggleSimulationClicked" />
+                        </Border.GestureRecognizers>
+                        <Label x:Name="ToggleSimulationIcon" Text="{x:Static services:IconGlyphs.Eye}" Style="{StaticResource IconLabel}"
+                               FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                </controls:BackHeaderView.TrailingContent>
+            </controls:BackHeaderView>
+            <BoxView HeightRequest="1" Color="#E4E9F1" VerticalOptions="End" />
         </Grid>
 
         <Grid x:Name="WorkspaceGrid" Grid.Row="1" ColumnDefinitions="*,340" ColumnSpacing="18" Padding="28,0,28,18">
@@ -77,31 +67,23 @@
                 <VerticalStackLayout x:Name="CenterColumn" Spacing="14">
                     <Grid x:Name="MainGrid" IsVisible="False" />
 
-                    <Border x:Name="SkuListCard" Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
-                        <VerticalStackLayout Spacing="12">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource CardTint}">
-                                    <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
-                                           FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
-                                </Border>
-                                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                    <Label Text="Pick a SKU to place" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
-                                    <Label Text="Tap a line from the pick list to start placing it." Style="{StaticResource MetaLabel}" />
-                                </VerticalStackLayout>
-                            </Grid>
+                    <Border x:Name="SkuListCard" StrokeThickness="0" BackgroundColor="Transparent" Padding="0">
+                        <VerticalStackLayout Spacing="10">
+                            <VerticalStackLayout Spacing="0" Padding="2,0">
+                                <Label Text="Pick a SKU" Style="{StaticResource SectionTitleLabel}" FontSize="15" />
+                            </VerticalStackLayout>
                             <CollectionView x:Name="SkuPickListCollectionView">
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate x:DataType="models:PickListSkuRow">
                                         <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                                                StrokeShape="RoundRectangle 16" BackgroundColor="{StaticResource CardLight}"
-                                                Padding="14" Margin="0,0,0,10" Opacity="{Binding IsEnabled, Converter={StaticResource BoolToOpacityConverter}}">
+                                                StrokeShape="RoundRectangle 12" BackgroundColor="{StaticResource CardLight}"
+                                                Padding="12,10" Margin="0,0,0,8" Opacity="{Binding IsEnabled, Converter={StaticResource BoolToOpacityConverter}}">
                                             <Border.GestureRecognizers>
                                                 <TapGestureRecognizer Tapped="OnSkuPickListItemTapped" />
                                             </Border.GestureRecognizers>
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                                 <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
-                                                    <Label Text="{Binding Name}" FontFamily="PoppinsSemiBold" FontSize="14"
+                                                    <Label Text="{Binding Name}" FontFamily="PoppinsSemiBold" FontSize="13"
                                                            TextColor="{StaticResource TextPrimaryLight}" LineBreakMode="TailTruncation" />
                                                     <Label Text="{Binding RemainingCaption}" Style="{StaticResource MetaLabel}" />
                                                 </VerticalStackLayout>
@@ -186,19 +168,19 @@
                         </Border>
                     </VerticalStackLayout>
 
-                    <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
+                    <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 16" Padding="14" IsVisible="False">
                         <VerticalStackLayout Spacing="12">
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnToggleRuleValidationClicked" />
                                 </Grid.GestureRecognizers>
-                                <Border Grid.Column="0" WidthRequest="38" HeightRequest="38" StrokeThickness="0"
-                                        BackgroundColor="{StaticResource StatusAssignedTint}" StrokeShape="RoundRectangle 19">
+                                <Border Grid.Column="0" WidthRequest="30" HeightRequest="30" StrokeThickness="0"
+                                        BackgroundColor="{StaticResource StatusAssignedTint}" StrokeShape="RoundRectangle 10">
                                     <Label Text="{x:Static services:IconGlyphs.TriangleExclamation}" Style="{StaticResource IconLabel}"
-                                           FontSize="14" TextColor="{StaticResource StatusAssigned}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                           FontSize="11" TextColor="{StaticResource StatusAssigned}" HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                                    <Label Text="Rule validation" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
+                                    <Label Text="Validation" Style="{StaticResource SectionTitleLabel}" FontSize="14" />
                                     <Label x:Name="RuleValidationSubtitleLabel" Text="Active arrangement notes" Style="{StaticResource MetaLabel}" />
                                 </VerticalStackLayout>
                                 <Label Grid.Column="2" x:Name="RuleValidationChevron" Text="{x:Static services:IconGlyphs.ChevronDown}"
@@ -228,7 +210,7 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16">
+                    <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="16" IsVisible="False">
                         <VerticalStackLayout Spacing="14">
                             <Grid ColumnDefinitions="*,Auto">
                                 <VerticalStackLayout Grid.Column="0" Spacing="1">

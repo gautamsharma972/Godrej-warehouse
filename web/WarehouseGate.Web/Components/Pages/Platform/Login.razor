@@ -1,16 +1,17 @@
 @page "/platform/login"
 @layout Layout.MainLayout
+@inject NavigationManager Nav
 
-<PageTitle>Platform Admin - WarehouseGate</PageTitle>
+<PageTitle>Platform Admin - Logiflow</PageTitle>
 
 <main class="login-shell">
-    <section class="login-brand" aria-label="WarehouseGate platform overview">
+    <section class="login-brand" aria-label="Logiflow platform overview">
         <div class="brand-mark" aria-hidden="true">
             <span>WG</span>
         </div>
 
         <div class="brand-copy">
-            <p class="eyebrow">WarehouseGate Platform</p>
+            <p class="eyebrow">Logiflow</p>
             <h1>Platform Admin Console</h1>
             <p class="brand-summary">
                 Create and manage organizations, their user/warehouse limits, and reset
@@ -110,6 +111,9 @@
 </main>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
     [SupplyParameterFromQuery]
     public string? Error { get; set; }
 
@@ -120,4 +124,31 @@
         "role" => "This account isn't provisioned for the platform console.",
         _ => null
     };
+
+    // Same reasoning as the tenant Login page: a signed-in user landing here would otherwise see
+    // this page's bare login-shell markup rendered inside MainLayout's already-Authorized sidebar
+    // shell. forceLoad re-checks the cookie server-side too, so a genuinely expired session still
+    // lands back here cleanly instead of on a half-rendered hybrid view.
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthStateTask is null)
+        {
+            return;
+        }
+
+        var user = (await AuthStateTask).User;
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        var landing = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value switch
+        {
+            "PlatformAdmin" => "/platform/organizations",
+            "SuperAdmin" => "/admin/dashboard",
+            "LogisticsManager" => "/logistics/dashboard",
+            _ => "/office/dashboard"
+        };
+        Nav.NavigateTo(landing, forceLoad: true);
+    }
 }

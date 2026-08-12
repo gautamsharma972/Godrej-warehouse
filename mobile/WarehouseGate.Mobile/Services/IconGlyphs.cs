@@ -5,12 +5,14 @@
 public static class IconGlyphs
 {
     public const string Bars = "";
+    public const string Ellipsis = "";
     public const string Bell = "";
     public const string Gear = "";
     public const string ChevronRight = "";
     public const string ChevronLeft = "";
     public const string Camera = "";
     public const string CircleCheck = "";
+    public const string CircleInfo = "";
     public const string TriangleExclamation = "";
     public const string Truck = "";
     public const string Box = "";
@@ -34,6 +36,8 @@ public static class IconGlyphs
     public const string IdCard = "";
     public const string Microphone = "";
     public const string QrCode = "";
+    public const string MagnifyingGlass = "";
+    public const string Filter = "";
     public const string House = "";
     public const string ChevronUp = "";
     public const string ChevronDown = "";

@@ -4,9 +4,9 @@
              x:Class="WarehouseGate.Mobile.Controls.LiveBadge"
              x:Name="Root">
 
-    <Border x:Name="Badge" Padding="13,8" Stroke="#CFEEDE" StrokeThickness="1"
+    <Border x:Name="Badge" Padding="13,8" Stroke="#D4E2FF" StrokeThickness="1"
             StrokeShape="RoundRectangle 18"
-            VerticalOptions="Center" BackgroundColor="#F4FCF8">
+            VerticalOptions="Center" BackgroundColor="#F4F7FF">
         <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
             <Ellipse x:Name="LiveDot" WidthRequest="7" HeightRequest="7" VerticalOptions="Center"
                      Fill="{StaticResource StatusSuccess}" />

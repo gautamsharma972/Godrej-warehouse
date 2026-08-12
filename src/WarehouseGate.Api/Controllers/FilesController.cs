@@ -4,46 +4,37 @@ using WarehouseGate.Infrastructure.Storage;
 
 namespace WarehouseGate.Api.Controllers;
 
-// Serves back whatever IPhotoStorageService/LocalDiskPhotoStorageService already wrote to disk.
-// Any authenticated role can read - both Security and Supervisor need to view evidence photos,
-// and the write side (GateController/InwardController/OutwardController) already gates who can
-// upload in the first place.
+// Serves back whatever IPhotoStorageService wrote, however it wrote it - storage-agnostic by
+// design, so switching the registered implementation (local disk <-> S3) in Program.cs is the only
+// change needed anywhere in the app. Any authenticated role can read - both Security and Supervisor
+// need to view evidence photos, and the write side (GateController/InwardController/
+// OutwardController) already gates who can upload in the first place.
 [ApiController]
 [Route("api/files")]
 [Authorize]
 public class FilesController : ControllerBase
 {
-    private readonly LocalDiskPhotoStorageOptions _options;
+    private readonly IPhotoStorageService _photoStorage;
 
-    public FilesController(LocalDiskPhotoStorageOptions options)
+    public FilesController(IPhotoStorageService photoStorage)
     {
-        _options = options;
+        _photoStorage = photoStorage;
     }
 
     [HttpGet("{**relativePath}")]
-    public IActionResult Get(string relativePath)
+    public async Task<IActionResult> Get(string relativePath, CancellationToken ct)
     {
-        var root = Path.GetFullPath(_options.RootPath);
-        if (!root.EndsWith(Path.DirectorySeparatorChar))
-        {
-            root += Path.DirectorySeparatorChar;
-        }
-
-        var fullPath = Path.GetFullPath(Path.Combine(root, relativePath));
-
-        // The resolved path must stay inside the photo storage root - blocks "../../" traversal.
-        if (!fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(fullPath))
+        var result = await _photoStorage.GetForServingAsync(relativePath, ct);
+        if (!result.Found)
         {
             return NotFound();
         }
 
-        var contentType = Path.GetExtension(fullPath).ToLowerInvariant() switch
+        if (result.RedirectUrl is not null)
         {
-            ".png" => "image/png",
-            ".webp" => "image/webp",
-            _ => "image/jpeg"
-        };
+            return Redirect(result.RedirectUrl);
+        }
 
-        return PhysicalFile(fullPath, contentType);
+        return File(result.Content!, result.ContentType!);
     }
 }

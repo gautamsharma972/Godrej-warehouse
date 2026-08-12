@@ -1,0 +1,122 @@
+﻿erDiagram
+    Organization {
+        int Id PK
+        string Code UK
+        string Name
+        bool IsActive
+    }
+    Country {
+        int Id PK
+        int OrganizationId FK
+        string Name UK
+    }
+    State {
+        int Id PK
+        int OrganizationId FK
+        int CountryId FK
+        string Name
+    }
+    City {
+        int Id PK
+        int OrganizationId FK
+        int StateId FK
+        string Name
+    }
+    Region {
+        int Id PK
+        int OrganizationId FK
+        string Name UK
+    }
+    Location {
+        int Id PK
+        int OrganizationId FK
+        int RegionId FK
+        int StateId FK
+        int CityId FK
+        string Name UK
+    }
+    Warehouse {
+        int Id PK
+        int OrganizationId FK
+        int CountryId FK
+        int StateId FK
+        int CityId FK
+        int RegionId FK
+        string Name UK
+    }
+    DockBay {
+        int Id PK
+        int OrganizationId FK
+        int WarehouseId FK
+        string Name UK
+    }
+    ApplicationUser {
+        string Id PK
+        int OrganizationId FK "nullable"
+        int WarehouseId FK "nullable"
+        int RegionId FK "nullable"
+        string UserName
+    }
+    Transporter {
+        int Id PK
+        int OrganizationId FK
+        string Name UK
+    }
+    VehicleType {
+        int Id PK
+        int OrganizationId FK
+        string Name UK
+    }
+    VehicleCategory {
+        int Id PK
+        int OrganizationId FK
+        string Name UK
+    }
+    VehicleMaster {
+        int Id PK
+        int OrganizationId FK
+        int VehicleTypeId FK
+        int VehicleCategoryId FK
+    }
+    Vehicle {
+        int Id PK
+        int OrganizationId FK
+        string Number UK
+    }
+    Product {
+        int Id PK
+        int OrganizationId FK
+        string SkuCode UK "nullable computed key"
+        string Name
+    }
+
+    Organization ||--o{ Country : owns
+    Organization ||--o{ State : owns
+    Organization ||--o{ City : owns
+    Organization ||--o{ Region : owns
+    Organization ||--o{ Location : owns
+    Organization ||--o{ Warehouse : owns
+    Organization ||--o{ DockBay : owns
+    Organization o|--o{ ApplicationUser : owns
+    Organization ||--o{ Transporter : owns
+    Organization ||--o{ VehicleType : owns
+    Organization ||--o{ VehicleCategory : owns
+    Organization ||--o{ VehicleMaster : owns
+    Organization ||--o{ Vehicle : owns
+    Organization ||--o{ Product : owns
+
+    Country ||--o{ State : contains
+    State ||--o{ City : contains
+    Region ||--o{ Location : groups
+    State ||--o{ Location : locates
+    City ||--o{ Location : locates
+    Country ||--o{ Warehouse : locates
+    State ||--o{ Warehouse : locates
+    City ||--o{ Warehouse : locates
+    Region ||--o{ Warehouse : groups
+    Warehouse ||--o{ DockBay : contains
+    Warehouse o|--o{ ApplicationUser : assigned_to
+    Region o|--o{ ApplicationUser : assigned_to
+    VehicleType ||--o{ VehicleMaster : classifies
+    VehicleCategory ||--o{ VehicleMaster : classifies
+

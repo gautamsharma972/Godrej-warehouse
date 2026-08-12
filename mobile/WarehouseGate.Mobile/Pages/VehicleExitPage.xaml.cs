@@ -19,6 +19,7 @@ public partial class VehicleExitPage : ContentPage
     private readonly Dictionary<string, List<string>> _pendingArrivalPhotosByType =
         ArrivalPhotoCategories.ToDictionary(c => c.Type, c => new List<string>());
     private bool? _isWide;
+    private int _selectedFormTab;
     private List<VehicleOption> _outwardVehicleOptions = new();
 
     public VehicleExitPage()
@@ -74,6 +75,7 @@ public partial class VehicleExitPage : ContentPage
     {
         base.OnAppearing();
         ShowGateInFormState();
+        SelectFormTab(0);
 
         if (OutwardGatePicker.ItemsSource is null)
         {
@@ -137,6 +139,28 @@ public partial class VehicleExitPage : ContentPage
     {
         GateInFormSection.IsVisible = false;
         GateInSuccessSection.IsVisible = true;
+    }
+
+    private void OnDispatchTabClicked(object? sender, TappedEventArgs e) => SelectFormTab(0);
+
+    private void OnPhotosTabClicked(object? sender, TappedEventArgs e) => SelectFormTab(1);
+
+    private void SelectFormTab(int tab)
+    {
+        _selectedFormTab = tab;
+        DispatchDetailsCard.IsVisible = tab == 0;
+        GatePhotoCard.IsVisible = tab == 1;
+
+        var activeColor = (Color)Application.Current!.Resources["Primary"];
+        var inactiveBackground = Color.FromArgb("#EAF1FF");
+        var inactiveText = (Color)Application.Current.Resources["TextSecondaryLight"];
+
+        DispatchTabPill.BackgroundColor = tab == 0 ? activeColor : inactiveBackground;
+        PhotosTabPill.BackgroundColor = tab == 1 ? activeColor : inactiveBackground;
+        DispatchTabLabel.TextColor = tab == 0 ? Colors.White : inactiveText;
+        PhotosTabLabel.TextColor = tab == 1 ? Colors.White : inactiveText;
+        GateInSubmitButton.Text = tab == 0 ? "Next" : "Register-Out Vehicle";
+        GateInSubmitButton.BackgroundColor = activeColor;
     }
 
     private static readonly string[] Gates = { "Gate 1", "Gate 2", "Gate 3", "Gate 4", "Gate 5", "Gate 6" };
@@ -414,6 +438,13 @@ public partial class VehicleExitPage : ContentPage
 
         if (!vehicleValid)
         {
+            SelectFormTab(0);
+            return;
+        }
+
+        if (_selectedFormTab == 0)
+        {
+            SelectFormTab(1);
             return;
         }
 
@@ -471,7 +502,7 @@ public partial class VehicleExitPage : ContentPage
         finally
         {
             GateInSubmitButton.IsEnabled = true;
-            GateInSubmitButton.Text = "Gate-Out Vehicle";
+            GateInSubmitButton.Text = _selectedFormTab == 0 ? "Next" : "Register-Out Vehicle";
             GateInSpinner.IsVisible = false;
             GateInSpinner.IsRunning = false;
         }

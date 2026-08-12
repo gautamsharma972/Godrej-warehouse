@@ -80,17 +80,26 @@ public partial class OutwardJobDetailPage : ContentPage
 
     private void ApplyResponsiveLayout(bool wide)
     {
-        PageContent.Padding = wide ? new Thickness(30, 24, 30, 32) : new Thickness(16, 18, 16, 24);
+        PageContent.Padding = wide ? new Thickness(30, 24, 30, 32) : new Thickness(10, 12, 10, 24);
+        DockInGrid.Padding = wide ? new Thickness(22) : new Thickness(14);
+        StartLoadingHeaderGrid.Padding = wide ? new Thickness(22, 20) : new Thickness(14);
+        ChecklistGrid.Padding = wide ? new Thickness(18) : new Thickness(14);
+        StartLoadingFooterGrid.Padding = wide ? new Thickness(18) : new Thickness(14);
+        PhotoHeaderGrid.Padding = wide ? new Thickness(8, 10, 8, 6) : new Thickness(4, 8, 4, 4);
+        LoadVizHeaderGrid.Padding = wide ? new Thickness(14, 12) : new Thickness(8, 10);
+        LoadVizContentGrid.Padding = wide ? new Thickness(18, 0) : new Thickness(12, 0);
+        LoadLinesHeaderGrid.Padding = wide ? new Thickness(18, 0) : new Thickness(12, 0);
+        LoadLinesContainer.Padding = wide ? new Thickness(18, 0, 18, 18) : new Thickness(12, 0, 12, 12);
 
         ConfigureHeroLayout(wide);
         ConfigureSummaryGrid(HeroSummaryGrid, wide);
+        SummaryHorizontalDivider.IsVisible = !wide;
         ConfigureTabletDashboardLayout(wide);
         ConfigureDockInLayout(wide);
         ConfigureSectionHeader(StartLoadingHeaderGrid, wide);
         ConfigureChecklistLayout(wide);
         ConfigureTwoColumnAction(StartLoadingFooterGrid, StartLoadingButton, wide, 220);
         ConfigureSectionHeader(PhotoHeaderGrid, wide);
-        ConfigureSectionHeader(LoadVizHeaderGrid, wide);
         ConfigureLoadVizLayout(wide);
         ConfigureTwoColumnAction(LoadLinesHeaderGrid, SubmitLoadLinesButton, wide, 170);
         ConfigureExceptionOptions(wide);
@@ -98,34 +107,8 @@ public partial class OutwardJobDetailPage : ContentPage
 
     private void ConfigureHeroLayout(bool wide)
     {
-        if (wide)
-        {
-            HeroGrid.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new(GridLength.Auto),
-                new(GridLength.Star),
-                new(new GridLength(1)),
-                new(GridLength.Auto)
-            };
-            HeroGrid.RowDefinitions = new RowDefinitionCollection
-            {
-                new(GridLength.Auto),
-                new(GridLength.Auto)
-            };
-            Grid.SetRow(HeroTextStack, 0);
-            Grid.SetColumn(HeroTextStack, 1);
-            Grid.SetColumnSpan(HeroTextStack, 1);
-            Grid.SetRow(HeroMetaStack, 0);
-            Grid.SetColumn(HeroMetaStack, 3);
-            Grid.SetColumnSpan(HeroMetaStack, 1);
-            HeroMetaStack.HorizontalOptions = LayoutOptions.End;
-            HeroDivider.IsVisible = true;
-            return;
-        }
-
         HeroGrid.ColumnDefinitions = new ColumnDefinitionCollection
         {
-            new(GridLength.Auto),
             new(GridLength.Star)
         };
         HeroGrid.RowDefinitions = new RowDefinitionCollection
@@ -134,12 +117,12 @@ public partial class OutwardJobDetailPage : ContentPage
             new(GridLength.Auto)
         };
         Grid.SetRow(HeroTextStack, 0);
-        Grid.SetColumn(HeroTextStack, 1);
+        Grid.SetColumn(HeroTextStack, 0);
         Grid.SetColumnSpan(HeroTextStack, 1);
         Grid.SetRow(HeroMetaStack, 1);
         Grid.SetColumn(HeroMetaStack, 0);
-        Grid.SetColumnSpan(HeroMetaStack, 2);
-        HeroMetaStack.HorizontalOptions = LayoutOptions.Start;
+        Grid.SetColumnSpan(HeroMetaStack, 1);
+        HeroMetaStack.HorizontalOptions = LayoutOptions.Fill;
         HeroDivider.IsVisible = false;
     }
 
@@ -162,17 +145,19 @@ public partial class OutwardJobDetailPage : ContentPage
             return;
         }
 
-        grid.ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Star) };
+        grid.ColumnDefinitions = new ColumnDefinitionCollection
+        {
+            new(GridLength.Star),
+            new(GridLength.Star)
+        };
         grid.RowDefinitions = new RowDefinitionCollection
         {
-            new(GridLength.Auto),
-            new(GridLength.Auto),
             new(GridLength.Auto),
             new(GridLength.Auto)
         };
         for (var i = 0; i < grid.Children.Count; i++)
         {
-            SetChildPosition(grid, i, i, 0);
+            SetChildPosition(grid, i, i / 2, i % 2);
         }
     }
 
@@ -297,6 +282,11 @@ public partial class OutwardJobDetailPage : ContentPage
             if (i < 2)
             {
                 SetChildPosition(grid, i, 0, i);
+                if (i == 0 && grid.Children[i] is Border icon)
+                {
+                    icon.WidthRequest = 38;
+                    icon.HeightRequest = 38;
+                }
             }
             else
             {
@@ -684,14 +674,14 @@ public partial class OutwardJobDetailPage : ContentPage
             StrokeThickness = 1,
             BackgroundColor = (Color)Application.Current.Resources["CardLight"],
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 18 },
-            WidthRequest = 220,
-            HeightRequest = 150,
+            WidthRequest = 148,
+            HeightRequest = 116,
             Padding = 0,
             Content = new Grid
             {
                 RowDefinitions = new RowDefinitionCollection
                 {
-                    new(new GridLength(100)),
+                    new(new GridLength(76)),
                     new(GridLength.Auto)
                 },
                 Children =
@@ -873,9 +863,9 @@ public partial class OutwardJobDetailPage : ContentPage
         {
             var swatch = new BoxView
             {
-                WidthRequest = 5,
-                HeightRequest = 56,
-                CornerRadius = 3,
+                WidthRequest = 4,
+                HeightRequest = 32,
+                CornerRadius = 2,
                 Color = (Color)Application.Current!.Resources["CardBorderLight"],
                 VerticalOptions = LayoutOptions.Fill
             };
@@ -884,7 +874,7 @@ public partial class OutwardJobDetailPage : ContentPage
             {
                 Text = line.ProductName,
                 FontFamily = "PoppinsSemiBold",
-                FontSize = 15,
+                FontSize = 13,
                 VerticalOptions = LayoutOptions.Center,
                 LineBreakMode = LineBreakMode.WordWrap
             };
@@ -917,23 +907,22 @@ public partial class OutwardJobDetailPage : ContentPage
 
             var row = new Grid
             {
-                ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto) },
-                ColumnSpacing = 12
+                ColumnDefinitions = new ColumnDefinitionCollection { new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto) },
+                ColumnSpacing = 9
             };
-            Grid.SetColumn(swatch, 0);
             var sequenceBadge = new Border
             {
-                WidthRequest = 42,
-                HeightRequest = 42,
+                WidthRequest = 28,
+                HeightRequest = 28,
                 StrokeThickness = 0,
                 BackgroundColor = (Color)Application.Current.Resources["SurfaceLight"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 },
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
                 VerticalOptions = LayoutOptions.Center,
                 Content = new Label
                 {
                     Text = (index + 1).ToString(CultureInfo.InvariantCulture),
                     FontFamily = "PoppinsBold",
-                    FontSize = 13,
+                    FontSize = 11,
                     TextColor = (Color)Application.Current.Resources["Primary"],
                     HorizontalOptions = LayoutOptions.Center,
                     VerticalOptions = LayoutOptions.Center
@@ -945,9 +934,8 @@ public partial class OutwardJobDetailPage : ContentPage
                 VerticalOptions = LayoutOptions.Center,
                 Children = { nameLabel, orderLabel }
             };
-            Grid.SetColumn(sequenceBadge, 1);
-            Grid.SetColumn(titleStack, 2);
-            row.Children.Add(swatch);
+            Grid.SetColumn(sequenceBadge, 0);
+            Grid.SetColumn(titleStack, 1);
             row.Children.Add(sequenceBadge);
             row.Children.Add(titleStack);
 
@@ -956,16 +944,16 @@ public partial class OutwardJobDetailPage : ContentPage
             {
                 qtyControl = new Border
                 {
-                    Padding = new Thickness(12, 8),
+                    Padding = new Thickness(10, 6),
                     StrokeThickness = 0,
                     BackgroundColor = (Color)Application.Current.Resources["SurfaceLight"],
-                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 13 },
+                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
                     VerticalOptions = LayoutOptions.Center,
                     Content = new Label
                     {
                         Text = string.IsNullOrWhiteSpace(loadedQtyText) ? "Not recorded" : $"{loadedQtyText} {line.UnitOfMeasure}",
                         FontFamily = "PoppinsBold",
-                        FontSize = 12,
+                        FontSize = 11,
                         TextColor = (Color)Application.Current.Resources["Primary"]
                     }
                 };
@@ -979,7 +967,7 @@ public partial class OutwardJobDetailPage : ContentPage
                     Children = { minusButton, qtyEntry, plusButton }
                 };
             }
-            Grid.SetColumn(qtyControl, 3);
+            Grid.SetColumn(qtyControl, 2);
             row.Children.Add(qtyControl);
 
             var notesEntry = new Entry
@@ -1021,8 +1009,8 @@ public partial class OutwardJobDetailPage : ContentPage
                 Stroke = (Color)Application.Current.Resources["CardBorderLight"],
                 StrokeThickness = 1,
                 BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 20 },
-                Padding = new Thickness(14),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 14 },
+                Padding = new Thickness(12, 10),
                 Content = cardContent
             };
             LoadLinesContainer.Children.Add(rowCard);
@@ -1040,6 +1028,39 @@ public partial class OutwardJobDetailPage : ContentPage
     }
 
     private async void OnCalculateLoadingPlanClicked(object? sender, EventArgs e) => await CalculateLoadingPlanAsync();
+
+    private async void OnViewSimulationClicked(object? sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_lastVizPayload))
+        {
+            await CalculateLoadingPlanAsync();
+        }
+
+        if (string.IsNullOrWhiteSpace(_lastVizPayload))
+        {
+            await DisplayAlertAsync("3D view unavailable", "The load simulation could not be prepared for this dispatch.", "OK");
+            return;
+        }
+
+        LoadSimulationSession.Payload = _lastVizPayload;
+        LoadSimulationSession.Title = _job?.DispatchOrderNumber ?? "Dispatch load simulation";
+        await Shell.Current.GoToAsync(nameof(LoadSimulationPage));
+    }
+
+    private void OnPhotoSectionHeaderTapped(object? sender, TappedEventArgs e) =>
+        ToggleAccordion(PhotoSectionContent, PhotoSectionChevron);
+
+    private void OnLoadSectionHeaderTapped(object? sender, TappedEventArgs e) =>
+        ToggleAccordion(LoadSectionContent, LoadSectionChevron);
+
+    private void OnExceptionSectionHeaderTapped(object? sender, TappedEventArgs e) =>
+        ToggleAccordion(ExceptionSectionContent, ExceptionSectionChevron);
+
+    private static void ToggleAccordion(VisualElement content, Label chevron)
+    {
+        content.IsVisible = !content.IsVisible;
+        chevron.Text = content.IsVisible ? IconGlyphs.ChevronUp : IconGlyphs.ChevronDown;
+    }
 
     private async void OnOpenLoadPlanEditorClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync($"{nameof(LoadPlanEditorPage)}?id={_jobId}");

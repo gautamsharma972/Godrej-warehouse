@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             x:Class="WarehouseGate.Mobile.Pages.SupervisorHistoryFilterPage"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource SurfaceLight}">
+
+    <Grid>
+        <Border StrokeThickness="0" BackgroundColor="{StaticResource SurfaceLight}" Padding="18,20,18,18">
+            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="18">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Spacing="3">
+                        <Label Text="FILTER HISTORY" FontSize="10" CharacterSpacing="1.1"
+                               TextColor="{StaticResource Primary}" />
+                        <Label Text="Filters" FontSize="22" FontFamily="PoppinsSemiBold"
+                               TextColor="{StaticResource TextPrimaryLight}" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1" WidthRequest="40" HeightRequest="40" Stroke="#DCE5F5"
+                            StrokeThickness="1" BackgroundColor="White" StrokeShape="RoundRectangle 12">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCancelClicked" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{x:Static services:IconGlyphs.Xmark}" Style="{StaticResource IconLabel}"
+                               FontSize="13" TextColor="{StaticResource TextSecondaryLight}"
+                               HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+
+                <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+                    <VerticalStackLayout Spacing="16">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="VEHICLE NUMBER" Style="{StaticResource MetaLabel}" FontFamily="PoppinsBold" />
+                            <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                                    BackgroundColor="White" StrokeShape="RoundRectangle 13" Padding="12,0" HeightRequest="50">
+                                <Entry x:Name="VehicleEntry" Placeholder="Any vehicle" VerticalOptions="Center" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label x:Name="OrderLabel" Text="ORDER NUMBER" Style="{StaticResource MetaLabel}" FontFamily="PoppinsBold" />
+                            <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                                    BackgroundColor="White" StrokeShape="RoundRectangle 13" Padding="12,0" HeightRequest="50">
+                                <Entry x:Name="OrderEntry" Placeholder="Any order" VerticalOptions="Center" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="Filter by date" FontSize="13" FontFamily="PoppinsSemiBold"
+                                       TextColor="{StaticResource TextPrimaryLight}" />
+                                <Label Text="Limit results to one day" Style="{StaticResource MetaLabel}" FontSize="10" />
+                            </VerticalStackLayout>
+                            <Switch x:Name="UseDateSwitch" Grid.Column="1" Toggled="OnDateFilterToggled"
+                                    OnColor="{StaticResource Primary}" VerticalOptions="Center" />
+                        </Grid>
+
+                        <Border x:Name="DateField" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                                BackgroundColor="White" StrokeShape="RoundRectangle 13" Padding="12,0" HeightRequest="50">
+                            <DatePicker x:Name="FilterDatePicker" FontSize="13" VerticalOptions="Center" />
+                        </Border>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Button Grid.Column="0" Text="Reset" Clicked="OnResetClicked"
+                            Style="{StaticResource ChipButton}" HeightRequest="48" Padding="16,6" />
+                    <Button Grid.Column="1" Text="Apply filters" Clicked="OnApplyClicked"
+                            Style="{StaticResource PrimaryActionButton}" HeightRequest="48" />
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

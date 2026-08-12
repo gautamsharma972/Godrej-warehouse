@@ -14,10 +14,21 @@ public partial class AppHeaderView : ContentView
     public static readonly BindableProperty AccountRouteProperty =
         BindableProperty.Create(nameof(AccountRoute), typeof(string), typeof(AppHeaderView));
 
+    public static readonly BindableProperty IsDockedProperty =
+        BindableProperty.Create(nameof(IsDocked), typeof(bool), typeof(AppHeaderView), false,
+            propertyChanged: static (bindable, _, value) =>
+                ((AppHeaderView)bindable).ApplySurfaceStyle((bool)value));
+
     public string? AccountRoute
     {
         get => (string?)GetValue(AccountRouteProperty);
         set => SetValue(AccountRouteProperty, value);
+    }
+
+    public bool IsDocked
+    {
+        get => (bool)GetValue(IsDockedProperty);
+        set => SetValue(IsDockedProperty, value);
     }
 
     public AppHeaderView()
@@ -37,6 +48,22 @@ public partial class AppHeaderView : ContentView
         Unloaded += OnUnloaded;
     }
 
+    private void ApplySurfaceStyle(bool docked)
+    {
+        HeaderSurface.StrokeShape = docked
+            ? new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = new CornerRadius(0) }
+            : new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = new CornerRadius(18) };
+        HeaderSurface.StrokeThickness = docked ? 0 : 1;
+        HeaderSurface.Padding = docked ? new Thickness(16, 10) : new Thickness(16, 10);
+        HeaderSurface.Shadow = docked ? null : new Shadow
+        {
+            Brush = Color.FromArgb("#23344F"),
+            Offset = new Point(0, 6),
+            Radius = 18,
+            Opacity = 0.05f
+        };
+    }
+
     protected override void OnSizeAllocated(double width, double height)
     {
         base.OnSizeAllocated(width, height);
@@ -52,7 +79,7 @@ public partial class AppHeaderView : ContentView
         // Drop the "Live" badge first - it's the least essential element - to give the
         // greeting/name column enough room to truncate cleanly instead of wrapping character by
         // character. The WG mark stays; the hamburger already makes it a real (tappable) icon.
-        LiveStatusBadge.IsVisible = !compact;
+        LiveStatusBadge.IsVisible = false;
         HeaderGrid.ColumnSpacing = compact ? 8 : 12;
     }
 

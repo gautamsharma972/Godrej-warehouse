@@ -1,10 +1,11 @@
 @page "/admin/products"
 @attribute [Authorize(Roles = "SuperAdmin")]
+@using Microsoft.AspNetCore.Components.Forms
 @inject PortalApiClient Api
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-<PageTitle>Products - WarehouseGate</PageTitle>
+<PageTitle>Products - Logiflow</PageTitle>
 
 <section class="admin-page">
     <div class="admin-page-header">
@@ -15,6 +16,15 @@
         </div>
         <div class="admin-page-actions">
             <span class="admin-count-pill"><i class="bx bx-package"></i>@(_products?.Count ?? 0) Products</span>
+            <a class="admin-secondary-btn" href="/templates/products-sample.xlsx" download>
+                <i class="bx bx-download"></i>
+                Sample Excel
+            </a>
+            <label class="admin-secondary-btn" for="productUpload">
+                <i class="bx bx-upload"></i>
+                @(_uploading ? "Uploading..." : "Upload Excel")
+            </label>
+            <InputFile id="productUpload" class="logistics-file-input" OnChange="OnFileSelectedAsync" accept=".xlsx" disabled="@_uploading" />
             <button class="admin-primary-btn" type="button" @onclick="() => OpenEditor(null)"><i class="bx bx-plus"></i>Add Product</button>
         </div>
     </div>
@@ -103,6 +113,7 @@
     private bool _sortAscending = true;
     private int _page = 1;
     private int _pageSize = 10;
+    private bool _uploading;
 
     private List<string> _categoryNames => (_products ?? []).Select(p => p.Category).Distinct().OrderBy(n => n).ToList();
 
@@ -206,6 +217,49 @@
         catch (ApiException ex)
         {
             Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs args) => await OnFileSelectedAsync(args.File);
+
+    private async Task OnFileSelectedAsync(IBrowserFile? file)
+    {
+        if (file is null)
+        {
+            return;
+        }
+
+        _uploading = true;
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            await using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+            using var streamContent = new StreamContent(stream);
+            content.Add(streamContent, "file", file.Name);
+
+            var result = await Api.PostFormAsync<ProductUploadResultDto>("api/admin/products/upload", content);
+            var summary = $"{result.InsertedCount} new product(s) imported";
+
+            if (result.Errors.Count == 0)
+            {
+                Snackbar.Add($"{summary}.", Severity.Success);
+            }
+            else
+            {
+                var message = $"{summary}, {result.DuplicateCount} duplicate(s), {result.Errors.Count} row(s) skipped: " +
+                    string.Join("; ", result.Errors.Select(e => $"row {e.RowNumber}: {e.Reason}"));
+                Snackbar.Add(message, Severity.Warning, config => config.VisibleStateDuration = 10000);
+            }
+
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _uploading = false;
         }
     }
 

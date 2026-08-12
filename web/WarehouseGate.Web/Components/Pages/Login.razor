@@ -1,17 +1,18 @@
 @page "/login"
 @layout Layout.MainLayout
+@inject NavigationManager Nav
 
-<PageTitle>Login - WarehouseGate</PageTitle>
+<PageTitle>Login - Logiflow</PageTitle>
 
 <main class="login-shell">
-    <section class="login-brand" aria-label="WarehouseGate overview">
+    <section class="login-brand" aria-label="Logiflow overview">
         <div class="brand-mark" aria-hidden="true">
             <span>WG</span>
         </div>
 
         <div class="brand-copy">
             <p class="eyebrow">Godrej Warehouse Operations</p>
-            <h1>WarehouseGate Portal</h1>
+            <h1>Logiflow</h1>
             <p class="brand-summary">
                 Secure access for management, logistics, and office teams coordinating gated warehouse movement.
             </p>
@@ -128,6 +129,9 @@
 </main>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
     [SupplyParameterFromQuery]
     public string? Error { get; set; }
 
@@ -138,4 +142,33 @@
         "role" => "This account isn't provisioned for the web portal.",
         _ => null
     };
+
+    // A signed-in user landing on /login (stale bookmark, back button, a stray link) would otherwise
+    // render this page's own bare login-shell markup inside MainLayout's already-Authorized sidebar
+    // shell - the confusing "dashboard nav behind a sign-in form" hybrid. Bouncing them straight to
+    // their dashboard is a real navigation (forceLoad) so the server's cookie auth re-checks the
+    // session too: a genuinely expired cookie lands them back here cleanly via OnRedirectToLogin
+    // instead of staying stuck on this half-rendered view.
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthStateTask is null)
+        {
+            return;
+        }
+
+        var user = (await AuthStateTask).User;
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        var landing = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value switch
+        {
+            "SuperAdmin" => "/admin/dashboard",
+            "LogisticsManager" => "/logistics/dashboard",
+            "PlatformAdmin" => "/platform/organizations",
+            _ => "/office/dashboard"
+        };
+        Nav.NavigateTo(landing, forceLoad: true);
+    }
 }

@@ -18,9 +18,9 @@ public partial class NotificationsPage : ContentPage
     {
         base.OnAppearing();
 
-        HeaderView.AccountRoute = Session.IsSupervisor
-            ? "//SupervisorTabs/SupervisorAccountPage"
-            : "//SecurityTabs/SecurityAccountPage";
+        NotificationHeader.BackRoute = Session.IsSupervisor
+            ? "//SupervisorTabs/SupervisorDashboardPage"
+            : "//SecurityTabs/SecurityDashboardPage";
 
         SupervisorHubClient.JobUpdated += OnHubChanged;
         SupervisorHubClient.JobAssignedToYou += OnHubChanged;
@@ -101,31 +101,31 @@ public partial class NotificationsPage : ContentPage
         {
             NotificationContainer.Children.Add(UiHelpers.BuildAttentionCard(IconGlyphs.Clock, "StatusException", waitingTooLong,
                 waitingTooLong == 1 ? "vehicle waiting over 30 min at the gate" : "vehicles waiting over 30 min at the gate",
-                "//SecurityTabs/SecurityStatusPage"));
+                nameof(SecurityStatusPage)));
         }
         if (readyToExit > 0)
         {
             NotificationContainer.Children.Add(UiHelpers.BuildAttentionCard(IconGlyphs.RightFromBracket, "StatusSuccess", readyToExit,
                 readyToExit == 1 ? "vehicle ready to exit" : "vehicles ready to exit",
-                "//SecurityTabs/VehicleExitPage"));
+                "//SecurityTabs/SecurityExitPage"));
         }
         if (newVehicles > 0)
         {
             NotificationContainer.Children.Add(UiHelpers.BuildAttentionCard(IconGlyphs.TriangleExclamation, "StatusAssigned", newVehicles,
                 newVehicles == 1 ? "new vehicle flagged for office review" : "new vehicles flagged for office review",
-                "//SecurityTabs/SecurityStatusPage"));
+                nameof(SecurityStatusPage)));
         }
         if (deliveryMismatches > 0)
         {
             NotificationContainer.Children.Add(UiHelpers.BuildAttentionCard(IconGlyphs.CalendarDays, "StatusException", deliveryMismatches,
                 deliveryMismatches == 1 ? "vehicle outside expected delivery window" : "vehicles outside expected delivery window",
-                "//SecurityTabs/SecurityStatusPage"));
+                nameof(SecurityStatusPage)));
         }
         if (exceptionsToday > 0)
         {
             NotificationContainer.Children.Add(UiHelpers.BuildAttentionCard(IconGlyphs.TriangleExclamation, "StatusException", exceptionsToday,
                 exceptionsToday == 1 ? "vehicle completed with exceptions today — needs follow-up" : "vehicles completed with exceptions today — needs follow-up",
-                "//SecurityTabs/SecurityStatusPage"));
+                nameof(SecurityStatusPage)));
         }
 
         ClearButton.IsVisible = NotificationContainer.Children.Count > 0;
@@ -184,6 +184,6 @@ public partial class NotificationsPage : ContentPage
             ? UiHelpers.BuildAllClearCard("All caught up", "No new assignments waiting on you right now.")
             : UiHelpers.BuildAllClearCard());
         ClearButton.IsVisible = false;
-        NotificationCenter.SetCount(0);
+        NotificationCenter.DismissCurrent();
     }
 }

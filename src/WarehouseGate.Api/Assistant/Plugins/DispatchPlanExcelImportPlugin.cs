@@ -31,7 +31,7 @@ public class DispatchPlanExcelImportPlugin
     private readonly PendingActionStore _pendingActions;
     private readonly IHubContext<InwardHub> _hub;
     private readonly AuditService _audit;
-    private readonly int? _callerRegionId;
+    private readonly List<int>? _callerWarehouseScope;
     private readonly string _currentUserId;
 
     public record PendingEntry(List<VehicleLogisticsRecord> Rows, int SkippedCount, string FileName, string CreatedByUserId);
@@ -42,13 +42,13 @@ public class DispatchPlanExcelImportPlugin
 
     public DispatchPlanExcelImportPlugin(
         WarehouseGateDbContext db, PendingActionStore pendingActions, IHubContext<InwardHub> hub, AuditService audit,
-        int? callerRegionId, string currentUserId)
+        List<int>? callerWarehouseScope, string currentUserId)
     {
         _db = db;
         _pendingActions = pendingActions;
         _hub = hub;
         _audit = audit;
-        _callerRegionId = callerRegionId;
+        _callerWarehouseScope = callerWarehouseScope;
         _currentUserId = currentUserId;
     }
 
@@ -76,7 +76,7 @@ public class DispatchPlanExcelImportPlugin
     public async Task<string> PreviewFromFileAsync(Stream excelStream, string fileName)
     {
         var allWarehouses = await _db.Warehouses.ToListAsync();
-        var (created, errors) = VehicleLogisticsExcelParser.Parse(excelStream, _currentUserId, allWarehouses, _callerRegionId);
+        var (created, errors) = VehicleLogisticsExcelParser.Parse(excelStream, _currentUserId, allWarehouses, _callerWarehouseScope);
 
         if (created.Count == 0)
         {

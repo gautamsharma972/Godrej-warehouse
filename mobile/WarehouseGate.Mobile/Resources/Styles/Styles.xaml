@@ -27,12 +27,13 @@
     </Style>
 
     <Style TargetType="Button">
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="TextColor" Value="{StaticResource PrimaryDarkText}" />
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
         <Setter Property="FontFamily" Value="PoppinsMedium"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="BorderWidth" Value="0"/>
-        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="Padding" Value="14,10"/>
         <Setter Property="MinimumHeightRequest" Value="44"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
@@ -71,6 +72,7 @@
     </Style>
 
     <Style TargetType="DatePicker">
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="TextColor" Value="{StaticResource TextPrimaryLight}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="PoppinsRegular"/>
@@ -80,6 +82,7 @@
     </Style>
 
     <Style TargetType="Editor">
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="TextColor" Value="{StaticResource TextPrimaryLight}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="PoppinsRegular"/>
@@ -90,6 +93,7 @@
     </Style>
 
     <Style TargetType="Entry">
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="TextColor" Value="{StaticResource TextPrimaryLight}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="PoppinsRegular"/>
@@ -122,6 +126,7 @@
     </Style>
 
     <Style TargetType="Label">
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="TextColor" Value="{StaticResource TextPrimaryLight}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="PoppinsRegular" />
@@ -158,14 +163,14 @@
 
     <!-- ==================== Design system: cards, type scale, action buttons, chips ==================== -->
 
-    <Shadow x:Key="CardShadow" Brush="{StaticResource Gray600}" Opacity="0.10" Radius="14" Offset="0,6" />
+    <Shadow x:Key="CardShadow" Brush="#2B5C99" Opacity="0.06" Radius="12" Offset="0,4" />
 
     <Style TargetType="Border" x:Key="CardBorder">
         <Setter Property="Background" Value="{StaticResource CardLightBrush}" />
         <Setter Property="Stroke" Value="{StaticResource CardBorderLight}" />
         <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
-        <Setter Property="Padding" Value="18" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="Padding" Value="16" />
         <Setter Property="Shadow" Value="{StaticResource CardShadow}" />
     </Style>
 
@@ -173,8 +178,8 @@
         <Setter Property="Background" Value="{StaticResource CardTintBrush}" />
         <Setter Property="Stroke" Value="Transparent" />
         <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
-        <Setter Property="Padding" Value="18" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="Padding" Value="16" />
     </Style>
 
     <Style TargetType="Border" x:Key="StatCard">
@@ -227,7 +232,7 @@
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
         <Setter Property="FontFamily" Value="PoppinsSemiBold" />
         <Setter Property="FontSize" Value="15" />
-        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Padding" Value="14,12" />
         <Setter Property="MinimumHeightRequest" Value="50" />
         <Setter Property="VisualStateManager.VisualStateGroups">
@@ -250,7 +255,7 @@
         <Setter Property="BackgroundColor" Value="{StaticResource Secondary}" />
         <Setter Property="FontFamily" Value="PoppinsSemiBold" />
         <Setter Property="FontSize" Value="15" />
-        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Padding" Value="14,12" />
         <Setter Property="MinimumHeightRequest" Value="50" />
     </Style>
@@ -284,6 +289,7 @@
     </Style>
 
     <Style TargetType="Picker">
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="TextColor" Value="{StaticResource TextPrimaryLight}" />
         <Setter Property="TitleColor" Value="{StaticResource TextSecondaryLight}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
@@ -311,6 +317,7 @@
     </Style>
 
     <Style TargetType="SearchBar">
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="TextColor" Value="{StaticResource TextPrimaryLight}" />
         <Setter Property="PlaceholderColor" Value="{StaticResource Gray500}" />
         <Setter Property="CancelButtonColor" Value="{StaticResource Gray500}" />
@@ -344,6 +351,7 @@
     </Style>
 
     <Style TargetType="TimePicker">
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="TextColor" Value="{StaticResource TextPrimaryLight}" />
         <Setter Property="BackgroundColor" Value="Transparent"/>
         <Setter Property="FontFamily" Value="PoppinsRegular"/>

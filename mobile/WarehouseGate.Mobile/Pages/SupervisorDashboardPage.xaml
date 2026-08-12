@@ -6,164 +6,158 @@
              x:Class="WarehouseGate.Mobile.Pages.SupervisorDashboardPage"
              Title="Dashboard"
              Shell.BackButtonBehavior="{x:Null}"
-             Shell.TabBarIsVisible="False"
+             Shell.TabBarIsVisible="True"
              BackgroundColor="#F8FAFC">
 
-    <Grid>
-        <RefreshView x:Name="RefreshViewControl" Refreshing="OnRefreshing">
+    <Grid RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" BackgroundColor="Transparent">
+            <controls:AppHeaderView IsDocked="True" AccountRoute="AccountPage" />
+        </Grid>
+        <RefreshView Grid.Row="1" x:Name="RefreshViewControl" Refreshing="OnRefreshing">
             <ScrollView>
-                <VerticalStackLayout x:Name="PageContent" Padding="30,26,30,30" Spacing="18">
-                    <controls:AppHeaderView AccountRoute="//SupervisorTabs/SupervisorAccountPage" />
-
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20" Margin="0,4,0,2">
-                        <VerticalStackLayout Grid.Column="0" Spacing="7">
+                <VerticalStackLayout x:Name="PageContent" Padding="16,14,16,24" Spacing="14">
+                    <VerticalStackLayout Spacing="9" Margin="2,2,2,4">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
                             <Label Text="DOCK OPERATIONS" TextColor="{StaticResource Primary}"
-                                   FontSize="11" CharacterSpacing="1.2" FontFamily="PoppinsRegular" />
-                            <Label Text="Dashboard" TextColor="#172033"
-                                   FontSize="30" FontFamily="PoppinsSemiBold" />
-                            <Label Text="Live dock work, assigned jobs, and today’s completions at a glance."
-                                   TextColor="#687387" FontSize="13" />
+                                   FontSize="10" CharacterSpacing="1.2" FontFamily="PoppinsMedium" />
                         </VerticalStackLayout>
 
-                        <Border Grid.Column="1" Stroke="#CFEEDE" StrokeThickness="1"
-                                StrokeShape="RoundRectangle 18" Padding="16,10"
-                                BackgroundColor="#F4FCF8" VerticalOptions="Start">
-                            <HorizontalStackLayout Spacing="8">
+                        <Border Grid.Column="1" Stroke="#D4E2FF" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 14" Padding="11,7"
+                                BackgroundColor="#F4F7FF" VerticalOptions="Center">
+                            <HorizontalStackLayout Spacing="6">
                                 <Label Text="{x:Static services:IconGlyphs.Warehouse}" Style="{StaticResource IconLabel}"
                                        FontSize="12" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
                                 <Label x:Name="ScopeLabel" Text="Mapped warehouse" TextColor="{StaticResource Primary}"
-                                       FontSize="13" FontFamily="PoppinsRegular" VerticalOptions="Center" />
+                                       FontSize="11" FontFamily="PoppinsSemiBold" VerticalOptions="Center" />
                             </HorizontalStackLayout>
                         </Border>
                     </Grid>
+                        <Label Text="Dashboard" TextColor="#172033"
+                               FontSize="26" FontFamily="PoppinsSemiBold" />
+                        <Label Text="Assigned dock work and recent activity"
+                               TextColor="#687387" FontSize="12" />
+                    </VerticalStackLayout>
 
-                    <Grid x:Name="StatsGrid" ColumnDefinitions="*,*" ColumnSpacing="16" RowSpacing="16">
+                    <Grid x:Name="StatsGrid" ColumnDefinitions="*,*" ColumnSpacing="10" RowSpacing="10">
                         <Border Grid.Column="0" Stroke="#E4E9F1" StrokeThickness="1"
-                                StrokeShape="RoundRectangle 18" BackgroundColor="White" Padding="22">
-                            <Border.Shadow>
-                                <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
-                            </Border.Shadow>
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18">
-                                <Border Grid.Column="0" WidthRequest="56" HeightRequest="56"
-                                        StrokeThickness="0" StrokeShape="RoundRectangle 16"
-                                        BackgroundColor="#E9FBF8" VerticalOptions="Center">
+                                StrokeShape="RoundRectangle 14" BackgroundColor="White" Padding="13" MinimumHeightRequest="100">
+                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="9" ColumnSpacing="10">
+                                <Border Grid.Row="0" Grid.Column="0" WidthRequest="34" HeightRequest="34"
+                                        StrokeThickness="0" StrokeShape="RoundRectangle 11"
+                                        BackgroundColor="#EAF1FF" VerticalOptions="Center">
                                     <Label Text="{x:Static services:IconGlyphs.ListCheck}" Style="{StaticResource IconLabel}"
-                                           FontSize="24" TextColor="{StaticResource Primary}"
+                                           FontSize="13" TextColor="{StaticResource Primary}"
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
-                                <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                                    <Label Text="DOCK WORK" TextColor="#4D596D"
-                                           FontSize="11" CharacterSpacing="0.8" FontFamily="PoppinsRegular" />
-                                    <Label Text="Active jobs" TextColor="#172033"
-                                           FontSize="15" FontFamily="PoppinsSemiBold" />
-                                </VerticalStackLayout>
-                                <Label Grid.Column="2" x:Name="ActiveCountLabel" TextColor="{StaticResource Primary}"
-                                       FontSize="42" FontFamily="PoppinsSemiBold"
+                                <Label Grid.Row="0" Grid.Column="1" x:Name="ActiveCountLabel" TextColor="{StaticResource Primary}"
+                                       FontSize="28" FontFamily="PoppinsSemiBold"
                                        HorizontalOptions="End" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="1">
+                                    <Label Text="DOCK WORK" TextColor="#4D596D"
+                                           FontSize="9" CharacterSpacing="0.7" FontFamily="PoppinsMedium" />
+                                    <Label Text="Active jobs" TextColor="#172033"
+                                           FontSize="12" FontFamily="PoppinsSemiBold" />
+                                </VerticalStackLayout>
                             </Grid>
                         </Border>
 
                         <Border Grid.Column="1" Stroke="#E4E9F1" StrokeThickness="1"
-                                StrokeShape="RoundRectangle 18" BackgroundColor="White" Padding="22">
-                            <Border.Shadow>
-                                <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
-                            </Border.Shadow>
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18">
-                                <Border Grid.Column="0" WidthRequest="56" HeightRequest="56"
-                                        StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                                StrokeShape="RoundRectangle 14" BackgroundColor="White" Padding="13" MinimumHeightRequest="100">
+                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" RowSpacing="9" ColumnSpacing="10">
+                                <Border Grid.Row="0" Grid.Column="0" WidthRequest="34" HeightRequest="34"
+                                        StrokeThickness="0" StrokeShape="RoundRectangle 11"
                                         BackgroundColor="{StaticResource StatusAvailableTint}" VerticalOptions="Center">
                                     <Label Text="{x:Static services:IconGlyphs.CircleCheck}" Style="{StaticResource IconLabel}"
-                                           FontSize="24" TextColor="{StaticResource StatusAvailable}"
+                                           FontSize="13" TextColor="{StaticResource StatusAvailable}"
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
-                                <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                                    <Label Text="TODAY" TextColor="#4D596D"
-                                           FontSize="11" CharacterSpacing="0.8" FontFamily="PoppinsRegular" />
-                                    <Label Text="Completed jobs" TextColor="#172033"
-                                           FontSize="15" FontFamily="PoppinsSemiBold" />
-                                </VerticalStackLayout>
-                                <Label Grid.Column="2" x:Name="CompletedTodayCountLabel"
+                                <Label Grid.Row="0" Grid.Column="1" x:Name="CompletedTodayCountLabel"
                                        TextColor="{StaticResource StatusAvailable}"
-                                       FontSize="42" FontFamily="PoppinsSemiBold"
+                                       FontSize="28" FontFamily="PoppinsSemiBold"
                                        HorizontalOptions="End" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="1">
+                                    <Label Text="TODAY" TextColor="#4D596D"
+                                           FontSize="9" CharacterSpacing="0.7" FontFamily="PoppinsMedium" />
+                                    <Label Text="Completed jobs" TextColor="#172033"
+                                           FontSize="12" FontFamily="PoppinsSemiBold" />
+                                </VerticalStackLayout>
                             </Grid>
                         </Border>
                     </Grid>
 
-                    <Grid x:Name="QuickActionsGrid" ColumnDefinitions="*,*" ColumnSpacing="14" RowSpacing="14">
+                    <Grid x:Name="QuickActionsGrid" ColumnDefinitions="*,*" ColumnSpacing="10" RowSpacing="10">
                         <Border Grid.Column="0" Stroke="#E4E9F1" StrokeThickness="1"
-                                BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="16">
+                                BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="13">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnJobsQuickActionClicked" />
                             </Border.GestureRecognizers>
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 14" BackgroundColor="#E9FBF8">
+                                <Border Grid.Column="0" WidthRequest="36" HeightRequest="36" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 11" BackgroundColor="#EAF1FF">
                                     <Label Text="{x:Static services:IconGlyphs.ListCheck}" Style="{StaticResource IconLabel}"
-                                           FontSize="18" TextColor="{StaticResource Primary}"
+                                           FontSize="13" TextColor="{StaticResource Primary}"
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                    <Label Text="Jobs" TextColor="#172033" FontFamily="PoppinsSemiBold" FontSize="14" />
-                                    <Label Text="View and continue dock work" TextColor="#687387" FontSize="12"
+                                    <Label Text="Jobs" TextColor="#172033" FontFamily="PoppinsSemiBold" FontSize="13" />
+                                    <Label Text="View and continue dock work" TextColor="#687387" FontSize="11"
                                            LineBreakMode="TailTruncation" />
                                 </VerticalStackLayout>
                                 <Label Grid.Column="2" Text="{x:Static services:IconGlyphs.ChevronRight}"
-                                       Style="{StaticResource IconLabel}" FontSize="12"
+                                       Style="{StaticResource IconLabel}" FontSize="10"
                                        TextColor="#A2ADBD" VerticalOptions="Center" />
                             </Grid>
                         </Border>
 
                         <Border Grid.Column="1" Stroke="#E4E9F1" StrokeThickness="1"
-                                BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="16">
+                                BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="13">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnHistoryQuickActionClicked" />
                             </Border.GestureRecognizers>
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 14"
+                                <Border Grid.Column="0" WidthRequest="36" HeightRequest="36" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 11"
                                         BackgroundColor="{StaticResource StatusAvailableTint}">
                                     <Label Text="{x:Static services:IconGlyphs.ClockRotateLeft}"
-                                           Style="{StaticResource IconLabel}" FontSize="18"
+                                           Style="{StaticResource IconLabel}" FontSize="13"
                                            TextColor="{StaticResource StatusAvailable}"
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                    <Label Text="History" TextColor="#172033" FontFamily="PoppinsSemiBold" FontSize="14" />
-                                    <Label Text="Review completed movements" TextColor="#687387" FontSize="12"
+                                    <Label Text="History" TextColor="#172033" FontFamily="PoppinsSemiBold" FontSize="13" />
+                                    <Label Text="Review completed movements" TextColor="#687387" FontSize="11"
                                            LineBreakMode="TailTruncation" />
                                 </VerticalStackLayout>
                                 <Label Grid.Column="2" Text="{x:Static services:IconGlyphs.ChevronRight}"
-                                       Style="{StaticResource IconLabel}" FontSize="12"
+                                       Style="{StaticResource IconLabel}" FontSize="10"
                                        TextColor="#A2ADBD" VerticalOptions="Center" />
                             </Grid>
                         </Border>
                     </Grid>
 
                     <Border Stroke="#E4E9F1" StrokeThickness="1"
-                            StrokeShape="RoundRectangle 18" BackgroundColor="White" Padding="0">
-                        <Border.Shadow>
-                            <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
-                        </Border.Shadow>
+                            StrokeShape="RoundRectangle 14" BackgroundColor="White" Padding="0">
                         <VerticalStackLayout Spacing="0">
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="20,18">
-                                <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
-                                        BackgroundColor="#E9FBF8" StrokeShape="RoundRectangle 14">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Padding="14,13">
+                                <Border Grid.Column="0" WidthRequest="36" HeightRequest="36" StrokeThickness="0"
+                                        BackgroundColor="#EAF1FF" StrokeShape="RoundRectangle 11">
                                     <Label Text="{x:Static services:IconGlyphs.Bell}" Style="{StaticResource IconLabel}"
-                                           FontSize="16" TextColor="{StaticResource Primary}"
+                                           FontSize="13" TextColor="{StaticResource Primary}"
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
-                                    <Label Text="Needs Your Attention" TextColor="#172033"
-                                           FontSize="17" FontFamily="PoppinsSemiBold" />
+                                    <Label Text="Needs attention" TextColor="#172033"
+                                           FontSize="14" FontFamily="PoppinsSemiBold" />
                                     <Label Text="Assigned work that may need action now."
-                                           TextColor="#687387" FontSize="12" />
+                                           TextColor="#687387" FontSize="11" />
                                 </VerticalStackLayout>
                                 <HorizontalStackLayout Grid.Column="2" Spacing="7" VerticalOptions="Center">
                                     <HorizontalStackLayout.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OnViewAllAttentionTapped" />
                                     </HorizontalStackLayout.GestureRecognizers>
-                                    <Label Text="View all" FontSize="13" FontFamily="PoppinsRegular"
+                                    <Label Text="View all" FontSize="11" FontFamily="PoppinsRegular"
                                            TextColor="{StaticResource Primary}" VerticalOptions="Center" />
                                     <Label Text="{x:Static services:IconGlyphs.ChevronRight}"
                                            Style="{StaticResource IconLabel}" FontSize="11"
@@ -178,7 +172,7 @@
             </ScrollView>
         </RefreshView>
 
-        <Border x:Name="LiveBanner" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="18,14"
+        <Border Grid.Row="1" x:Name="LiveBanner" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="18,14"
                 Padding="14,10" StrokeThickness="0" BackgroundColor="{StaticResource Primary}"
                 StrokeShape="RoundRectangle 12">
             <Label x:Name="LiveBannerLabel" TextColor="White" FontFamily="PoppinsSemiBold"

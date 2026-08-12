@@ -13,40 +13,45 @@ namespace WarehouseGate.Api.Controllers;
 
 [ApiController]
 [Route("api/logistics")]
-[Authorize(Roles = "LogisticsManager")]
+[Authorize(Roles = "LogisticsManager,Office")]
 public class LogisticsController : ControllerBase
 {
     private readonly WarehouseGateDbContext _db;
     private readonly AuditService _audit;
     private readonly IHubContext<InwardHub> _hub;
+    private readonly WarehouseScopeResolver _scopeResolver;
 
-    public LogisticsController(WarehouseGateDbContext db, AuditService audit, IHubContext<InwardHub> hub)
+    public LogisticsController(WarehouseGateDbContext db, AuditService audit, IHubContext<InwardHub> hub, WarehouseScopeResolver scopeResolver)
     {
         _db = db;
         _audit = audit;
         _hub = hub;
+        _scopeResolver = scopeResolver;
     }
 
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     private string CurrentUserName => User.FindFirstValue("displayName") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
 
-    private async Task<int?> GetCallerRegionIdAsync() =>
-        await _db.Users.Where(u => u.Id == CurrentUserId).Select(u => u.RegionId).FirstOrDefaultAsync();
+    // Same shared scope concept as everywhere else in the app (AdminController/AssistantController/
+    // DashboardController all use the same resolver) - "every warehouse in my region" for
+    // LogisticsManager, "my own assigned warehouse(s)" for Office. Opened up to Office alongside
+    // LogisticsManager so Office staff can manage/upload Dispatch Plan rows too, scoped to
+    // whichever warehouse(s) they're mapped to instead of a region.
+    private Task<List<int>?> GetCallerWarehouseScopeAsync() => _scopeResolver.ResolveAsync(User);
 
-    // A dispatch's From/To warehouse can each legitimately sit in a different region than the
-    // uploader's own (e.g. West region warehouse shipping to a North region CFA) - so the pick
-    // lists offer the full master, and row-level access is enforced separately by requiring at
-    // least one side (From or To) to fall in the caller's own region.
+    // A dispatch's From/To warehouse can each legitimately sit outside the uploader's own scope on
+    // one side (e.g. a warehouse in the caller's own scope shipping to an external CFA) - so the
+    // pick lists offer the full master, and row-level access is enforced separately by requiring at
+    // least one side (From or To) to fall inside the caller's own warehouse scope.
     private async Task<bool> IsRowInCallerScopeAsync(int fromWarehouseId, int toWarehouseId)
     {
-        var regionId = await GetCallerRegionIdAsync();
-        if (regionId is null)
+        var warehouseScope = await GetCallerWarehouseScopeAsync();
+        if (warehouseScope is null || warehouseScope.Count == 0)
         {
             return false;
         }
 
-        return await _db.Warehouses.AnyAsync(w =>
-            (w.Id == fromWarehouseId || w.Id == toWarehouseId) && w.RegionId == regionId);
+        return warehouseScope.Contains(fromWarehouseId) || warehouseScope.Contains(toWarehouseId);
     }
 
     // ============================ WAREHOUSES (full master - From/To can cross regions) ============================
@@ -68,13 +73,13 @@ public class LogisticsController : ControllerBase
     // ============================ VEHICLE LOGISTICS RECORDS ============================
 
     // Defaults to the last 30 days (by CreatedAtUtc, inclusive calendar days) so the Dispatch Plan
-    // list doesn't grow unbounded over the life of a region - Logistics Managers widen or narrow
+    // list doesn't grow unbounded over the life of a region/warehouse - callers widen or narrow
     // that window with the Created From/To filters, same convention as ReportsController.GetDetailed.
     [HttpGet("vehicle-records")]
     public async Task<ActionResult<List<VehicleLogisticsRecordDto>>> GetVehicleRecords([FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
     {
-        var regionId = await GetCallerRegionIdAsync();
-        if (regionId is null)
+        var warehouseScope = await GetCallerWarehouseScopeAsync();
+        if (warehouseScope is null || warehouseScope.Count == 0)
         {
             return Ok(new List<VehicleLogisticsRecordDto>());
         }
@@ -95,11 +100,11 @@ public class LogisticsController : ControllerBase
         var rangeStart = fromDate.ToDateTime(TimeOnly.MinValue);
         var rangeEnd = toDate.AddDays(1).ToDateTime(TimeOnly.MinValue);
 
-        // Capped to the most recent 500 records within the selected window so a region with years
-        // of vehicle logistics data can't silently balloon this into an unbounded payload.
+        // Capped to the most recent 500 records within the selected window so a region/warehouse
+        // with years of vehicle logistics data can't silently balloon this into an unbounded payload.
         var records = await _db.VehicleLogisticsRecords
             .Include(r => r.FromWarehouse).Include(r => r.ToWarehouse)
-            .Where(r => (r.FromWarehouse!.RegionId == regionId || r.ToWarehouse!.RegionId == regionId)
+            .Where(r => (warehouseScope.Contains(r.FromWarehouseId) || warehouseScope.Contains(r.ToWarehouseId))
                 && r.CreatedAtUtc >= rangeStart && r.CreatedAtUtc < rangeEnd)
             .OrderByDescending(r => r.CreatedAtUtc)
             .Take(MaxVehicleRecordResults)
@@ -164,7 +169,7 @@ public class LogisticsController : ControllerBase
 
         if (!await IsRowInCallerScopeAsync(record.FromWarehouseId, record.ToWarehouseId))
         {
-            return StatusCode(StatusCodes.Status403Forbidden, new { message = "This record is outside your region." });
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "This record is outside your assigned warehouse scope." });
         }
 
         if (record.Status != VehicleLogisticsStatus.InTransit)
@@ -219,7 +224,7 @@ public class LogisticsController : ControllerBase
 
         if (!await IsRowInCallerScopeAsync(record.FromWarehouseId, record.ToWarehouseId))
         {
-            return StatusCode(StatusCodes.Status403Forbidden, new { message = "This record is outside your region." });
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "This record is outside your assigned warehouse scope." });
         }
 
         if (record.Status != VehicleLogisticsStatus.InTransit)
@@ -249,13 +254,13 @@ public class LogisticsController : ControllerBase
         }
 
         var allWarehouses = await _db.Warehouses.ToListAsync();
-        var regionId = await GetCallerRegionIdAsync();
+        var warehouseScope = await GetCallerWarehouseScopeAsync();
 
         List<VehicleLogisticsRecord> parsedRows;
         List<VehicleLogisticsUploadRowErrorDto> errors;
         await using (var stream = file.OpenReadStream())
         {
-            (parsedRows, errors) = VehicleLogisticsExcelParser.Parse(stream, CurrentUserId, allWarehouses, regionId);
+            (parsedRows, errors) = VehicleLogisticsExcelParser.Parse(stream, CurrentUserId, allWarehouses, warehouseScope);
         }
 
         var (insertedCount, updatedCount) = await VehicleLogisticsRecordUpsertService.UpsertAsync(_db, parsedRows, CurrentUserId);
@@ -272,7 +277,7 @@ public class LogisticsController : ControllerBase
     }
 
     // Both warehouses must exist, be distinct, and at least one must fall in the caller's own
-    // region - shared by Create and Update so the rule can't drift between the two.
+    // warehouse scope - shared by Create and Update so the rule can't drift between the two.
     private async Task<ActionResult?> ValidateWarehousesAsync(int fromWarehouseId, int toWarehouseId)
     {
         if (fromWarehouseId == toWarehouseId)
@@ -291,7 +296,7 @@ public class LogisticsController : ControllerBase
 
         if (!await IsRowInCallerScopeAsync(fromWarehouseId, toWarehouseId))
         {
-            return BadRequest(new { message = "Neither the From nor the To warehouse is in your region." });
+            return BadRequest(new { message = "Neither the From nor the To warehouse is in your assigned warehouse scope." });
         }
 
         return null;

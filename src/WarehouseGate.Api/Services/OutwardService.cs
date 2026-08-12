@@ -575,7 +575,9 @@ public class OutwardService
             }
         }
 
-        var filePath = await _photoStorage.SaveAsync($"outward-{id}", fileName, content);
+        var storageKey = await PhotoStorageKeyBuilder.BuildAsync(
+            _db, id, transaction.OutwardTxnNumber, transaction.OrganizationId, transaction.WarehouseId);
+        var filePath = await _photoStorage.SaveAsync(storageKey, fileName, content);
 
         _db.OutwardPhotoEvidences.Add(new OutwardPhotoEvidence
         {
@@ -946,7 +948,12 @@ public class OutwardService
             throw new InvalidOperationException($"A maximum of {max} '{type}' photo(s) can be captured.");
         }
 
-        var filePath = await _photoStorage.SaveAsync($"outward-gate-arrival-{arrivalId}", fileName, content);
+        // Captured before this arrival is ever linked to a real OutwardTransaction (see the class
+        // header comment on OutwardGateArrival), so there's no transaction number yet to key off of -
+        // null here means the path stops at the arrival's own id instead of inventing one.
+        var storageKey = await PhotoStorageKeyBuilder.BuildAsync(
+            _db, arrivalId, transactionNumber: null, arrival.OrganizationId, arrival.WarehouseId);
+        var filePath = await _photoStorage.SaveAsync(storageKey, fileName, content);
 
         _db.OutwardGateArrivalPhotos.Add(new OutwardGateArrivalPhoto
         {
@@ -1108,9 +1115,17 @@ public class OutwardService
             query = query.Where(t => t.GateInTime.HasValue && t.GateInTime.Value.Date == date.Value.Date);
             isFiltered = true;
         }
+        else if (!isFiltered)
+        {
+            // Mirrors InwardService.GetForSecurityAsync: the Security app's Outward History tab
+            // lands here with nothing searched/picked yet - default to the last 7 days instead of an
+            // arbitrary "most recent 200, any age" cap. An explicit vehicle/DO/date search stays
+            // fully unbounded, same as before.
+            var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+            query = query.Where(t => t.GateInTime.HasValue && t.GateInTime.Value >= sevenDaysAgo);
+        }
 
-        var ordered = query.OrderByDescending(t => t.GateInTime);
-        var transactions = await (isFiltered ? ordered : ordered.Take(MaxUnfilteredHistoryResults)).ToListAsync();
+        var transactions = await query.OrderByDescending(t => t.GateInTime).ToListAsync();
         var progress = await GetLoadPlanProgressAsync(transactions.Select(t => t.Id).ToList());
         return transactions.Select(t => MapToDto(t, progress)).ToList();
     }
@@ -1146,7 +1161,9 @@ public class OutwardService
             throw new InvalidOperationException("This vehicle has already exited.");
         }
 
-        var filePath = await _photoStorage.SaveAsync($"outward-{id}", fileName, content);
+        var storageKey = await PhotoStorageKeyBuilder.BuildAsync(
+            _db, id, transaction.OutwardTxnNumber, transaction.OrganizationId, transaction.WarehouseId);
+        var filePath = await _photoStorage.SaveAsync(storageKey, fileName, content);
         _db.OutwardPhotoEvidences.Add(new OutwardPhotoEvidence
         {
             OutwardTransactionId = id,

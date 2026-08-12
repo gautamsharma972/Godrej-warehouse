@@ -6,55 +6,45 @@
              x:Class="WarehouseGate.Mobile.Pages.VehicleExitPage"
              Title="Outward"
              Shell.BackButtonBehavior="{x:Null}"
-             Shell.TabBarIsVisible="False">
+             Shell.TabBarIsVisible="True">
 
-    <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="32,28,32,32" Spacing="18">
-
-                <controls:AppHeaderView AccountRoute="//SecurityTabs/SecurityAccountPage" />
-
-                <Grid ColumnDefinitions="*,Auto" Margin="0,10,0,4">
-                    <VerticalStackLayout Grid.Column="0" Spacing="3">
-                        <Label Text="Outward" Style="{StaticResource PageTitleLabel}" FontSize="26" />
-                        <Label Text="Record dispatch vehicle arrival and capture optional gate evidence."
-                               Style="{StaticResource MetaLabel}" FontSize="13" />
-                    </VerticalStackLayout>
-                    <Border Grid.Column="1" BackgroundColor="{StaticResource StatusSuccessTint}" Stroke="Transparent"
-                            StrokeShape="RoundRectangle 18" Padding="12,8" VerticalOptions="Center">
-                        <HorizontalStackLayout Spacing="8">
-                            <Label Text="{x:Static services:IconGlyphs.RightFromBracket}" Style="{StaticResource IconLabel}"
-                                   FontSize="12" TextColor="{StaticResource StatusSuccess}" VerticalOptions="Center" />
-                            <Label Text="Outbound gate" FontSize="12" FontFamily="PoppinsSemiBold"
-                                   TextColor="{StaticResource StatusSuccess}" VerticalOptions="Center" />
-                        </HorizontalStackLayout>
-                    </Border>
-                </Grid>
+    <Grid RowDefinitions="Auto,*" BackgroundColor="{StaticResource SurfaceLight}">
+        <Grid Grid.Row="0" BackgroundColor="Transparent">
+            <controls:BackHeaderView PageTitle="Outward" Title="Record a vehicle departure" ShowBackButton="False" />
+        </Grid>
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="14,10,14,22" Spacing="14">
 
                 <VerticalStackLayout x:Name="GateInFormSection" Spacing="16" IsVisible="False">
+                    <HorizontalStackLayout HorizontalOptions="Start" Spacing="8" Margin="0,0,0,2">
+                        <Border x:Name="DispatchTabPill" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 18" Padding="18,9">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnDispatchTabClicked" />
+                            </Border.GestureRecognizers>
+                            <Label x:Name="DispatchTabLabel" Text="DISPATCH" FontFamily="PoppinsSemiBold"
+                                   FontSize="10" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <Border x:Name="PhotosTabPill" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 18" Padding="18,9">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnPhotosTabClicked" />
+                            </Border.GestureRecognizers>
+                            <Label x:Name="PhotosTabLabel" Text="PHOTOS" FontFamily="PoppinsSemiBold"
+                                   FontSize="10" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                    </HorizontalStackLayout>
+
                     <Grid x:Name="FormCardsGrid" ColumnDefinitions="*" RowDefinitions="Auto,Auto" RowSpacing="16" ColumnSpacing="16">
 
                         <Border x:Name="DispatchDetailsCard" Grid.Row="0" Grid.Column="0"
-                                Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="0">
+                                Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 18" Padding="0">
                             <VerticalStackLayout Spacing="0">
-                                <Grid Padding="20,18" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                                    <Border Grid.Column="0" WidthRequest="54" HeightRequest="54" StrokeThickness="0"
-                                            StrokeShape="RoundRectangle 18" BackgroundColor="{StaticResource StatusSuccessTint}">
-                                        <Label Text="{x:Static services:IconGlyphs.RightFromBracket}" Style="{StaticResource IconLabel}"
-                                               FontSize="20" TextColor="{StaticResource StatusSuccess}"
-                                               HorizontalOptions="Center" VerticalOptions="Center" />
-                                    </Border>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                        <Label Text="Dispatch details" Style="{StaticResource CardTitleLabel}" FontSize="18" />
+                                <VerticalStackLayout Padding="20,18,20,16" Spacing="4">
+                                        <Label Text="Dispatch details" Style="{StaticResource CardTitleLabel}" FontSize="16" />
                                         <Label Text="Dispatch order, vehicle, driver, transporter, and assigned gate."
                                                Style="{StaticResource MetaLabel}" />
-                                    </VerticalStackLayout>
-                                    <Border Grid.Column="2" BackgroundColor="{StaticResource CardTint}" Stroke="Transparent"
-                                            StrokeShape="RoundRectangle 16" Padding="11,6" VerticalOptions="Start">
-                                        <Label Text="Security" FontSize="12" FontFamily="PoppinsSemiBold"
-                                               TextColor="{StaticResource Primary}" />
-                                    </Border>
-                                </Grid>
+                                </VerticalStackLayout>
 
                                 <BoxView HeightRequest="1" Color="{StaticResource CardBorderLight}" />
 
@@ -136,7 +126,7 @@
                                                TextColor="{StaticResource StatusException}" IsVisible="False" />
                                     </VerticalStackLayout>
 
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14" RowDefinitions="Auto,Auto" RowSpacing="14">
+                                    <Grid ColumnDefinitions="*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="16">
                                         <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
                                             <Label Text="DRIVER NAME" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
@@ -162,7 +152,7 @@
                                             </Grid>
                                         </VerticalStackLayout>
 
-                                        <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                        <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
                                             <Label Text="DRIVER MOBILE" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                                 <Border x:Name="OutwardDriverMobileEntryBorder" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1.3"
@@ -187,7 +177,7 @@
                                             </Grid>
                                         </VerticalStackLayout>
 
-                                        <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
+                                        <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="6">
                                             <Label Text="TRANSPORTER" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
                                             <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1.3"
                                                     StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="50">
@@ -208,7 +198,7 @@
                                             </Border>
                                         </VerticalStackLayout>
 
-                                        <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6">
+                                        <VerticalStackLayout Grid.Row="3" Grid.Column="0" Spacing="6">
                                             <Label Text="GATE" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
                                             <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1.3"
                                                     StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="50">
@@ -226,25 +216,12 @@
                         </Border>
 
                         <Border x:Name="GatePhotoCard" Grid.Row="1" Grid.Column="0"
-                                Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 22" Padding="0">
+                                Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 18" Padding="0" IsVisible="False">
                             <VerticalStackLayout Spacing="0">
-                                <Grid Padding="20,18" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                                    <Border Grid.Column="0" WidthRequest="54" HeightRequest="54" StrokeThickness="0"
-                                            StrokeShape="RoundRectangle 18" BackgroundColor="{StaticResource CardTint}">
-                                        <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
-                                               FontSize="19" TextColor="{StaticResource Primary}"
-                                               HorizontalOptions="Center" VerticalOptions="Center" />
-                                    </Border>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                        <Label Text="Gate photos" Style="{StaticResource CardTitleLabel}" FontSize="18" />
+                                <VerticalStackLayout Padding="20,18,20,16" Spacing="4">
+                                        <Label Text="Gate photos" Style="{StaticResource CardTitleLabel}" FontSize="16" />
                                         <Label Text="Vehicle, driver, vehicle RC, and driving licence - all optional." Style="{StaticResource MetaLabel}" />
-                                    </VerticalStackLayout>
-                                    <Border Grid.Column="2" BackgroundColor="{StaticResource CardTint}" Stroke="Transparent"
-                                            StrokeShape="RoundRectangle 16" Padding="11,6" VerticalOptions="Start">
-                                        <Label Text="Optional" FontSize="12" FontFamily="PoppinsSemiBold"
-                                               TextColor="{StaticResource Primary}" />
-                                    </Border>
-                                </Grid>
+                                </VerticalStackLayout>
 
                                 <BoxView HeightRequest="1" Color="{StaticResource CardBorderLight}" />
 
@@ -253,10 +230,10 @@
                         </Border>
                     </Grid>
 
-                    <Button x:Name="GateInSubmitButton" Text="Gate-Out Vehicle" Clicked="OnGateInSubmitClicked"
-                            Style="{StaticResource PrimaryActionButton}" BackgroundColor="{StaticResource StatusSuccess}"
+                    <Button x:Name="GateInSubmitButton" Text="Register-Out Vehicle" Clicked="OnGateInSubmitClicked"
+                            Style="{StaticResource PrimaryActionButton}" BackgroundColor="{StaticResource Primary}"
                             TextColor="White" CornerRadius="14" HeightRequest="50"
-                            WidthRequest="220" HorizontalOptions="End" />
+                            WidthRequest="190" HorizontalOptions="End" />
 
                     <ActivityIndicator x:Name="GateInSpinner" IsRunning="False" IsVisible="False" />
 

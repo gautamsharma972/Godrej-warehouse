@@ -5,17 +5,11 @@
              xmlns:models="clr-namespace:WarehouseGate.Mobile.Models"
              x:Class="WarehouseGate.Mobile.Pages.SkuPickerPage"
              Title="Select SKU"
-             BackgroundColor="#66000000">
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource SurfaceLight}">
 
-    <Grid ColumnDefinitions="3*,7*">
-        <BoxView Grid.Column="0" BackgroundColor="Transparent">
-            <BoxView.GestureRecognizers>
-                <TapGestureRecognizer Tapped="OnCancelClicked" />
-            </BoxView.GestureRecognizers>
-        </BoxView>
-
-        <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="{StaticResource SurfaceLight}"
-                StrokeShape="RoundRectangle 24,0,24,0" Padding="20">
+    <Grid>
+        <Border StrokeThickness="0" BackgroundColor="{StaticResource SurfaceLight}" Padding="20,20,20,18">
             <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="14">
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                     <VerticalStackLayout Grid.Column="0" Spacing="3">
@@ -36,7 +30,7 @@
                     </Border>
                 </Grid>
 
-                <Border Grid.Row="1" Stroke="#DCEAE8" StrokeThickness="1"
+                <Border Grid.Row="1" Stroke="#DCE5F5" StrokeThickness="1"
                         StrokeShape="RoundRectangle 14" BackgroundColor="White"
                         Padding="8,0" HeightRequest="50">
                     <SearchBar x:Name="SearchBarControl" Placeholder="Search SKU name or code"
@@ -66,7 +60,7 @@
                                     </Border.GestureRecognizers>
                                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                         <Border Grid.Column="0" WidthRequest="40" HeightRequest="40"
-                                                StrokeThickness="0" BackgroundColor="#E9FBF8"
+                                                StrokeThickness="0" BackgroundColor="#EAF1FF"
                                                 StrokeShape="RoundRectangle 14">
                                             <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
                                                    FontSize="15" TextColor="{StaticResource Primary}"

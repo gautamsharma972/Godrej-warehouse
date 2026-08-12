@@ -569,7 +569,9 @@ public class OutwardLoadPlanService
         RequireEditableStatus(transaction);
         FindGroupAcrossOptions(transaction, groupId);
 
-        var filePath = await _photoStorage.SaveAsync($"outward-{transactionId}", fileName, content);
+        var storageKey = await PhotoStorageKeyBuilder.BuildAsync(
+            _db, transactionId, transaction.OutwardTxnNumber, transaction.OrganizationId, transaction.WarehouseId);
+        var filePath = await _photoStorage.SaveAsync(storageKey, fileName, content);
         _db.OutwardPhotoEvidences.Add(new OutwardPhotoEvidence
         {
             OutwardTransactionId = transactionId,

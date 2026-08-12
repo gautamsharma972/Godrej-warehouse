@@ -6,11 +6,15 @@
     xmlns:pages="clr-namespace:WarehouseGate.Mobile.Pages"
     xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
     xmlns:controls="clr-namespace:WarehouseGate.Mobile.Controls"
-    FlyoutBehavior="Flyout"
+    FlyoutBehavior="Disabled"
     FlyoutWidth="252"
     FlyoutBackgroundColor="Transparent"
     Shell.NavBarIsVisible="False"
-    Title="WarehouseGate.Mobile">
+    Title="LogiFlow"
+    Shell.TabBarBackgroundColor="#F8FBFE"
+    Shell.TabBarForegroundColor="{StaticResource Primary}"
+    Shell.TabBarTitleColor="{StaticResource Primary}"
+    Shell.TabBarUnselectedColor="#73839A">
 
     <!-- Default for every page is a hamburger-triggered overlay drawer (FlyoutBehavior=Flyout,
          toggled by AppHeaderView's menu icon) - one control shared by all Security/Supervisor
@@ -28,27 +32,22 @@
     <TabBar Route="SecurityTabs">
         <ShellContent Title="Dashboard" Route="SecurityDashboardPage" ContentTemplate="{DataTemplate pages:SecurityDashboardPage}">
             <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.House}" Color="{StaticResource Primary}" Size="20" />
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.House}" Size="20" />
             </ShellContent.Icon>
         </ShellContent>
-        <ShellContent Title="Check-In" Route="SecurityHomePage" ContentTemplate="{DataTemplate pages:SecurityHomePage}">
+        <ShellContent Title="Inward" Route="SecurityHomePage" ContentTemplate="{DataTemplate pages:SecurityHomePage}">
             <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Warehouse}" Color="{StaticResource Primary}" Size="20" />
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Warehouse}" Size="20" />
             </ShellContent.Icon>
         </ShellContent>
-        <ShellContent Title="Status" Route="SecurityStatusPage" ContentTemplate="{DataTemplate pages:SecurityStatusPage}">
+        <ShellContent Title="Outward" Route="SecurityExitPage" ContentTemplate="{DataTemplate pages:VehicleExitPage}">
             <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ClipboardList}" Color="{StaticResource Primary}" Size="20" />
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.RightFromBracket}" Size="20" />
             </ShellContent.Icon>
         </ShellContent>
-        <ShellContent Title="Exit" Route="VehicleExitPage" ContentTemplate="{DataTemplate pages:VehicleExitPage}">
+        <ShellContent Title="More" Route="SecurityMorePage" ContentTemplate="{DataTemplate pages:MoreMenuPage}">
             <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.RightFromBracket}" Color="{StaticResource Primary}" Size="20" />
-            </ShellContent.Icon>
-        </ShellContent>
-        <ShellContent Title="Account" Route="SecurityAccountPage" ContentTemplate="{DataTemplate pages:AccountPage}">
-            <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.User}" Color="{StaticResource Primary}" Size="20" />
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Ellipsis}" Size="20" />
             </ShellContent.Icon>
         </ShellContent>
     </TabBar>
@@ -56,22 +55,22 @@
     <TabBar Route="SupervisorTabs">
         <ShellContent Title="Dashboard" Route="SupervisorDashboardPage" ContentTemplate="{DataTemplate pages:SupervisorDashboardPage}">
             <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.House}" Color="{StaticResource Primary}" Size="20" />
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.House}" Size="20" />
             </ShellContent.Icon>
         </ShellContent>
         <ShellContent Title="Jobs" Route="SupervisorHomePage" ContentTemplate="{DataTemplate pages:SupervisorHomePage}">
             <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ListCheck}" Color="{StaticResource Primary}" Size="20" />
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ListCheck}" Size="20" />
             </ShellContent.Icon>
         </ShellContent>
         <ShellContent Title="History" Route="SupervisorHistoryPage" ContentTemplate="{DataTemplate pages:SupervisorHistoryPage}">
             <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ClockRotateLeft}" Color="{StaticResource Primary}" Size="20" />
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ClockRotateLeft}" Size="20" />
             </ShellContent.Icon>
         </ShellContent>
-        <ShellContent Title="Account" Route="SupervisorAccountPage" ContentTemplate="{DataTemplate pages:AccountPage}">
+        <ShellContent Title="More" Route="SupervisorMorePage" ContentTemplate="{DataTemplate pages:MoreMenuPage}">
             <ShellContent.Icon>
-                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.User}" Color="{StaticResource Primary}" Size="20" />
+                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Ellipsis}" Size="20" />
             </ShellContent.Icon>
         </ShellContent>
     </TabBar>

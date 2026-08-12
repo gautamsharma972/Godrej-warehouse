@@ -9,485 +9,344 @@
              Shell.BackButtonBehavior="{x:Null}"
              Shell.TabBarIsVisible="False">
 
-    <Grid RowDefinitions="*,Auto" BackgroundColor="{StaticResource SurfaceLight}">
-    <ScrollView Grid.Row="0">
-        <VerticalStackLayout x:Name="PageContent" Padding="30,24,30,32" Spacing="18">
+    <Grid RowDefinitions="Auto,*" BackgroundColor="{StaticResource SurfaceLight}">
+    <controls:BackHeaderView x:Name="PageHeaderView" Grid.Row="0" PageTitle="Inbound job" Title="Unloading and inspection">
+        <controls:BackHeaderView.TrailingContent>
+            <Border Padding="12,7" StrokeThickness="0" x:Name="StatusBadgeBorder" StrokeShape="RoundRectangle 14"
+                    VerticalOptions="Center">
+                <Label x:Name="StatusLabel" TextColor="White" FontFamily="PoppinsSemiBold" FontSize="12" />
+            </Border>
+        </controls:BackHeaderView.TrailingContent>
+    </controls:BackHeaderView>
+    <ScrollView Grid.Row="1">
+        <VerticalStackLayout x:Name="PageContent" Padding="12,10,12,24" Spacing="12">
 
-            <controls:BackHeaderView Title="Back to jobs">
-                <controls:BackHeaderView.TrailingContent>
-                    <Border Padding="12,7" StrokeThickness="0" x:Name="StatusBadgeBorder" StrokeShape="RoundRectangle 14"
-                            VerticalOptions="Center">
-                        <Label x:Name="StatusLabel" TextColor="White" FontFamily="PoppinsSemiBold" FontSize="12" />
-                    </Border>
-                </controls:BackHeaderView.TrailingContent>
-            </controls:BackHeaderView>
-
-            <!-- Compact inbound manifest -->
-            <Border Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                    StrokeShape="RoundRectangle 22" Padding="0">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
-                </Border.Shadow>
-                <Grid x:Name="HeroGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20"
-                      Padding="24" BackgroundColor="White">
-                    <Border Grid.Column="0" WidthRequest="52" HeightRequest="52" StrokeThickness="0"
-                            BackgroundColor="#E9FBF8" StrokeShape="RoundRectangle 14" VerticalOptions="Center">
-                        <Label Text="{x:Static services:IconGlyphs.Truck}" Style="{StaticResource IconLabel}"
-                               FontSize="20" TextColor="{StaticResource Primary}"
-                               HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-
-                    <VerticalStackLayout x:Name="HeroTextStack" Grid.Column="1" Spacing="7" VerticalOptions="Center">
-                        <Label x:Name="HeaderLabel" TextColor="#172033" FontFamily="PoppinsSemiBold"
-                               FontSize="23" LineBreakMode="WordWrap" />
+            <!-- Compact transaction summary. Operational counters are shown in their
+                 relevant sections below instead of repeating six cards here. -->
+            <Border StrokeThickness="0" BackgroundColor="Transparent" Padding="2,4">
+                <VerticalStackLayout Spacing="8">
+                    <Label x:Name="HeaderLabel" Style="{StaticResource CardTitleLabel}" FontSize="19" LineBreakMode="WordWrap" />
+                    <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
                         <HorizontalStackLayout Spacing="8">
-                            <Label Text="{x:Static services:IconGlyphs.ClipboardCheck}" Style="{StaticResource IconLabel}"
-                                   FontSize="11" TextColor="#687387" VerticalOptions="Center" />
-                            <Label x:Name="SubHeaderLabel" TextColor="#687387" FontSize="13" />
+                            <Border Style="{StaticResource TintCardBorder}" Padding="10,6">
+                                <HorizontalStackLayout Spacing="7">
+                                    <Label Text="{x:Static services:IconGlyphs.ClipboardList}" Style="{StaticResource IconLabel}" FontSize="11" TextColor="{StaticResource Primary}" />
+                                    <Label x:Name="SubHeaderLabel" FontSize="11" TextColor="{StaticResource Primary}" LineBreakMode="NoWrap" />
+                                </HorizontalStackLayout>
+                            </Border>
+                            <Border Style="{StaticResource TintCardBorder}" Padding="10,6" IsVisible="{Binding Source={x:Reference TimeTrackingLabel}, Path=IsVisible}">
+                                <HorizontalStackLayout Spacing="7">
+                                    <Label Text="{x:Static services:IconGlyphs.Clock}" Style="{StaticResource IconLabel}" FontSize="11" TextColor="{StaticResource Primary}" />
+                                    <Label x:Name="TimeTrackingLabel" FontSize="11" TextColor="{StaticResource Primary}" IsVisible="False" />
+                                </HorizontalStackLayout>
+                            </Border>
                         </HorizontalStackLayout>
-                        <HorizontalStackLayout Spacing="8" IsVisible="{Binding Source={x:Reference TimeTrackingLabel}, Path=IsVisible}">
-                            <Label Text="{x:Static services:IconGlyphs.Clock}" Style="{StaticResource IconLabel}"
-                                   FontSize="11" TextColor="#687387" VerticalOptions="Center" />
-                            <Label x:Name="TimeTrackingLabel" TextColor="#687387" FontSize="12" IsVisible="False" />
-                        </HorizontalStackLayout>
-                    </VerticalStackLayout>
-
-                    <HorizontalStackLayout x:Name="HeroMetaChips" Grid.Column="2" Spacing="8"
-                                           HorizontalOptions="End" VerticalOptions="Center">
-                        <Border Padding="12,8" Stroke="#DDE8E6" StrokeThickness="1" BackgroundColor="#F4FAF9"
-                                StrokeShape="RoundRectangle 12">
-                            <HorizontalStackLayout Spacing="8">
-                                <Label Text="{x:Static services:IconGlyphs.LocationDot}" Style="{StaticResource IconLabel}"
-                                       FontSize="11" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <Label x:Name="BaySummaryLabel" Text="Bay pending" FontSize="11"
-                                       FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
-                            </HorizontalStackLayout>
-                        </Border>
-                        <Border Padding="12,8" Stroke="#DDE8E6" StrokeThickness="1" BackgroundColor="#F4FAF9"
-                                StrokeShape="RoundRectangle 12">
-                            <HorizontalStackLayout Spacing="8">
-                                <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
-                                       FontSize="11" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <Label x:Name="LineSummaryLabel" Text="0 lines" FontSize="11"
-                                       FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
-                            </HorizontalStackLayout>
-                        </Border>
-                    </HorizontalStackLayout>
-                </Grid>
-            </Border>
-
-            <!-- Workflow and evidence: balanced tablet split -->
-            <Grid x:Name="WorkflowEvidenceGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
-                  ColumnSpacing="14" RowSpacing="14">
-
-            <!-- Inbound workflow -->
-            <Grid x:Name="HeroSummaryGrid" Grid.Column="0" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                <Border Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                        StrokeShape="RoundRectangle 16" Padding="14" MinimumHeightRequest="88">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
-                        <Border WidthRequest="38" HeightRequest="38" StrokeThickness="0"
-                                BackgroundColor="#123F3D" StrokeShape="RoundRectangle 10" VerticalOptions="Center">
-                            <Label Text="01" FontFamily="PoppinsSemiBold" FontSize="12" TextColor="White"
-                                   HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                            <Label Text="Unload &amp; inspect" FontSize="13" FontFamily="PoppinsSemiBold"
-                                   TextColor="#172033" />
-                            <Border Padding="10,3" StrokeThickness="0" BackgroundColor="{StaticResource StatusSuccessTint}"
-                                    StrokeShape="RoundRectangle 8" HorizontalOptions="Start">
-                                <Label Text="Current work" FontSize="10" FontFamily="PoppinsSemiBold"
-                                       TextColor="{StaticResource StatusSuccess}" />
-                            </Border>
-                        </VerticalStackLayout>
-                    </Grid>
-                </Border>
-                <Border Grid.Row="1" Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                        StrokeShape="RoundRectangle 16" Padding="14" MinimumHeightRequest="88">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
-                        <Border WidthRequest="38" HeightRequest="38" StrokeThickness="0"
-                                BackgroundColor="#123F3D" StrokeShape="RoundRectangle 10" VerticalOptions="Center">
-                            <Label Text="02" FontFamily="PoppinsSemiBold" FontSize="12" TextColor="White"
-                                   HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                            <Label x:Name="PhotoCountLabel" Text="0 photos" FontSize="13"
-                                   FontFamily="PoppinsSemiBold" TextColor="#172033" />
-                            <Border Padding="10,3" StrokeThickness="0" BackgroundColor="{StaticResource StatusAvailableTint}"
-                                    StrokeShape="RoundRectangle 8" HorizontalOptions="Start">
-                                <Label Text="Evidence" FontSize="10" FontFamily="PoppinsSemiBold"
-                                       TextColor="{StaticResource StatusDocked}" />
-                            </Border>
-                        </VerticalStackLayout>
-                    </Grid>
-                </Border>
-                <Border Grid.Row="2" Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                        StrokeShape="RoundRectangle 16" Padding="14" MinimumHeightRequest="88">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
-                        <Border WidthRequest="38" HeightRequest="38" StrokeThickness="0"
-                                BackgroundColor="#123F3D" StrokeShape="RoundRectangle 10" VerticalOptions="Center">
-                            <Label Text="03" FontFamily="PoppinsSemiBold" FontSize="12" TextColor="White"
-                                   HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                            <Label Text="Completion readiness" FontSize="13" FontFamily="PoppinsSemiBold"
-                                   TextColor="#172033" />
-                            <Border Padding="10,3" StrokeThickness="0" BackgroundColor="#FFF1D6"
-                                    StrokeShape="RoundRectangle 8" HorizontalOptions="Start">
-                                <Label Text="Closure" FontSize="10" FontFamily="PoppinsSemiBold" TextColor="#B87500" />
-                            </Border>
-                        </VerticalStackLayout>
-                    </Grid>
-                </Border>
-            </Grid>
-
-            <!-- Dock-in -->
-            <Border x:Name="DockInSection" Grid.Row="1" Grid.ColumnSpan="2" Stroke="#E4E9F1" StrokeThickness="1"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,5" Radius="16" Opacity="0.05" />
-                </Border.Shadow>
-                <Grid x:Name="DockInCardGrid" RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto"
-                      ColumnSpacing="14" RowSpacing="14" Padding="18">
-                    <Border Grid.Row="0" Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
-                        <Label Text="{x:Static services:IconGlyphs.LocationDot}" Style="{StaticResource IconLabel}"
-                               FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-                    <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                        <Label Text="Assign unloading bay" Style="{StaticResource SectionTitleLabel}" FontSize="17" />
-                        <Label Text="Map this vehicle to a physical bay before unloading starts." Style="{StaticResource MetaLabel}" />
-                    </VerticalStackLayout>
-                    <Border Grid.Row="0" Grid.Column="2" Padding="12,7" StrokeThickness="0"
-                            BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 14" VerticalOptions="Center">
-                        <Label Text="Required" FontSize="12" FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
-                    </Border>
-
-                    <Grid x:Name="DockInActionGrid" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" ColumnDefinitions="*,Auto" ColumnSpacing="16" RowSpacing="12">
-                        <Grid Grid.Column="0" x:Name="BayNumberEntryGrid" ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                            <Border Grid.Column="0" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                                    StrokeShape="RoundRectangle 18" Padding="16,0" HeightRequest="58"
-                                    BackgroundColor="{StaticResource CardTint}" VerticalOptions="Center">
-                                <Label Text="Bay-" VerticalOptions="Center" FontFamily="PoppinsSemiBold"
-                                       TextColor="{StaticResource Primary}" />
-                            </Border>
-                            <Border Grid.Column="1" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                                    StrokeShape="RoundRectangle 18" Padding="12,0" HeightRequest="58"
-                                    BackgroundColor="{StaticResource CardLight}">
-                                <Entry x:Name="BayNumberEntry" Placeholder="Bay number (1-50)"
-                                       Keyboard="Numeric" MaxLength="2" TextChanged="OnBayNumberTextChanged"
-                                       FontSize="16" FontFamily="PoppinsSemiBold" VerticalOptions="Center" />
-                            </Border>
-                        </Grid>
-                        <ScrollView Grid.Column="0" x:Name="BayChipsScroll" Orientation="Horizontal" IsVisible="False" VerticalOptions="Center">
-                            <FlexLayout x:Name="BayChipsLayout" Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Center" />
-                        </ScrollView>
-                        <Button Grid.Column="1" x:Name="DockInButton" Text="Dock In" Clicked="OnDockInClicked"
-                                Style="{StaticResource PrimaryActionButton}" CornerRadius="18" HeightRequest="56" WidthRequest="220" />
-                    </Grid>
-                </Grid>
-            </Border>
-
-            <!-- Start unloading -->
-            <Border x:Name="StartUnloadingSection" Grid.Row="1" Grid.ColumnSpan="2" Stroke="#E4E9F1" StrokeThickness="1"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,5" Radius="16" Opacity="0.05" />
-                </Border.Shadow>
-                <Grid x:Name="StartUnloadingCardGrid" RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto"
-                      ColumnSpacing="14" RowSpacing="14" Padding="18">
-                    <Border Grid.Row="0" Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 12" BackgroundColor="{StaticResource StatusAvailableTint}">
-                        <Label Text="{x:Static services:IconGlyphs.Clock}" Style="{StaticResource IconLabel}"
-                               FontSize="16" TextColor="{StaticResource StatusAvailable}" HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-                    <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                        <Label Text="Ready to begin unloading?" Style="{StaticResource SectionTitleLabel}" FontSize="17" />
-                        <Label Text="Start unloading records the begin time and opens inspection tracking for this inbound job."
-                               Style="{StaticResource MetaLabel}" />
-                    </VerticalStackLayout>
-                    <Border Grid.Row="0" Grid.Column="2" Padding="12,7" StrokeThickness="0"
-                            BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 14" VerticalOptions="Center">
-                        <Label Text="Next step" FontSize="12" FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
-                    </Border>
-
-                    <Grid x:Name="StartUnloadingActionGrid" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" ColumnDefinitions="*,Auto" ColumnSpacing="16" RowSpacing="12">
-                        <Border Grid.Column="0" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}"
-                                StrokeShape="RoundRectangle 18" Padding="14,11">
-                            <HorizontalStackLayout Spacing="9">
-                                <Label Text="{x:Static services:IconGlyphs.CircleCheck}" Style="{StaticResource IconLabel}"
-                                       FontSize="13" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <Label Text="Ensure the vehicle is positioned and the unloading team is ready."
-                                       Style="{StaticResource MetaLabel}" VerticalOptions="Center" />
-                            </HorizontalStackLayout>
-                        </Border>
-                        <Button Grid.Column="1" x:Name="StartUnloadingButton" Text="Start Unloading" Clicked="OnStartUnloadingClicked"
-                                Style="{StaticResource PrimaryActionButton}" CornerRadius="18" HeightRequest="56" WidthRequest="240" />
-                    </Grid>
-                </Grid>
-            </Border>
-
-            <!-- Photos -->
-            <Border x:Name="PhotoSection" Grid.Column="1" Stroke="#E4E9F1" StrokeThickness="1"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0"
-                    VerticalOptions="Fill">
-                <VerticalStackLayout Spacing="0">
-                    <Grid x:Name="PhotoHeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" RowSpacing="10"
-                          Padding="18,16" BackgroundColor="#FBFCFE">
-                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
-                                StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
-                            <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
-                                   FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                            <Label Text="Proof gallery" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
-                            <Label Text="Review captured unloading proof before closure." Style="{StaticResource MetaLabel}" />
-                        </VerticalStackLayout>
-                        <Border Grid.Column="2" Padding="12,7" StrokeThickness="0" BackgroundColor="White"
-                                StrokeShape="RoundRectangle 12" VerticalOptions="Center">
-                            <Label x:Name="PhotoCountHeaderLabel" Text="Evidence" FontSize="12" FontFamily="PoppinsBold" TextColor="{StaticResource Primary}" />
-                        </Border>
-                    </Grid>
-
-                    <VerticalStackLayout Padding="18" Spacing="0">
-                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" Margin="0,0,0,14">
-                            <Button Grid.Column="0" x:Name="CaptureVehiclePhotoButton" Text="Vehicle" Clicked="OnCaptureVehiclePhotoClicked"
-                                    Style="{StaticResource IconTextButton}">
-                                <Button.ImageSource>
-                                    <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Truck}" Color="{StaticResource Primary}" Size="13" />
-                                </Button.ImageSource>
-                            </Button>
-                            <Button Grid.Column="1" x:Name="CaptureMaterialPhotoButton" Text="Material" Clicked="OnCaptureMaterialPhotoClicked"
-                                    Style="{StaticResource IconTextButton}">
-                                <Button.ImageSource>
-                                    <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.BoxesStacked}" Color="{StaticResource Primary}" Size="13" />
-                                </Button.ImageSource>
-                            </Button>
-                            <Button Grid.Column="2" x:Name="CaptureExceptionPhotoButton" Text="Exception" Clicked="OnCaptureExceptionPhotoClicked"
-                                    Style="{StaticResource IconTextButton}">
-                                <Button.ImageSource>
-                                    <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.TriangleExclamation}" Color="{StaticResource Primary}" Size="13" />
-                                </Button.ImageSource>
-                            </Button>
-                        </Grid>
-
-                        <Grid Padding="0,2">
-                            <HorizontalStackLayout x:Name="NoPhotosLabel" Spacing="8" HorizontalOptions="Center"
-                                                   VerticalOptions="Center" IsVisible="False">
-                                <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
-                                       FontSize="14" TextColor="{StaticResource TextSecondaryLight}" />
-                                <Label Text="No photos yet." Style="{StaticResource EmptyStateLabel}" Margin="0" />
-                            </HorizontalStackLayout>
-
-                            <CollectionView x:Name="PhotoCarousel" HeightRequest="162" HorizontalScrollBarVisibility="Never">
-                                <CollectionView.ItemsLayout>
-                                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
-                                </CollectionView.ItemsLayout>
-                                <CollectionView.ItemTemplate>
-                                    <DataTemplate x:DataType="models:PhotoDisplayItem">
-                                        <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" Padding="0"
-                                                BackgroundColor="{StaticResource CardLight}"
-                                                StrokeShape="RoundRectangle 18" WidthRequest="220" HeightRequest="150">
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnPhotoTapped" />
-                                            </Border.GestureRecognizers>
-                                            <Grid RowDefinitions="100,Auto">
-                                                <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceLight}">
-                                                    <Image Source="{Binding Source}" Aspect="AspectFill" IsVisible="{Binding HasLocalImage}" />
-                                                    <VerticalStackLayout IsVisible="{Binding IsPlaceholder}" VerticalOptions="Center" Spacing="6">
-                                                        <Label Text="{x:Static services:IconGlyphs.Camera}" FontFamily="FaSolid" FontSize="22"
-                                                               TextColor="{StaticResource Primary}" HorizontalOptions="Center" />
-                                                        <Label Text="{Binding FriendlyType}" FontSize="12" HorizontalOptions="Center" />
-                                                    </VerticalStackLayout>
-                                                </Grid>
-                                                <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="10,9">
-                                                    <BoxView WidthRequest="7" HeightRequest="7" CornerRadius="4" Color="{StaticResource Primary}" VerticalOptions="Center" />
-                                                    <Label Grid.Column="1" Text="{Binding Description}" FontSize="10" TextColor="{StaticResource TextPrimaryLight}"
-                                                           LineBreakMode="TailTruncation" VerticalOptions="Center" />
-                                                </Grid>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
-                        </Grid>
-
-                        <Grid ColumnDefinitions="*,Auto" Margin="0,16,0,10">
-                            <Label Text="Gate documents" FontFamily="PoppinsSemiBold" FontSize="13" TextColor="#172033" VerticalOptions="Center" />
-                            <Label Grid.Column="1" x:Name="DocumentCountLabel" Text="0 documents" FontSize="11"
-                                   TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
-                        </Grid>
-
-                        <Grid Padding="0,2">
-                            <HorizontalStackLayout x:Name="NoDocumentsLabel" Spacing="8" HorizontalOptions="Center"
-                                                   VerticalOptions="Center" IsVisible="False">
-                                <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
-                                       FontSize="14" TextColor="{StaticResource TextSecondaryLight}" />
-                                <Label Text="No documents uploaded at the gate." Style="{StaticResource EmptyStateLabel}" Margin="0" />
-                            </HorizontalStackLayout>
-
-                            <CollectionView x:Name="DocumentsCarousel" HeightRequest="162" HorizontalScrollBarVisibility="Never">
-                                <CollectionView.ItemsLayout>
-                                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
-                                </CollectionView.ItemsLayout>
-                                <CollectionView.ItemTemplate>
-                                    <DataTemplate x:DataType="models:PhotoDisplayItem">
-                                        <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" Padding="0"
-                                                BackgroundColor="{StaticResource CardLight}"
-                                                StrokeShape="RoundRectangle 18" WidthRequest="220" HeightRequest="150">
-                                            <Border.GestureRecognizers>
-                                                <TapGestureRecognizer Tapped="OnPhotoTapped" />
-                                            </Border.GestureRecognizers>
-                                            <Grid RowDefinitions="100,Auto">
-                                                <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceLight}">
-                                                    <Image Source="{Binding Source}" Aspect="AspectFill" IsVisible="{Binding HasLocalImage}" />
-                                                    <VerticalStackLayout IsVisible="{Binding IsPlaceholder}" VerticalOptions="Center" Spacing="6">
-                                                        <Label Text="{x:Static services:IconGlyphs.Camera}" FontFamily="FaSolid" FontSize="22"
-                                                               TextColor="{StaticResource Primary}" HorizontalOptions="Center" />
-                                                        <Label Text="{Binding FriendlyType}" FontSize="12" HorizontalOptions="Center" />
-                                                    </VerticalStackLayout>
-                                                </Grid>
-                                                <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="10,9">
-                                                    <BoxView WidthRequest="7" HeightRequest="7" CornerRadius="4" Color="{StaticResource Primary}" VerticalOptions="Center" />
-                                                    <Label Grid.Column="1" Text="{Binding Description}" FontSize="10" TextColor="{StaticResource TextPrimaryLight}"
-                                                           LineBreakMode="TailTruncation" VerticalOptions="Center" />
-                                                </Grid>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
-                        </Grid>
-                    </VerticalStackLayout>
-
-                    <IndicatorView x:Name="PhotoCarouselIndicator" IsVisible="False" HorizontalOptions="Center"
-                                   IndicatorColor="{StaticResource CardBorderLight}" SelectedIndicatorColor="{StaticResource Primary}" />
+                    </ScrollView>
                 </VerticalStackLayout>
             </Border>
 
-            </Grid>
-
-            <!-- Original dispatch load plan (read-only reference - only shown when this shipment
-                 was actually dispatched through our own Outward flow at the origin warehouse) -->
-            <Border x:Name="OutwardReferenceSection" Stroke="#E4E9F1" StrokeThickness="1"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0"
-                    VerticalOptions="Start">
+            <!-- Dock-in -->
+            <Border x:Name="DockInSection" Style="{StaticResource CardBorder}" IsVisible="False">
                 <VerticalStackLayout Spacing="16">
-                    <Grid x:Name="OutwardReferenceHeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14"
-                          Padding="18,16" BackgroundColor="#FBFCFE">
-                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
-                                StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
-                            <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 12" BackgroundColor="{StaticResource CardTint}">
+                            <Label Text="{x:Static services:IconGlyphs.LocationDot}" Style="{StaticResource IconLabel}"
                                    FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
                         </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                            <Label Text="Original dispatch load plan" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
-                            <Label x:Name="OutwardReferenceSubtitleLabel" Style="{StaticResource MetaLabel}" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Assign unloading bay" Style="{StaticResource SectionTitleLabel}" />
+                            <Label Text="Map this vehicle to a physical bay before unloading starts." Style="{StaticResource MetaLabel}" />
                         </VerticalStackLayout>
-                        <Border Grid.Column="2" x:Name="ToggleReferenceSimulationButton" WidthRequest="40" HeightRequest="40"
-                                StrokeShape="RoundRectangle 12" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                                BackgroundColor="{StaticResource CardLight}" VerticalOptions="Center"
-                                SemanticProperties.Description="Show simulation">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnToggleReferenceSimulationClicked" />
-                            </Border.GestureRecognizers>
-                            <Label x:Name="ToggleReferenceSimulationIcon" Text="{x:Static services:IconGlyphs.Eye}" Style="{StaticResource IconLabel}"
-                                   FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        <Border Grid.Column="2" Padding="10,6" StrokeThickness="0"
+                                BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 12" VerticalOptions="Start">
+                            <Label Text="Required" FontSize="11" FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
                         </Border>
                     </Grid>
 
-                    <Border x:Name="OutwardReferenceEmptyBorder" StrokeThickness="0" BackgroundColor="{StaticResource SurfaceLight}"
-                            StrokeShape="RoundRectangle 16" Padding="14,12" IsVisible="False">
+                    <Grid x:Name="BayNumberEntryGrid" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Border Grid.Column="0" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 14" Padding="16,0" HeightRequest="52"
+                                BackgroundColor="{StaticResource CardTint}" VerticalOptions="Center">
+                            <Label Text="Bay-" VerticalOptions="Center" FontFamily="PoppinsSemiBold"
+                                   TextColor="{StaticResource Primary}" />
+                        </Border>
+                        <Border Grid.Column="1" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
+                                StrokeShape="RoundRectangle 14" Padding="12,0" HeightRequest="52"
+                                BackgroundColor="{StaticResource CardLight}">
+                            <Entry x:Name="BayNumberEntry" Placeholder="Bay number (1-50)"
+                                   Keyboard="Numeric" MaxLength="2" TextChanged="OnBayNumberTextChanged"
+                                   FontSize="16" FontFamily="PoppinsSemiBold" VerticalOptions="Center" />
+                        </Border>
+                    </Grid>
+                    <ScrollView x:Name="BayChipsScroll" Orientation="Horizontal" IsVisible="False">
+                        <FlexLayout x:Name="BayChipsLayout" Wrap="Wrap" Direction="Row" JustifyContent="Start" AlignItems="Center" />
+                    </ScrollView>
+
+                    <Button x:Name="DockInButton" Text="Dock In" Clicked="OnDockInClicked"
+                            Style="{StaticResource PrimaryActionButton}" HeightRequest="52" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Start unloading -->
+            <Border x:Name="StartUnloadingSection" Style="{StaticResource CardBorder}" IsVisible="False">
+                <VerticalStackLayout Spacing="16">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 12" BackgroundColor="{StaticResource StatusAvailableTint}">
+                            <Label Text="{x:Static services:IconGlyphs.Clock}" Style="{StaticResource IconLabel}"
+                                   FontSize="16" TextColor="{StaticResource StatusAvailable}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Ready to begin unloading?" Style="{StaticResource SectionTitleLabel}" />
+                            <Label Text="Start unloading records the begin time and opens inspection tracking."
+                                   Style="{StaticResource MetaLabel}" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="2" Padding="10,6" StrokeThickness="0"
+                                BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 12" VerticalOptions="Start">
+                            <Label Text="Next step" FontSize="11" FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
+                        </Border>
+                    </Grid>
+
+                    <Button x:Name="StartUnloadingButton" Text="Start Unloading" Clicked="OnStartUnloadingClicked"
+                            Style="{StaticResource PrimaryActionButton}" HeightRequest="52" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Proof gallery: photos + gate documents -->
+            <Border x:Name="PhotoSection" StrokeThickness="0" BackgroundColor="Transparent" Padding="2,6" IsVisible="False">
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto" Padding="0,2">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPhotoSectionHeaderTapped" />
+                        </Grid.GestureRecognizers>
+                        <Label Text="Proof gallery" Style="{StaticResource SectionTitleLabel}" VerticalOptions="Center" />
+                        <Label x:Name="PhotoSectionChevron" Grid.Column="1"
+                               Text="{x:Static services:IconGlyphs.ChevronUp}"
+                               FontFamily="FaSolid" FontSize="12"
+                               TextColor="{StaticResource TextSecondaryLight}"
+                               VerticalOptions="Center" Margin="12,0,4,0" />
+                    </Grid>
+
+                    <VerticalStackLayout x:Name="PhotoSectionContent" Spacing="10">
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" IsVisible="False" HeightRequest="0">
+                        <Button Grid.Column="0" x:Name="CaptureVehiclePhotoButton" Text="Vehicle" Clicked="OnCaptureVehiclePhotoClicked"
+                                Style="{StaticResource IconTextButton}">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Truck}" Color="{StaticResource Primary}" Size="13" />
+                            </Button.ImageSource>
+                        </Button>
+                        <Button Grid.Column="1" x:Name="CaptureMaterialPhotoButton" Text="Material" Clicked="OnCaptureMaterialPhotoClicked"
+                                Style="{StaticResource IconTextButton}">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.BoxesStacked}" Color="{StaticResource Primary}" Size="13" />
+                            </Button.ImageSource>
+                        </Button>
+                        <Button Grid.Column="2" x:Name="CaptureExceptionPhotoButton" Text="Exception" Clicked="OnCaptureExceptionPhotoClicked"
+                                Style="{StaticResource IconTextButton}">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.TriangleExclamation}" Color="{StaticResource Primary}" Size="13" />
+                            </Button.ImageSource>
+                        </Button>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="4" Padding="4" BackgroundColor="{StaticResource CardTint}">
+                        <Border x:Name="PhotosTabButton" Grid.Column="0" Padding="12,9" StrokeThickness="0"
+                                BackgroundColor="{StaticResource Primary}" StrokeShape="RoundRectangle 11">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnPhotosTabTapped" />
+                            </Border.GestureRecognizers>
+                            <Label x:Name="PhotosTabLabel" Text="Photos (0)" FontSize="12" FontFamily="PoppinsSemiBold"
+                                   TextColor="White" HorizontalOptions="Center" />
+                        </Border>
+                        <Border x:Name="DocumentsTabButton" Grid.Column="1" Padding="12,9" StrokeThickness="0"
+                                BackgroundColor="Transparent" StrokeShape="RoundRectangle 11">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnDocumentsTabTapped" />
+                            </Border.GestureRecognizers>
+                            <Label x:Name="DocumentsTabLabel" Text="Documents (0)" FontSize="12" FontFamily="PoppinsSemiBold"
+                                   TextColor="{StaticResource TextSecondaryLight}" HorizontalOptions="Center" />
+                        </Border>
+                    </Grid>
+
+                    <Grid x:Name="PhotosContentGrid">
+                        <HorizontalStackLayout x:Name="NoPhotosLabel" Spacing="8" HorizontalOptions="Center"
+                                               VerticalOptions="Center" IsVisible="False">
+                            <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}" FontSize="14" TextColor="{StaticResource TextSecondaryLight}" />
+                            <Label Text="No photos yet." Style="{StaticResource EmptyStateLabel}" Margin="0" />
+                        </HorizontalStackLayout>
+
+                        <CollectionView x:Name="PhotoCarousel" HeightRequest="112" HorizontalScrollBarVisibility="Never">
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                            </CollectionView.ItemsLayout>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:PhotoDisplayItem">
+                                    <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" Padding="0"
+                                            BackgroundColor="{StaticResource CardLight}"
+                                            StrokeShape="RoundRectangle 12" WidthRequest="140" HeightRequest="104">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnPhotoTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Grid RowDefinitions="70,34">
+                                            <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceLight}">
+                                                <Image Source="{Binding Source}" Aspect="AspectFill" IsVisible="{Binding HasLocalImage}" />
+                                                <VerticalStackLayout IsVisible="{Binding IsPlaceholder}" VerticalOptions="Center" Spacing="6">
+                                                    <Label Text="{x:Static services:IconGlyphs.Camera}" FontFamily="FaSolid" FontSize="22"
+                                                           TextColor="{StaticResource Primary}" HorizontalOptions="Center" />
+                                                    <Label Text="{Binding FriendlyType}" FontSize="12" HorizontalOptions="Center" />
+                                                </VerticalStackLayout>
+                                            </Grid>
+                                            <Grid Grid.Row="1" ColumnDefinitions="*" Padding="9,7">
+                                                <Label Text="{Binding Description}" FontSize="9" TextColor="{StaticResource TextSecondaryLight}"
+                                                       LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+
+                    <Grid x:Name="DocumentsContentGrid" IsVisible="False">
+                        <HorizontalStackLayout x:Name="NoDocumentsLabel" Spacing="8" HorizontalOptions="Center"
+                                               VerticalOptions="Center" IsVisible="False">
+                            <Label Text="{x:Static services:IconGlyphs.Camera}" Style="{StaticResource IconLabel}"
+                                   FontSize="14" TextColor="{StaticResource TextSecondaryLight}" />
+                            <Label Text="No documents uploaded at the gate." Style="{StaticResource EmptyStateLabel}" Margin="0" />
+                        </HorizontalStackLayout>
+
+                        <CollectionView x:Name="DocumentsCarousel" HeightRequest="112" HorizontalScrollBarVisibility="Never">
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                            </CollectionView.ItemsLayout>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:PhotoDisplayItem">
+                                    <Border Stroke="{StaticResource CardBorderLight}" StrokeThickness="1" Padding="0"
+                                            BackgroundColor="{StaticResource CardLight}"
+                                            StrokeShape="RoundRectangle 12" WidthRequest="140" HeightRequest="104">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnPhotoTapped" />
+                                        </Border.GestureRecognizers>
+                                        <Grid RowDefinitions="70,34">
+                                            <Grid Grid.Row="0" BackgroundColor="{StaticResource SurfaceLight}">
+                                                <Image Source="{Binding Source}" Aspect="AspectFill" IsVisible="{Binding HasLocalImage}" />
+                                                <VerticalStackLayout IsVisible="{Binding IsPlaceholder}" VerticalOptions="Center" Spacing="6">
+                                                    <Label Text="{x:Static services:IconGlyphs.Camera}" FontFamily="FaSolid" FontSize="22"
+                                                           TextColor="{StaticResource Primary}" HorizontalOptions="Center" />
+                                                    <Label Text="{Binding FriendlyType}" FontSize="12" HorizontalOptions="Center" />
+                                                </VerticalStackLayout>
+                                            </Grid>
+                                            <Grid Grid.Row="1" ColumnDefinitions="*" Padding="9,7">
+                                                <Label Text="{Binding Description}" FontSize="9" TextColor="{StaticResource TextSecondaryLight}"
+                                                       LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+
+                    <IndicatorView x:Name="PhotoCarouselIndicator" IsVisible="False" HorizontalOptions="Center"
+                                   IndicatorColor="{StaticResource CardBorderLight}" SelectedIndicatorColor="{StaticResource Primary}" />
+                    </VerticalStackLayout>
+                    <BoxView HeightRequest="1" Color="{StaticResource CardBorderLight}" Margin="0,8,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Original dispatch load plan (read-only reference - only shown when this shipment
+                 was actually dispatched through our own Outward flow at the origin warehouse) -->
+            <Border x:Name="OutwardReferenceSection" Style="{StaticResource CardBorder}" IsVisible="False">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Dispatch load plan" Style="{StaticResource SectionTitleLabel}" />
+                            <Label x:Name="OutwardReferenceSubtitleLabel" Style="{StaticResource MetaLabel}"
+                                   LineBreakMode="WordWrap" MaxLines="3" />
+                        </VerticalStackLayout>
+                        <Border x:Name="ToggleReferenceSimulationButton" Grid.Column="1" Padding="10,7" StrokeThickness="0"
+                                BackgroundColor="{StaticResource CardTint}" StrokeShape="RoundRectangle 12" VerticalOptions="Start">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnToggleReferenceSimulationClicked" />
+                            </Border.GestureRecognizers>
+                            <HorizontalStackLayout Spacing="7">
+                                <Label x:Name="ToggleReferenceSimulationIcon" Text="{x:Static services:IconGlyphs.Eye}" Style="{StaticResource IconLabel}"
+                                       FontSize="12" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                                <Label Text="View 3D" FontSize="12" FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <Border x:Name="OutwardReferenceEmptyBorder" Style="{StaticResource TintCardBorder}" IsVisible="False">
                         <Label Text="No 3D load plan on file for this shipment - it was received without the origin warehouse planning the load in the 3D dispatch flow."
                                Style="{StaticResource MetaLabel}" />
                     </Border>
 
-                    <Grid x:Name="OutwardReferenceContentGrid" ColumnDefinitions="2*,*" ColumnSpacing="16"
-                          RowSpacing="14" Padding="18,0,18,18">
-                        <Border Grid.Column="0" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                                BackgroundColor="{StaticResource SurfaceLight}" StrokeShape="RoundRectangle 20"
-                                Padding="10" VerticalOptions="Fill">
-                            <Grid>
-                                <HybridWebView x:Name="ReferenceLoadVizWebView" MinimumHeightRequest="340"
-                                               HorizontalOptions="Fill" VerticalOptions="Fill"
-                                               HybridRoot="loadviz" DefaultFile="index.html" IsVisible="False" />
-                                <Label x:Name="ReferenceLoadVizUnavailableLabel" Text="Loading plan unavailable - vehicle dimensions not on file."
-                                       Style="{StaticResource MetaLabel}" IsVisible="False" HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Grid>
-                        </Border>
-
-                        <Border Grid.Column="1" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
-                                BackgroundColor="{StaticResource CardLight}" StrokeShape="RoundRectangle 18" Padding="14"
-                                VerticalOptions="Fill">
-                            <VerticalStackLayout Spacing="10">
-                                <Label Text="Loading sequence" FontFamily="PoppinsSemiBold" FontSize="14" />
-                                <ScrollView MaximumHeightRequest="300">
-                                    <VerticalStackLayout x:Name="OutwardReferenceSequenceContainer" Spacing="8" />
-                                </ScrollView>
-                            </VerticalStackLayout>
-                        </Border>
-                    </Grid>
+                    <VerticalStackLayout x:Name="OutwardReferenceContentGrid" Spacing="8">
+                        <VerticalStackLayout x:Name="OutwardReferenceSequenceContainer" Spacing="8" />
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Inspection -->
-            <Border x:Name="InspectionSection" Stroke="#E4E9F1" StrokeThickness="1"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 18" IsVisible="False" Padding="0">
-                <VerticalStackLayout Spacing="0">
-                    <Grid x:Name="InspectionHeaderGrid" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" RowSpacing="10"
-                          Padding="18,16" BackgroundColor="#FBFCFE">
-                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeThickness="0"
-                                StrokeShape="RoundRectangle 12" BackgroundColor="#E9FBF8">
-                            <Label Text="{x:Static services:IconGlyphs.ClipboardCheck}" Style="{StaticResource IconLabel}"
-                                   FontSize="15" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                            <Label Text="Receiving inspection" Style="{StaticResource SectionTitleLabel}" FontSize="16" />
-                            <Label Text="Review each product, split received quantities by condition, and capture exceptions."
-                                   Style="{StaticResource MetaLabel}" />
+            <!-- Receiving inspection -->
+            <Border x:Name="InspectionSection"
+                    IsVisible="False"
+                    StrokeThickness="0"
+                    BackgroundColor="Transparent"
+                    Padding="0">
+                <VerticalStackLayout Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnInspectionSectionHeaderTapped" />
+                        </Grid.GestureRecognizers>
+                        <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Receiving inspection" Style="{StaticResource SectionTitleLabel}" />
+                            <Label Text="Record received quantities and exceptions." Style="{StaticResource MetaLabel}" />
                         </VerticalStackLayout>
-                        <Border Grid.Column="2" Padding="12,7" StrokeThickness="0" BackgroundColor="White"
-                                StrokeShape="RoundRectangle 12" VerticalOptions="Center">
-                            <HorizontalStackLayout Spacing="8">
-                                <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
-                                       FontSize="11" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <Label x:Name="InspectionCountLabel" Text="0 lines" FontSize="12" FontFamily="PoppinsBold"
-                                       TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                            </HorizontalStackLayout>
-                        </Border>
+                        <HorizontalStackLayout Grid.Column="1" Spacing="10" VerticalOptions="Center">
+                            <Border Padding="10,6" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}"
+                                    StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                                <Label x:Name="InspectionCountLabel" Text="0 lines" FontSize="11" FontFamily="PoppinsBold"
+                                       TextColor="{StaticResource Primary}" />
+                            </Border>
+                            <Label x:Name="InspectionSectionChevron"
+                                   Text="{x:Static services:IconGlyphs.ChevronUp}"
+                                   FontFamily="FaSolid" FontSize="12"
+                                   TextColor="{StaticResource TextSecondaryLight}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                     </Grid>
-                    <VerticalStackLayout x:Name="InspectionLinesContainer" Spacing="16" Padding="18,18,18,0" />
 
-                    <VerticalStackLayout Spacing="10" Padding="18,20,18,0">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <VerticalStackLayout Grid.Column="0" Spacing="2">
-                                <Label Text="Mismatch SKU details" FontFamily="PoppinsSemiBold" FontSize="14"
-                                       TextColor="{StaticResource TextPrimaryLight}" />
-                                <Label Text="Select any SKU from the SKU Master and enter the quantity actually received in its place. The total across all rows here must match the total Mismatch quantity entered above."
-                                       Style="{StaticResource MetaLabel}" FontSize="11" />
-                            </VerticalStackLayout>
-                            <Button Grid.Column="1" x:Name="AddUnplannedLineButton" Text="Add SKU" Clicked="OnAddUnplannedLineClicked"
-                                    Style="{StaticResource IconTextButton}" VerticalOptions="Center">
-                                <Button.ImageSource>
-                                    <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ListCheck}" Color="{StaticResource Primary}" Size="12" />
-                                </Button.ImageSource>
-                            </Button>
-                        </Grid>
-                        <VerticalStackLayout x:Name="UnplannedLinesContainer" Spacing="10" />
+                    <VerticalStackLayout x:Name="InspectionSectionContent" Spacing="12">
+                        <VerticalStackLayout x:Name="InspectionLinesContainer" Spacing="10" />
+
+                        <VerticalStackLayout x:Name="UnplannedSection" Spacing="10" Margin="0,4,0,0">
+                            <BoxView HeightRequest="1" Color="{StaticResource CardBorderLight}" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                    <Label Text="Replacement SKUs" FontFamily="PoppinsSemiBold" FontSize="14"
+                                           TextColor="{StaticResource TextPrimaryLight}" />
+                                    <Label Text="Items received in place of the expected SKU."
+                                           Style="{StaticResource MetaLabel}" FontSize="11" />
+                                </VerticalStackLayout>
+                                <Button Grid.Column="1" x:Name="AddUnplannedLineButton" Text="Add SKU" Clicked="OnAddUnplannedLineClicked"
+                                        Style="{StaticResource IconTextButton}" VerticalOptions="Center">
+                                    <Button.ImageSource>
+                                        <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.ListCheck}" Color="{StaticResource Primary}" Size="12" />
+                                    </Button.ImageSource>
+                                </Button>
+                            </Grid>
+                            <VerticalStackLayout x:Name="UnplannedLinesContainer" Spacing="10" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout x:Name="InspectionFooterGrid">
+                            <Button x:Name="SubmitInspectionButton" Text="Save inspection" Clicked="OnSubmitInspectionClicked"
+                                    Style="{StaticResource PrimaryActionButton}" HeightRequest="52" />
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
-
-                    <Grid x:Name="InspectionFooterGrid" ColumnDefinitions="*,Auto" ColumnSpacing="14" RowSpacing="12" Padding="18" BackgroundColor="{StaticResource CardLight}">
-                        <Border Grid.Column="0" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}"
-                                StrokeShape="RoundRectangle 18" Padding="14,11">
-                            <HorizontalStackLayout Spacing="9">
-                                <Label Text="{x:Static services:IconGlyphs.CircleCheck}" Style="{StaticResource IconLabel}"
-                                       FontSize="13" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                <Label Text="Save inspection once all condition quantities are reviewed."
-                                       Style="{StaticResource MetaLabel}" VerticalOptions="Center" />
-                            </HorizontalStackLayout>
-                        </Border>
-                        <Button Grid.Column="1" x:Name="SubmitInspectionButton" Text="Save Inspection" Clicked="OnSubmitInspectionClicked"
-                                Style="{StaticResource PrimaryActionButton}" CornerRadius="18" HeightRequest="54" WidthRequest="220" />
-                    </Grid>
+                    <BoxView HeightRequest="1" Color="{StaticResource CardBorderLight}" Margin="0,8,0,0" />
                 </VerticalStackLayout>
             </Border>
 
@@ -495,22 +354,19 @@
             <VerticalStackLayout x:Name="CompletionSection" Spacing="6">
                 <Button x:Name="CompleteButton" Text="Complete Unloading" Clicked="OnCompleteClicked"
                         IsVisible="False" Style="{StaticResource PrimaryActionButton}"
-                        BackgroundColor="{StaticResource StatusSuccess}" TextColor="White" CornerRadius="18" HeightRequest="54" />
+                        BackgroundColor="{StaticResource StatusSuccess}" TextColor="White" HeightRequest="54" />
                 <Label x:Name="CompleteHintLabel" Style="{StaticResource MetaLabel}" IsVisible="False"
                        HorizontalOptions="Center" />
             </VerticalStackLayout>
 
             <!-- GRN -->
-            <Border x:Name="GrnBorder" IsVisible="False" Stroke="#E4E9F1" StrokeThickness="1"
-                    BackgroundColor="White" Padding="16,11" StrokeShape="RoundRectangle 18">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Opacity="0.05" Radius="10" Offset="0,3" />
-                </Border.Shadow>
+            <Border x:Name="GrnBorder" IsVisible="False" StrokeThickness="0"
+                    BackgroundColor="{StaticResource StatusSuccessTint}" Padding="12" StrokeShape="RoundRectangle 14">
                 <Grid x:Name="GrnGrid" ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Grid Grid.Column="0" WidthRequest="38" HeightRequest="38" VerticalOptions="Center">
+                    <Grid Grid.Column="0" WidthRequest="32" HeightRequest="32" VerticalOptions="Center">
                         <Border x:Name="GrnIconBadge" StrokeThickness="0" BackgroundColor="#E8F8EF"
-                                StrokeShape="RoundRectangle 12" />
-                        <Label x:Name="GrnIconLabel" FontFamily="FaSolid" FontSize="15"
+                                StrokeShape="RoundRectangle 10" />
+                        <Label x:Name="GrnIconLabel" FontFamily="FaSolid" FontSize="13"
                                HorizontalOptions="Center" VerticalOptions="Center" />
                     </Grid>
                     <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
@@ -521,7 +377,10 @@
                 </Grid>
             </Border>
 
-            <ActivityIndicator x:Name="Spinner" IsRunning="False" IsVisible="False" />
+            <!-- Kept as a named compatibility target for existing operations, but removed from
+                 layout; each action already disables its own control while awaiting the API. -->
+            <ActivityIndicator x:Name="Spinner" IsRunning="False" IsVisible="False"
+                               HeightRequest="0" WidthRequest="0" Opacity="0" InputTransparent="True" />
 
         </VerticalStackLayout>
     </ScrollView>

@@ -8,4 +8,23 @@
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 	<uses-feature android:name="android.hardware.camera" android:required="false" />
+	<!-- Without these, the ACCESS_FINE_LOCATION/ACCESS_COARSE_LOCATION and RECORD_AUDIO permissions
+	     above make the Android build tools auto-declare android.hardware.location and
+	     android.hardware.microphone as REQUIRED - which blocks installation outright ("app not
+	     compatible with your phone") on any device lacking that hardware, e.g. warehouse-grade
+	     handheld scanners/tablets with no GPS or mic. Both features already degrade gracefully in
+	     code (SecurityHomePage's GPS capture is nullable and swallows failures; SpeechToTextService
+	     no-ops without mic permission), so neither should ever have blocked install in the first
+	     place. -->
+	<uses-feature android:name="android.hardware.location" android:required="false" />
+	<uses-feature android:name="android.hardware.microphone" android:required="false" />
+	<!-- Android 11+ (API 30+) package-visibility rule: MediaPicker.CapturePhotoAsync() resolves a
+	     camera app via an implicit ACTION_IMAGE_CAPTURE intent, which is invisible to this app
+	     unless declared here - without it, capture fails with "no camera on the device" on every
+	     API 30+ device, physical or emulated, even when a camera app is actually installed. -->
+	<queries>
+		<intent>
+			<action android:name="android.media.action.IMAGE_CAPTURE" />
+		</intent>
+	</queries>
 </manifest>

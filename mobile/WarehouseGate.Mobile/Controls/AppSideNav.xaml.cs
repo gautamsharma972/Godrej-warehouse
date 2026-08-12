@@ -4,6 +4,8 @@ namespace WarehouseGate.Mobile.Controls;
 
 public partial class AppSideNav : ContentView
 {
+    private string? _renderedRole;
+
     public AppSideNav()
     {
         InitializeComponent();
@@ -33,7 +35,22 @@ public partial class AppSideNav : ContentView
 
     private void UpdateVisibleNav()
     {
-        SecurityNav.IsVisible = Session.IsSecurity;
-        SupervisorNav.IsVisible = Session.IsSupervisor;
+        var role = Session.IsSecurity ? "Security" : Session.IsSupervisor ? "Supervisor" : null;
+        if (role == _renderedRole)
+        {
+            return;
+        }
+
+        _renderedRole = role;
+        NavHost.Children.Clear();
+
+        if (role == "Security")
+        {
+            NavHost.Children.Add(new SecuritySideNav());
+        }
+        else if (role == "Supervisor")
+        {
+            NavHost.Children.Add(new SupervisorSideNav());
+        }
     }
 }

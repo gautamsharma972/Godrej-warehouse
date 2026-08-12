@@ -16,7 +16,6 @@
                 <div class="admin-form-field"><label>Weight Category</label><select class="admin-form-select" @bind="Category"><option>Fragile</option><option>Light</option><option>Medium</option><option>Heavy</option></select></div>
                 <div class="admin-form-field"><label>Max Stack Layers</label><input class="admin-form-control" type="number" min="1" disabled="@(!IsStackable)" @bind="MaxStackLayers" /></div>
                 <label class="admin-form-check"><input type="checkbox" @bind="IsStackable" /> Stackable</label>
-                <div class="admin-form-field"><label>Color Hex</label><input class="admin-form-control" placeholder="#4f7cff" @bind="ColorHex" @bind:event="oninput" /></div>
             </div>
         </div>
         <div class="admin-drawer-actions">

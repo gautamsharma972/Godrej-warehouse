@@ -117,6 +117,7 @@ h1:focus {
     color: var(--wg-accent-dark, #0f8a5a);
     font-size: 13px;
     font-weight: 400;
+    white-space: nowrap;
 }
 
 .admin-primary-btn {
@@ -133,6 +134,7 @@ h1:focus {
     font: inherit;
     font-size: 13px;
     font-weight: 400;
+    white-space: nowrap;
     box-shadow: 0 10px 22px var(--wg-accent-shadow, rgba(0, 141, 134, 0.22));
     cursor: pointer;
     transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
@@ -816,6 +818,7 @@ h1:focus {
     font: inherit;
     font-size: 13px;
     font-weight: 400;
+    white-space: nowrap;
     cursor: pointer;
     transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
 }
@@ -1049,7 +1052,7 @@ h1:focus {
 
 .dispatch-card-summary {
     display: grid;
-    grid-template-columns: minmax(140px, 1.1fr) minmax(90px, 0.55fr) minmax(140px, 0.9fr) minmax(100px, 0.65fr) minmax(90px, 0.55fr) 84px 42px;
+    grid-template-columns: minmax(140px, 1.1fr) minmax(90px, 0.55fr) minmax(140px, 0.9fr) minmax(100px, 0.65fr) minmax(90px, 0.55fr) minmax(90px, 0.55fr) 84px 42px;
     gap: 14px;
     align-items: center;
     padding: 18px 20px;
@@ -1076,7 +1079,14 @@ h1:focus {
 }
 
 .office-pending-summary {
-    grid-template-columns: minmax(160px, 1.1fr) minmax(160px, 1fr) minmax(140px, 0.8fr) minmax(140px, 0.8fr) 42px;
+    grid-template-columns: minmax(160px, 1.1fr) minmax(160px, 1fr) minmax(140px, 0.8fr) minmax(140px, 0.8fr) minmax(90px, 0.55fr) auto 42px;
+}
+
+.office-pending-summary .admin-primary-btn {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 12px;
+    white-space: nowrap;
 }
 
 .office-pending-section {

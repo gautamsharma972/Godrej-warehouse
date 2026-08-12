@@ -15,6 +15,7 @@ public partial class SecurityStatusPage : ContentPage
     private bool? _isSearchWide;
 
     private bool _showingOutwardStatus;
+    private bool _filtersExpanded;
     private bool _outwardDateFilterActive;
     private bool _outwardResultsLoaded;
 
@@ -27,6 +28,8 @@ public partial class SecurityStatusPage : ContentPage
     private bool _isLoadingActive;
     private bool _isSearchingHistory;
     private bool _isSearchingReadyToExit;
+    private CancellationTokenSource? _filterDebounceCts;
+    private bool _suppressFilterEvents;
 
     public SecurityStatusPage()
     {
@@ -64,8 +67,8 @@ public partial class SecurityStatusPage : ContentPage
             Grid.SetColumn(StatusHeaderControls, 1);
             Grid.SetColumnSpan(StatusHeaderControls, 1);
             StatusHeaderControls.HorizontalOptions = LayoutOptions.End;
-            InwardSubTabToggle.WidthRequest = 420;
-            InwardSubTabToggle.HorizontalOptions = LayoutOptions.End;
+            InwardSubTabToggle.WidthRequest = -1;
+            InwardSubTabToggle.HorizontalOptions = LayoutOptions.Start;
 
             SearchFieldsGrid.RowDefinitions = new RowDefinitionCollection { new RowDefinition(GridLength.Auto) };
             SearchFieldsGrid.ColumnDefinitions = new ColumnDefinitionCollection
@@ -86,11 +89,11 @@ public partial class SecurityStatusPage : ContentPage
             Grid.SetRow(DateSection, 0);
             Grid.SetColumn(DateSection, 2);
 
-            Grid.SetRow(SearchButtonControl, 0);
-            Grid.SetColumn(SearchButtonControl, 3);
-            Grid.SetColumnSpan(SearchButtonControl, 1);
-            SearchButtonControl.VerticalOptions = LayoutOptions.End;
-            SearchButtonControl.WidthRequest = 110;
+            Grid.SetRow(InwardFilterActions, 0);
+            Grid.SetColumn(InwardFilterActions, 3);
+            Grid.SetColumnSpan(InwardFilterActions, 1);
+            InwardFilterActions.VerticalOptions = LayoutOptions.End;
+            InwardFilterActions.WidthRequest = 220;
 
             OutwardSearchFieldsGrid.RowDefinitions = new RowDefinitionCollection { new RowDefinition(GridLength.Auto) };
             OutwardSearchFieldsGrid.ColumnDefinitions = new ColumnDefinitionCollection
@@ -111,11 +114,11 @@ public partial class SecurityStatusPage : ContentPage
             Grid.SetRow(OutwardDateSection, 0);
             Grid.SetColumn(OutwardDateSection, 2);
 
-            Grid.SetRow(OutwardSearchButtonControl, 0);
-            Grid.SetColumn(OutwardSearchButtonControl, 3);
-            Grid.SetColumnSpan(OutwardSearchButtonControl, 1);
-            OutwardSearchButtonControl.VerticalOptions = LayoutOptions.End;
-            OutwardSearchButtonControl.WidthRequest = 118;
+            Grid.SetRow(OutwardFilterActions, 0);
+            Grid.SetColumn(OutwardFilterActions, 3);
+            Grid.SetColumnSpan(OutwardFilterActions, 1);
+            OutwardFilterActions.VerticalOptions = LayoutOptions.End;
+            OutwardFilterActions.WidthRequest = 220;
         }
         else
         {
@@ -130,65 +133,62 @@ public partial class SecurityStatusPage : ContentPage
             Grid.SetColumnSpan(StatusHeaderControls, 1);
             StatusHeaderControls.HorizontalOptions = LayoutOptions.Fill;
             InwardSubTabToggle.WidthRequest = -1;
-            InwardSubTabToggle.HorizontalOptions = LayoutOptions.Fill;
+            InwardSubTabToggle.HorizontalOptions = LayoutOptions.Start;
 
-            SearchFieldsGrid.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)
-            };
+            SearchFieldsGrid.ColumnDefinitions = new ColumnDefinitionCollection { new ColumnDefinition(GridLength.Star) };
             SearchFieldsGrid.RowDefinitions = new RowDefinitionCollection
             {
-                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)
             };
 
             Grid.SetRow(VehicleSearchSection, 0);
             Grid.SetColumn(VehicleSearchSection, 0);
-            Grid.SetColumnSpan(VehicleSearchSection, 2);
+            Grid.SetColumnSpan(VehicleSearchSection, 1);
 
             Grid.SetRow(PoNumberSection, 1);
             Grid.SetColumn(PoNumberSection, 0);
             Grid.SetColumnSpan(PoNumberSection, 1);
 
-            Grid.SetRow(DateSection, 1);
-            Grid.SetColumn(DateSection, 1);
+            Grid.SetRow(DateSection, 2);
+            Grid.SetColumn(DateSection, 0);
 
-            Grid.SetRow(SearchButtonControl, 2);
-            Grid.SetColumn(SearchButtonControl, 0);
-            Grid.SetColumnSpan(SearchButtonControl, 2);
-            SearchButtonControl.VerticalOptions = LayoutOptions.Fill;
-            SearchButtonControl.WidthRequest = -1;
+            Grid.SetRow(InwardFilterActions, 3);
+            Grid.SetColumn(InwardFilterActions, 0);
+            Grid.SetColumnSpan(InwardFilterActions, 1);
+            InwardFilterActions.VerticalOptions = LayoutOptions.Fill;
+            InwardFilterActions.WidthRequest = -1;
 
-            OutwardSearchFieldsGrid.ColumnDefinitions = new ColumnDefinitionCollection
-            {
-                new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)
-            };
+            OutwardSearchFieldsGrid.ColumnDefinitions = new ColumnDefinitionCollection { new ColumnDefinition(GridLength.Star) };
             OutwardSearchFieldsGrid.RowDefinitions = new RowDefinitionCollection
             {
-                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)
             };
 
             Grid.SetRow(OutwardVehicleSearchSection, 0);
             Grid.SetColumn(OutwardVehicleSearchSection, 0);
-            Grid.SetColumnSpan(OutwardVehicleSearchSection, 2);
+            Grid.SetColumnSpan(OutwardVehicleSearchSection, 1);
 
             Grid.SetRow(OutwardDoNumberSection, 1);
             Grid.SetColumn(OutwardDoNumberSection, 0);
             Grid.SetColumnSpan(OutwardDoNumberSection, 1);
 
-            Grid.SetRow(OutwardDateSection, 1);
-            Grid.SetColumn(OutwardDateSection, 1);
+            Grid.SetRow(OutwardDateSection, 2);
+            Grid.SetColumn(OutwardDateSection, 0);
 
-            Grid.SetRow(OutwardSearchButtonControl, 2);
-            Grid.SetColumn(OutwardSearchButtonControl, 0);
-            Grid.SetColumnSpan(OutwardSearchButtonControl, 2);
-            OutwardSearchButtonControl.VerticalOptions = LayoutOptions.Fill;
-            OutwardSearchButtonControl.WidthRequest = -1;
+            Grid.SetRow(OutwardFilterActions, 3);
+            Grid.SetColumn(OutwardFilterActions, 0);
+            Grid.SetColumnSpan(OutwardFilterActions, 1);
+            OutwardFilterActions.VerticalOptions = LayoutOptions.Fill;
+            OutwardFilterActions.WidthRequest = -1;
         }
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        _filtersExpanded = false;
 
         SupervisorHubClient.JobAvailable += OnHubJobChanged;
         SupervisorHubClient.JobClaimed += OnHubJobChanged;
@@ -204,7 +204,7 @@ public partial class SecurityStatusPage : ContentPage
         _selectedExitJob = null;
         UpdateTabStyles();
         ShowInwardListState();
-        _ = LoadActiveAsync();
+        _ = LoadInwardOverviewAsync();
 
         _selectedOutwardExitJob = null;
         ShowOutwardListState();
@@ -234,7 +234,7 @@ public partial class SecurityStatusPage : ContentPage
             {
                 _ = SearchReadyToExitAsync();
             }
-            _ = ShowLiveBannerAsync($"Update: {job.VehicleNumber} — {job.Status}");
+            _ = ShowLiveBannerAsync($"Update: {job.VehicleNumber} â€” {job.Status}");
         });
     }
 
@@ -246,7 +246,7 @@ public partial class SecurityStatusPage : ContentPage
             {
                 _ = SearchOutwardAsync();
             }
-            _ = ShowLiveBannerAsync($"Update: {job.VehicleNumber} — {job.Status}");
+            _ = ShowLiveBannerAsync($"Update: {job.VehicleNumber} â€” {job.Status}");
         });
     }
 
@@ -274,15 +274,22 @@ public partial class SecurityStatusPage : ContentPage
     {
         InwardStatusSection.IsVisible = !_showingOutwardStatus;
         OutwardStatusSection.IsVisible = _showingOutwardStatus;
-        InwardSubTabToggle.IsVisible = !_showingOutwardStatus && StatusExitConfirmSection.IsVisible == false && StatusExitResultSection.IsVisible == false;
-        InwardFilterBar.IsVisible = !_showingOutwardStatus && StatusExitConfirmSection.IsVisible == false && StatusExitResultSection.IsVisible == false;
+        var hasAnyInwardData = _activeJobs.Count > 0 || _readyToExitJobs.Count > 0 || (_historyResults?.Count ?? 0) > 0;
+        InwardSubTabToggle.IsVisible = !_showingOutwardStatus && hasAnyInwardData
+            && StatusExitConfirmSection.IsVisible == false && StatusExitResultSection.IsVisible == false;
+        var inwardListVisible = !_showingOutwardStatus && StatusExitConfirmSection.IsVisible == false && StatusExitResultSection.IsVisible == false;
+        InwardFilterBar.IsVisible = inwardListVisible && _filtersExpanded;
+        OutwardFilterBar.IsVisible = _showingOutwardStatus && OutwardSearchSection.IsVisible && _filtersExpanded;
+        FilterToggleButton.IsVisible = inwardListVisible || (_showingOutwardStatus && OutwardSearchSection.IsVisible);
+        FilterToggleButton.Text = _filtersExpanded ? "Hide filters" : "Filters";
 
         var selectedText = (Color)Application.Current!.Resources["Primary"];
         var unselectedText = (Color)Application.Current.Resources["TextSecondaryLight"];
 
-        VehicleModeThumb.HorizontalOptions = _showingOutwardStatus ? LayoutOptions.End : LayoutOptions.Start;
-        StatusInwardRadioLabel.TextColor = _showingOutwardStatus ? unselectedText : selectedText;
-        StatusOutwardRadioLabel.TextColor = _showingOutwardStatus ? selectedText : unselectedText;
+        InwardModePill.BackgroundColor = _showingOutwardStatus ? Color.FromArgb("#EAF1FF") : selectedText;
+        OutwardModePill.BackgroundColor = _showingOutwardStatus ? selectedText : Color.FromArgb("#EAF1FF");
+        StatusInwardRadioLabel.TextColor = _showingOutwardStatus ? unselectedText : Colors.White;
+        StatusOutwardRadioLabel.TextColor = _showingOutwardStatus ? Colors.White : unselectedText;
     }
 
     private void OnVehicleModeSwitchTapped(object? sender, EventArgs e)
@@ -295,6 +302,12 @@ public partial class SecurityStatusPage : ContentPage
         {
             OnStatusOutwardTabClicked(sender, e);
         }
+    }
+
+    private void OnFilterToggleClicked(object? sender, EventArgs e)
+    {
+        _filtersExpanded = !_filtersExpanded;
+        UpdateStatusModeStyles();
     }
 
     private async Task SearchOutwardAsync()
@@ -329,17 +342,28 @@ public partial class SecurityStatusPage : ContentPage
 
     private async void OnOutwardSearchClicked(object? sender, EventArgs e) => await SearchOutwardAsync();
 
+    private void OnOutwardFilterTextChanged(object? sender, TextChangedEventArgs e) => ScheduleFilterRefresh();
+
     private void OnOutwardHistoryDateSelected(object? sender, DateChangedEventArgs e)
     {
+        if (_suppressFilterEvents)
+        {
+            return;
+        }
+
         _outwardDateFilterActive = true;
         OutwardClearDateButton.IsVisible = true;
+        ScheduleFilterRefresh();
     }
 
     private void OnOutwardClearDateClicked(object? sender, EventArgs e)
     {
         _outwardDateFilterActive = false;
         OutwardClearDateButton.IsVisible = false;
+        _suppressFilterEvents = true;
         OutwardHistoryDatePicker.Date = DateTime.Today;
+        _suppressFilterEvents = false;
+        ScheduleFilterRefresh();
     }
 
     private async void OnOutwardStatusJobTapped(object? sender, EventArgs e)
@@ -357,6 +381,7 @@ public partial class SecurityStatusPage : ContentPage
         OutwardSearchSection.IsVisible = true;
         OutwardExitConfirmSection.IsVisible = false;
         OutwardExitResultSection.IsVisible = false;
+        UpdateStatusModeStyles();
     }
 
     private void ShowOutwardExitConfirmState()
@@ -364,6 +389,7 @@ public partial class SecurityStatusPage : ContentPage
         OutwardSearchSection.IsVisible = false;
         OutwardExitConfirmSection.IsVisible = true;
         OutwardExitResultSection.IsVisible = false;
+        UpdateStatusModeStyles();
     }
 
     private void ShowOutwardExitResultState()
@@ -371,6 +397,7 @@ public partial class SecurityStatusPage : ContentPage
         OutwardSearchSection.IsVisible = false;
         OutwardExitConfirmSection.IsVisible = false;
         OutwardExitResultSection.IsVisible = true;
+        UpdateStatusModeStyles();
     }
 
     private void OnOutwardReadyToExitJobTapped(object? sender, EventArgs e)
@@ -386,7 +413,7 @@ public partial class SecurityStatusPage : ContentPage
         OutwardStatusConfirmExitButton.IsEnabled = false;
 
         OutwardConfirmVehicleLabel.Text = job.VehicleNumber;
-        OutwardConfirmSubtitleLabel.Text = $"DO {job.DispatchOrderNumber} · {job.CustomerName}";
+        OutwardConfirmSubtitleLabel.Text = $"DO {job.DispatchOrderNumber} Â· {job.CustomerName}";
         OutwardConfirmDriverLabel.Text = string.IsNullOrWhiteSpace(job.DriverName) ? "Driver not recorded" : $"Driver: {job.DriverName}";
         OutwardConfirmDispatchNoteLabel.Text = job.DispatchNote is null ? string.Empty : $"Dispatch Note {job.DispatchNote.DispatchNoteNumber}";
 
@@ -427,7 +454,7 @@ public partial class SecurityStatusPage : ContentPage
         try
         {
             var job = await ApiClient.RecordOutwardExitAsync(_selectedOutwardExitJob.Id, _outwardExitPhotoLocalPath);
-            OutwardStatusResultVehicleLabel.Text = $"{job.VehicleNumber} · DO {job.DispatchOrderNumber}";
+            OutwardStatusResultVehicleLabel.Text = $"{job.VehicleNumber} Â· DO {job.DispatchOrderNumber}";
             OutwardStatusGatePassTokenLabel.Text = job.GatePassToken;
 
             ShowOutwardExitResultState();
@@ -486,6 +513,7 @@ public partial class SecurityStatusPage : ContentPage
             var active = await ApiClient.GetSecurityTransactionsAsync(activeOnly: true);
             _activeJobs = active;
             ApplyActiveFilter();
+            UpdateStatusModeStyles();
         }
         catch (ApiException ex)
         {
@@ -500,6 +528,12 @@ public partial class SecurityStatusPage : ContentPage
             _isLoadingActive = false;
             RefreshViewControl.IsRefreshing = false;
         }
+    }
+
+    private async Task LoadInwardOverviewAsync()
+    {
+        await Task.WhenAll(LoadActiveAsync(), SearchReadyToExitAsync(), SearchHistoryAsync());
+        UpdateStatusModeStyles();
     }
 
     private List<InwardJob> ApplyCurrentInwardFilters(IEnumerable<InwardJob> jobs)
@@ -587,6 +621,7 @@ public partial class SecurityStatusPage : ContentPage
 
             _historyResults = await ApiClient.GetSecurityTransactionsAsync(activeOnly: false, vehicleNumber, poNumber, date);
             await RenderHistoryListAsync();
+            UpdateStatusModeStyles();
         }
         catch (ApiException ex)
         {
@@ -742,10 +777,82 @@ public partial class SecurityStatusPage : ContentPage
 
     private void OnFilterTextChanged(object? sender, TextChangedEventArgs e)
     {
-        if (_inwardSubTab != 2)
+        ScheduleFilterRefresh();
+    }
+
+    private void ScheduleFilterRefresh()
+    {
+        if (_suppressFilterEvents)
         {
-            ApplyCurrentInwardFilter();
+            return;
         }
+
+        _filterDebounceCts?.Cancel();
+        _filterDebounceCts?.Dispose();
+        _filterDebounceCts = new CancellationTokenSource();
+        _ = RefreshFiltersAfterDelayAsync(_filterDebounceCts.Token);
+    }
+
+    private async Task RefreshFiltersAfterDelayAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(350, cancellationToken);
+            if (_showingOutwardStatus)
+            {
+                await SearchOutwardAsync();
+            }
+            else if (_inwardSubTab == 2)
+            {
+                await SearchHistoryAsync();
+            }
+            else
+            {
+                ApplyCurrentInwardFilter();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer keystroke superseded this refresh.
+        }
+    }
+
+    private async void OnResetInwardFiltersClicked(object? sender, EventArgs e)
+    {
+        _filterDebounceCts?.Cancel();
+        _suppressFilterEvents = true;
+        VehicleSearchBar.Text = string.Empty;
+        PoNumberSearchEntry.Text = string.Empty;
+        _dateFilterActive = false;
+        ClearDateButton.IsVisible = false;
+        HistoryDatePicker.Date = DateTime.Today;
+        _suppressFilterEvents = false;
+
+        if (_inwardSubTab == 2)
+        {
+            await SearchHistoryAsync();
+        }
+        else if (_inwardSubTab == 1)
+        {
+            await SearchReadyToExitAsync();
+        }
+        else
+        {
+            await LoadActiveAsync();
+        }
+    }
+
+    private async void OnResetOutwardFiltersClicked(object? sender, EventArgs e)
+    {
+        _filterDebounceCts?.Cancel();
+        _suppressFilterEvents = true;
+        OutwardVehicleSearchBar.Text = string.Empty;
+        OutwardDoNumberSearchEntry.Text = string.Empty;
+        _outwardDateFilterActive = false;
+        OutwardClearDateButton.IsVisible = false;
+        OutwardHistoryDatePicker.Date = DateTime.Today;
+        _suppressFilterEvents = false;
+        await SearchOutwardAsync();
     }
 
     private void OnPoNumberFocused(object? sender, FocusEventArgs e) => UiHelpers.SetFieldFocus(PoNumberEntryBorder, true);
@@ -806,12 +913,13 @@ public partial class SecurityStatusPage : ContentPage
     private void ShowInwardListState()
     {
         InwardSubTabToggle.IsVisible = true;
-        InwardFilterBar.IsVisible = true;
+        InwardFilterBar.IsVisible = _filtersExpanded;
         ActiveSection.IsVisible = _inwardSubTab == 0;
         ReadyToExitSection.IsVisible = _inwardSubTab == 1;
         HistorySection.IsVisible = _inwardSubTab == 2;
         StatusExitConfirmSection.IsVisible = false;
         StatusExitResultSection.IsVisible = false;
+        UpdateStatusModeStyles();
     }
 
     private void ShowExitConfirmState()
@@ -823,6 +931,7 @@ public partial class SecurityStatusPage : ContentPage
         HistorySection.IsVisible = false;
         StatusExitConfirmSection.IsVisible = true;
         StatusExitResultSection.IsVisible = false;
+        UpdateStatusModeStyles();
     }
 
     private void ShowExitResultState()
@@ -834,6 +943,7 @@ public partial class SecurityStatusPage : ContentPage
         HistorySection.IsVisible = false;
         StatusExitConfirmSection.IsVisible = false;
         StatusExitResultSection.IsVisible = true;
+        UpdateStatusModeStyles();
     }
 
     private async Task SearchReadyToExitAsync()
@@ -851,6 +961,7 @@ public partial class SecurityStatusPage : ContentPage
             _readyToExitJobs = results;
             ApplyReadyToExitFilter();
             _readyToExitLoaded = true;
+            UpdateStatusModeStyles();
         }
         catch (ApiException ex)
         {
@@ -940,7 +1051,7 @@ public partial class SecurityStatusPage : ContentPage
         try
         {
             var job = await ApiClient.RecordExitAsync(_selectedExitJob.Id, _exitPhotoLocalPath);
-            StatusResultVehicleLabel.Text = string.IsNullOrWhiteSpace(job.PONumber) ? job.VehicleNumber : $"{job.VehicleNumber} · PO {job.PONumber}";
+            StatusResultVehicleLabel.Text = string.IsNullOrWhiteSpace(job.PONumber) ? job.VehicleNumber : $"{job.VehicleNumber} Â· PO {job.PONumber}";
             StatusGatePassTokenLabel.Text = job.GatePassToken;
 
             ShowExitResultState();

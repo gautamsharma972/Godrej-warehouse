@@ -7,145 +7,87 @@
              x:Class="WarehouseGate.Mobile.Pages.SupervisorHistoryPage"
              Title="History"
              Shell.BackButtonBehavior="{x:Null}"
-             Shell.TabBarIsVisible="False"
+             Shell.TabBarIsVisible="True"
              BackgroundColor="#F8FAFC">
 
     <ContentPage.Resources>
         <DataTemplate x:Key="InwardHistoryRowTemplate" x:DataType="models:InwardJob">
             <Border Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                    StrokeShape="RoundRectangle 18" Padding="0" Margin="0,0,0,10">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
-                </Border.Shadow>
+                    StrokeShape="RoundRectangle 14" Padding="12" Margin="0,0,0,9">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnInwardJobTapped" />
                 </Border.GestureRecognizers>
-                <Grid ColumnDefinitions="6,Auto,1.2*,1.5*,Auto,Auto" ColumnSpacing="0" MinimumHeightRequest="86">
-                    <BoxView Grid.Column="0" Color="{StaticResource StatusSuccess}" />
-                    <Border Grid.Column="1" WidthRequest="46" HeightRequest="46" StrokeThickness="0"
-                            Margin="16,0,14,0" BackgroundColor="{StaticResource StatusSuccessTint}"
-                            StrokeShape="RoundRectangle 14"
-                            VerticalOptions="Center">
-                        <Label Text="{x:Static services:IconGlyphs.Truck}" Style="{StaticResource IconLabel}" FontSize="17"
-                               TextColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                               HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-                    <VerticalStackLayout Grid.Column="2" Spacing="4" VerticalOptions="Center">
-                        <Label Text="VEHICLE" TextColor="#687387" FontSize="9" CharacterSpacing="0.7" />
-                        <Label Text="{Binding VehicleNumber}" FontFamily="PoppinsSemiBold" FontSize="16"
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" MinimumHeightRequest="58">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                        <Label Text="{Binding VehicleNumber}" FontFamily="PoppinsSemiBold" FontSize="13"
                                TextColor="#172033" LineBreakMode="TailTruncation" />
+                        <Label Text="{Binding SubtitleWithTime}" Style="{StaticResource MetaLabel}" FontSize="10"
+                               LineBreakMode="WordWrap" MaxLines="2" VerticalOptions="Center" />
                     </VerticalStackLayout>
-                    <VerticalStackLayout Grid.Column="3" Spacing="4" VerticalOptions="Center">
-                        <Label Text="JOB DETAILS" TextColor="#687387" FontSize="9" CharacterSpacing="0.7" />
-                        <HorizontalStackLayout Spacing="7">
-                            <Label Text="{x:Static services:IconGlyphs.Warehouse}" Style="{StaticResource IconLabel}"
-                                   FontSize="11" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
-                            <Label Text="{Binding SubtitleWithTime}" Style="{StaticResource MetaLabel}" FontSize="12"
-                                   LineBreakMode="TailTruncation" VerticalOptions="Center" />
-                        </HorizontalStackLayout>
-                    </VerticalStackLayout>
-                    <Border Grid.Column="4" Padding="10,5" Margin="16,0" StrokeThickness="0"
-                            HorizontalOptions="End" VerticalOptions="Center"
-                            BackgroundColor="{StaticResource StatusSuccess}"
-                            StrokeShape="RoundRectangle 11">
-                            <Label Text="{Binding Status, Converter={StaticResource StatusToDisplayTextConverter}}"
-                                   TextColor="White" FontSize="10" FontFamily="PoppinsSemiBold" />
-                    </Border>
-                        <Border Grid.Column="5" WidthRequest="36" HeightRequest="36" Margin="0,0,16,0"
-                                Stroke="#E4E9F1" StrokeThickness="1"
-                                BackgroundColor="#FBFCFE" StrokeShape="RoundRectangle 11"
-                                VerticalOptions="Center">
-                            <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
-                                   FontSize="12" VerticalOptions="Center" HorizontalOptions="Center"
-                                   TextColor="{StaticResource StatusNeutral}" />
+                    <HorizontalStackLayout Grid.Column="1" Spacing="9" VerticalOptions="Center">
+                        <Border WidthRequest="28" HeightRequest="28" StrokeThickness="0"
+                                BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 10">
+                            <Label Text="{x:Static services:IconGlyphs.CircleCheck}" Style="{StaticResource IconLabel}"
+                                   FontSize="10" TextColor="{StaticResource StatusSuccess}"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
                         </Border>
+                        <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                               FontSize="11" VerticalOptions="Center" TextColor="{StaticResource StatusNeutral}" />
+                    </HorizontalStackLayout>
                 </Grid>
             </Border>
         </DataTemplate>
 
         <DataTemplate x:Key="OutwardHistoryRowTemplate" x:DataType="models:OutwardJob">
             <Border Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                    StrokeShape="RoundRectangle 18" Padding="0" Margin="0,0,0,10">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
-                </Border.Shadow>
+                    StrokeShape="RoundRectangle 14" Padding="12" Margin="0,0,0,9">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnOutwardJobTapped" />
                 </Border.GestureRecognizers>
-                <Grid ColumnDefinitions="6,Auto,1.2*,1.5*,Auto,Auto" ColumnSpacing="0" MinimumHeightRequest="86">
-                    <BoxView Grid.Column="0" Color="{StaticResource StatusSuccess}" />
-                    <Border Grid.Column="1" WidthRequest="46" HeightRequest="46" StrokeThickness="0"
-                            Margin="16,0,14,0" BackgroundColor="{StaticResource StatusSuccessTint}"
-                            StrokeShape="RoundRectangle 14"
-                            VerticalOptions="Center">
-                        <Label Text="{x:Static services:IconGlyphs.Dolly}" Style="{StaticResource IconLabel}" FontSize="17"
-                               TextColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                               HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-                    <VerticalStackLayout Grid.Column="2" Spacing="4" VerticalOptions="Center">
-                        <Label Text="DISPATCH ORDER" TextColor="#687387" FontSize="9" CharacterSpacing="0.7" />
-                        <Label Text="{Binding DispatchOrderNumber}" FontFamily="PoppinsSemiBold" FontSize="16"
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" MinimumHeightRequest="58">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                        <Label Text="{Binding DispatchOrderNumber}" FontFamily="PoppinsSemiBold" FontSize="13"
                                TextColor="#172033" LineBreakMode="TailTruncation" />
+                        <Label Text="{Binding SubtitleWithTime}" Style="{StaticResource MetaLabel}" FontSize="10"
+                               LineBreakMode="WordWrap" MaxLines="2" VerticalOptions="Center" />
                     </VerticalStackLayout>
-                    <VerticalStackLayout Grid.Column="3" Spacing="4" VerticalOptions="Center">
-                        <Label Text="CUSTOMER &amp; TIME" TextColor="#687387" FontSize="9" CharacterSpacing="0.7" />
-                        <HorizontalStackLayout Spacing="7">
-                            <Label Text="{x:Static services:IconGlyphs.Building}" Style="{StaticResource IconLabel}"
-                                   FontSize="11" TextColor="{StaticResource TextSecondaryLight}" VerticalOptions="Center" />
-                            <Label Text="{Binding SubtitleWithTime}" Style="{StaticResource MetaLabel}" FontSize="12"
-                                   LineBreakMode="TailTruncation" VerticalOptions="Center" />
-                        </HorizontalStackLayout>
-                    </VerticalStackLayout>
-                    <Border Grid.Column="4" Padding="10,5" Margin="16,0" StrokeThickness="0"
-                            HorizontalOptions="End" VerticalOptions="Center"
-                            BackgroundColor="{StaticResource StatusSuccess}"
-                            StrokeShape="RoundRectangle 11">
-                            <Label Text="{Binding Status, Converter={StaticResource StatusToDisplayTextConverter}}"
-                                   TextColor="White" FontSize="10" FontFamily="PoppinsSemiBold" />
-                    </Border>
-                        <Border Grid.Column="5" WidthRequest="36" HeightRequest="36" Margin="0,0,16,0"
-                                Stroke="#E4E9F1" StrokeThickness="1"
-                                BackgroundColor="#FBFCFE" StrokeShape="RoundRectangle 11"
-                                VerticalOptions="Center">
-                            <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
-                                   FontSize="12" VerticalOptions="Center" HorizontalOptions="Center"
-                                   TextColor="{StaticResource StatusNeutral}" />
+                    <HorizontalStackLayout Grid.Column="1" Spacing="9" VerticalOptions="Center">
+                        <Border WidthRequest="28" HeightRequest="28" StrokeThickness="0"
+                                BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 10">
+                            <Label Text="{x:Static services:IconGlyphs.CircleCheck}" Style="{StaticResource IconLabel}"
+                                   FontSize="10" TextColor="{StaticResource StatusSuccess}"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
                         </Border>
+                        <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                               FontSize="11" VerticalOptions="Center" TextColor="{StaticResource StatusNeutral}" />
+                    </HorizontalStackLayout>
                 </Grid>
             </Border>
         </DataTemplate>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,*">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="30,26,30,18" Spacing="18">
+    <Grid RowDefinitions="Auto,Auto,*">
+        <Grid Grid.Row="0" BackgroundColor="Transparent">
+            <controls:BackHeaderView PageTitle="History" Title="Completed dock activity" ShowBackButton="False"
+                                     BackRoute="//SupervisorTabs/SupervisorDashboardPage">
+                <controls:BackHeaderView.TrailingContent>
+                    <Border Padding="9,5" Stroke="#D4E2FF" StrokeThickness="1"
+                            BackgroundColor="#F4F7FF" StrokeShape="RoundRectangle 11">
+                        <Label x:Name="ResultsCountLabel" Text="0 results" FontSize="10"
+                               FontFamily="PoppinsSemiBold" TextColor="{StaticResource Primary}" />
+                    </Border>
+                </controls:BackHeaderView.TrailingContent>
+            </controls:BackHeaderView>
+        </Grid>
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="12,10,12,10" Spacing="12">
 
-                    <controls:AppHeaderView AccountRoute="//SupervisorTabs/SupervisorAccountPage" />
-
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20" Margin="0,4,0,2">
-                        <VerticalStackLayout Grid.Column="0" Spacing="7">
-                            <Label Text="DOCK OPERATIONS" TextColor="{StaticResource Primary}"
-                                   FontSize="11" CharacterSpacing="1.2" FontFamily="PoppinsRegular" />
-                            <Label Text="History" TextColor="#172033" FontSize="30" FontFamily="PoppinsSemiBold" />
-                            <Label x:Name="HistorySubtitleLabel" Text="Search completed inward dock activity."
-                                   TextColor="#687387" FontSize="13" />
-                        </VerticalStackLayout>
-                        <VerticalStackLayout Grid.Column="1" Spacing="10" HorizontalOptions="End">
-                                <Border Padding="10,6" Stroke="#CFEEDE" StrokeThickness="1" BackgroundColor="#F4FCF8"
-                                        StrokeShape="RoundRectangle 13" HorizontalOptions="End">
-                                    <HorizontalStackLayout Spacing="7">
-                                        <BoxView WidthRequest="7" HeightRequest="7" CornerRadius="4"
-                                                 Color="{StaticResource StatusSuccess}" VerticalOptions="Center" />
-                                        <Label x:Name="ResultsCountLabel" Text="0 results" FontSize="12" FontFamily="PoppinsSemiBold"
-                                               TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                    </HorizontalStackLayout>
-                                </Border>
-
-                                <HorizontalStackLayout Spacing="10" HorizontalOptions="End">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" HeightRequest="42">
                                     <Border Padding="5" Stroke="#E4E9F1" StrokeThickness="1"
                                             StrokeShape="RoundRectangle 14" BackgroundColor="White"
-                                            HeightRequest="42" VerticalOptions="Center">
-                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4" WidthRequest="210">
+                                            HeightRequest="42" MinimumHeightRequest="42" MaximumHeightRequest="42"
+                                            VerticalOptions="Center" HorizontalOptions="Fill">
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
                                         <Border x:Name="InwardHistoryTabPill" Grid.Column="0" StrokeThickness="0"
                                                 StrokeShape="RoundRectangle 10" Padding="10,6">
                                         <Label x:Name="InwardSwitchLabel" Text="Inward" FontFamily="PoppinsSemiBold"
@@ -166,22 +108,25 @@
                                         </Border>
                                         </Grid>
                                     </Border>
+                                    <Button Grid.Column="1" Text="Filters" Clicked="OnOpenFiltersClicked"
+                                            Style="{StaticResource ChipButton}" HeightRequest="42" MinimumHeightRequest="42" MaximumHeightRequest="42"
+                                            CornerRadius="14" Padding="10,0" FontSize="11" BackgroundColor="#EAF1FF" VerticalOptions="Center">
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.Filter}" Color="{StaticResource Primary}" Size="11" />
+                                        </Button.ImageSource>
+                                    </Button>
                                     <Button x:Name="ClearDateQuickButton" Text="Today" Clicked="OnClearDateClicked"
-                                            Style="{StaticResource ChipButton}" HeightRequest="42" MinimumHeightRequest="42"
-                                            Padding="12,6" FontSize="12" BackgroundColor="White">
+                                            Grid.Column="2"
+                                            Style="{StaticResource ChipButton}" HeightRequest="42" MinimumHeightRequest="42" MaximumHeightRequest="42"
+                                            CornerRadius="14" Padding="12,0" FontSize="12" BackgroundColor="White" VerticalOptions="Center">
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="FaSolid" Glyph="{x:Static services:IconGlyphs.CalendarDays}" Color="{StaticResource Primary}" Size="11" />
                                         </Button.ImageSource>
                                     </Button>
-                                </HorizontalStackLayout>
-                        </VerticalStackLayout>
                     </Grid>
 
                     <Border Stroke="#E4E9F1" StrokeThickness="1" BackgroundColor="White"
-                            StrokeShape="RoundRectangle 18" Padding="18">
-                        <Border.Shadow>
-                            <Shadow Brush="#23344F" Offset="0,8" Radius="24" Opacity="0.06" />
-                        </Border.Shadow>
+                            StrokeShape="RoundRectangle 14" Padding="12" IsVisible="False">
                         <VerticalStackLayout Spacing="0">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                 <Grid.IsVisible>False</Grid.IsVisible>
@@ -243,10 +188,10 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                    <Grid ColumnDefinitions="*,Auto" Margin="2,2,2,0">
                         <VerticalStackLayout Grid.Column="0" Spacing="2">
                             <Label x:Name="ResultsTitleLabel" Text="Completed inward jobs" Style="{StaticResource SectionTitleLabel}" FontSize="18" />
-                            <Label Text="Tap any row to inspect the completed job." Style="{StaticResource MetaLabel}" />
+                            <Label Text="Tap a row to view details." Style="{StaticResource MetaLabel}" FontSize="10" />
                         </VerticalStackLayout>
                         <Border Grid.Column="1" Padding="10,6" StrokeThickness="0" BackgroundColor="{StaticResource CardTint}"
                                 StrokeShape="RoundRectangle 12" VerticalOptions="Center">
@@ -263,8 +208,8 @@
              virtualization and measures/renders every row up front, which is what was causing
              the ANR ("isn't responding") on this page once history had more than a handful of
              completed jobs. Giving it a real "*" row lets it virtualize normally. -->
-        <RefreshView Grid.Row="1" x:Name="RefreshViewControl" Refreshing="OnRefreshing">
-            <Grid Padding="32,8,32,32">
+        <RefreshView Grid.Row="2" x:Name="RefreshViewControl" Refreshing="OnRefreshing">
+            <Grid Padding="14,4,14,24">
                 <CollectionView x:Name="InwardResultsCollectionView" ItemTemplate="{StaticResource InwardHistoryRowTemplate}">
                     <CollectionView.EmptyView>
                         <VerticalStackLayout Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
@@ -285,7 +230,7 @@
         </RefreshView>
 
         <!-- Transient live-update banner, overlaid on top of the header. -->
-        <Border x:Name="LiveBanner" Grid.Row="0" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="16,12"
+        <Border x:Name="LiveBanner" Grid.Row="1" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="16,12"
                 Padding="14,10" StrokeThickness="0" BackgroundColor="{StaticResource Primary}" StrokeShape="RoundRectangle 14">
             <Label x:Name="LiveBannerLabel" TextColor="{StaticResource PrimaryDarkText}" FontFamily="PoppinsSemiBold"
                    FontSize="13" HorizontalOptions="Center" />

@@ -96,41 +96,53 @@ public static class UiHelpers
         var color = (Color)Application.Current!.Resources[colorKey];
         var mutedColor = (Color)Application.Current!.Resources["TextSecondaryLight"];
 
-        var badge = new Grid { WidthRequest = 46, HeightRequest = 46, VerticalOptions = LayoutOptions.Center };
+        var badge = new Grid { WidthRequest = 38, HeightRequest = 38, VerticalOptions = LayoutOptions.Center };
         badge.Children.Add(new Border
         {
-            StrokeShape = new Ellipse(),
+            StrokeShape = new RoundRectangle { CornerRadius = 12 },
             StrokeThickness = 0,
             BackgroundColor = color,
             Opacity = 0.15
         });
         badge.Children.Add(new Label
         {
-            Text = icon, FontFamily = "FaSolid", FontSize = 16, TextColor = color,
+            Text = icon, FontFamily = "FaSolid", FontSize = 14, TextColor = color,
             HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center
         });
 
         var countLabel = new Label
         {
             Text = count.ToString(),
-            FontFamily = "PoppinsBold",
-            FontSize = 22,
+            FontFamily = "PoppinsSemiBold",
+            FontSize = 11,
             TextColor = color,
+            HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center
+        };
+
+        var countBadge = new Border
+        {
+            Padding = new Thickness(9, 5),
+            StrokeThickness = 0,
+            BackgroundColor = color.WithAlpha(0.12f),
+            StrokeShape = new RoundRectangle { CornerRadius = 11 },
+            VerticalOptions = LayoutOptions.Center,
+            Content = countLabel
         };
 
         var messageLabel = new Label
         {
             Text = label,
-            FontSize = 13,
-            TextColor = mutedColor,
+            FontSize = 12,
+            FontFamily = "PoppinsSemiBold",
+            TextColor = (Color)Application.Current.Resources["TextPrimaryLight"],
             VerticalOptions = LayoutOptions.Center,
             LineBreakMode = LineBreakMode.WordWrap
         };
 
         var chevron = new Label
         {
-            Text = IconGlyphs.ChevronRight, FontFamily = "FaSolid", FontSize = 14,
+            Text = IconGlyphs.ChevronRight, FontFamily = "FaSolid", FontSize = 10,
             TextColor = mutedColor, VerticalOptions = LayoutOptions.Center
         };
 
@@ -143,22 +155,24 @@ public static class UiHelpers
                 new ColumnDefinition(GridLength.Auto),
                 new ColumnDefinition(GridLength.Auto)
             },
-            ColumnSpacing = 14
+            ColumnSpacing = 10
         };
         grid.Children.Add(badge);
         Grid.SetColumn(badge, 0);
         grid.Children.Add(messageLabel);
         Grid.SetColumn(messageLabel, 1);
-        grid.Children.Add(countLabel);
-        Grid.SetColumn(countLabel, 2);
+        grid.Children.Add(countBadge);
+        Grid.SetColumn(countBadge, 2);
         grid.Children.Add(chevron);
         Grid.SetColumn(chevron, 3);
 
         var card = new Border
         {
-            Style = (Style)Application.Current!.Resources["CardBorder"],
-            StrokeShape = new RoundRectangle { CornerRadius = 18 },
-            Padding = new Thickness(18, 16),
+            Stroke = (Color)Application.Current!.Resources["CardBorderLight"],
+            StrokeThickness = 1,
+            BackgroundColor = Colors.White,
+            StrokeShape = new RoundRectangle { CornerRadius = 14 },
+            Padding = new Thickness(13, 12),
             Content = grid
         };
         card.GestureRecognizers.Add(new TapGestureRecognizer

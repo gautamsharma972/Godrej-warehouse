@@ -1,6 +1,9 @@
 using System.Text;
+using Amazon;
+using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -29,10 +32,25 @@ try
         ?? throw new InvalidOperationException("Jwt configuration section is missing.");
     builder.Services.AddSingleton(jwtOptions);
 
-    var photoStorageOptions = builder.Configuration.GetSection("PhotoStorage").Get<LocalDiskPhotoStorageOptions>()
-        ?? new LocalDiskPhotoStorageOptions();
-    builder.Services.AddSingleton(photoStorageOptions);
-    builder.Services.AddSingleton<IPhotoStorageService, LocalDiskPhotoStorageService>();
+    // "S3" in production (bucket/region only - no access keys live here; the AWS SDK's default
+    // credential chain picks up the EC2/ECS instance role automatically), "LocalDisk" (default) for
+    // local dev so it keeps working with zero AWS setup at all.
+    var storageProvider = builder.Configuration["Storage:Provider"] ?? "LocalDisk";
+    if (string.Equals(storageProvider, "S3", StringComparison.OrdinalIgnoreCase))
+    {
+        var s3Options = builder.Configuration.GetSection("Storage:S3").Get<S3PhotoStorageOptions>()
+            ?? throw new InvalidOperationException("Storage:S3 configuration section is missing.");
+        builder.Services.AddSingleton(s3Options);
+        builder.Services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(RegionEndpoint.GetBySystemName(s3Options.Region)));
+        builder.Services.AddSingleton<IPhotoStorageService, S3PhotoStorageService>();
+    }
+    else
+    {
+        var photoStorageOptions = builder.Configuration.GetSection("PhotoStorage").Get<LocalDiskPhotoStorageOptions>()
+            ?? new LocalDiskPhotoStorageOptions();
+        builder.Services.AddSingleton(photoStorageOptions);
+        builder.Services.AddSingleton<IPhotoStorageService, LocalDiskPhotoStorageService>();
+    }
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentTenantProvider, HttpContextCurrentTenantProvider>();
@@ -112,6 +130,32 @@ try
                         context.Token = accessToken;
                     }
                     return Task.CompletedTask;
+                },
+                // A token's "orgId" claim is baked in at login and never re-checked afterward - if
+                // that organization is later deleted (or the token was issued against a different
+                // database, e.g. during a local-to-production connection string switch), every
+                // request still sails through JWT validation and only blows up much later as a raw
+                // DbUpdateException the first time something auto-stamps OrganizationId onto a new
+                // row (most visibly AuditService's own insert, since that's a fresh row on nearly
+                // every write, even ones that don't otherwise touch OrganizationId). Rejecting here
+                // - before the request ever reaches a controller/DB write - turns that into a clean
+                // 401 instead. PlatformAdmin's orgId is legitimately absent (see
+                // HttpContextCurrentTenantProvider's own comment on that), so no claim means nothing
+                // to check, same as today.
+                OnTokenValidated = async context =>
+                {
+                    var orgIdClaim = context.Principal?.FindFirst("orgId")?.Value;
+                    if (string.IsNullOrEmpty(orgIdClaim) || !int.TryParse(orgIdClaim, out var orgId))
+                    {
+                        return;
+                    }
+
+                    var db = context.HttpContext.RequestServices.GetRequiredService<WarehouseGateDbContext>();
+                    var organizationExists = await db.Organizations.AnyAsync(o => o.Id == orgId);
+                    if (!organizationExists)
+                    {
+                        context.Fail("Organization no longer exists - please sign in again.");
+                    }
                 }
             };
         });
@@ -150,11 +194,44 @@ try
         });
     });
 
+    // No actual browser ever calls this API cross-origin today - the web portal is Blazor Server
+    // (its own server proxies every API call, including /file-proxy), and the mobile app is a
+    // native HttpClient/SignalR client, neither of which CORS applies to. This policy exists purely
+    // as a guardrail for whatever DOES end up calling from a browser later. Wide open
+    // (SetIsOriginAllowed(_ => true) + AllowCredentials) was the previous default - locked down to
+    // an explicit allowlist instead. Cors:AllowedOrigins is unset by default, which falls back to
+    // just the local dev portal origins below; add the real production web portal origin(s) via
+    // that config key (or the Cors__AllowedOrigins__0 env var) once that's known.
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+    if (allowedOrigins is null || allowedOrigins.Length == 0)
+    {
+        allowedOrigins = ["https://localhost:7172", "http://localhost:5062"];
+    }
     builder.Services.AddCors(options =>
     {
         options.AddDefaultPolicy(policy =>
-            policy.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true).AllowCredentials());
+            policy.AllowAnyHeader().AllowAnyMethod().WithOrigins(allowedOrigins).AllowCredentials());
     });
+
+    // Unauthenticated brute-force guard on login specifically - Identity's own account lockout
+    // isn't engaged here (AuthController.Login calls CheckPasswordAsync directly, not
+    // PasswordSignInAsync), so without this a weak/guessable password has literally no attempt
+    // ceiling. Partitioned per client IP so one attacker can't exhaust everyone else's budget.
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy("login", httpContext => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 5,
+                QueueLimit = 0
+            }));
+    });
+
+    builder.Services.AddHealthChecks()
+        .AddDbContextCheck<WarehouseGateDbContext>();
 
     var app = builder.Build();
 
@@ -163,11 +240,11 @@ try
 //    await SeedData.InitializeAsync(scope.ServiceProvider);
 //}
 
-//if (app.Environment.IsDevelopment())
-//{
-app.UseSwagger();
-app.UseSwaggerUI();
-//}
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
 
     // Local Android emulators call the dev API over HTTP via 10.0.2.2. Redirecting that
     // request to HTTPS breaks on the emulator because the localhost dev certificate is not trusted.
@@ -176,6 +253,7 @@ app.UseSwaggerUI();
         app.UseHttpsRedirection();
     }
     app.UseCors();
+    app.UseRateLimiter();
 
     app.UseSerilogRequestLogging(options =>
     {
@@ -193,6 +271,7 @@ app.UseSwaggerUI();
 
     app.MapControllers();
     app.MapHub<InwardHub>("/hubs/inward");
+    app.MapHealthChecks("/health");
 
     app.Run();
 }

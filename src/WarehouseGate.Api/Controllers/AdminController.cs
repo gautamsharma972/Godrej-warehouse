@@ -616,7 +616,11 @@ public class AdminController : ControllerBase
             Category = category,
             IsStackable = request.IsStackable,
             MaxStackLayers = request.MaxStackLayers,
-            ColorHex = string.IsNullOrWhiteSpace(request.ColorHex) ? null : request.ColorHex.Trim()
+            // Color is never a field the Add form collects (see ProductColorAssigner's header
+            // comment) - a blank value here is the normal case, not a fallback for a rare gap.
+            ColorHex = string.IsNullOrWhiteSpace(request.ColorHex)
+                ? ProductColorAssigner.AutoColorFor(request.SkuCode)
+                : request.ColorHex.Trim()
         };
         _db.Products.Add(product);
         await _db.SaveChangesAsync();
@@ -647,7 +651,13 @@ public class AdminController : ControllerBase
         product.Category = category;
         product.IsStackable = request.IsStackable;
         product.MaxStackLayers = request.MaxStackLayers;
-        product.ColorHex = string.IsNullOrWhiteSpace(request.ColorHex) ? null : request.ColorHex.Trim();
+        // The Edit form passes the product's existing color straight through unseen (there's no
+        // field for it), so this only actually falls to auto-assignment for an older product that
+        // never had a color to begin with - which then gets one going forward instead of staying
+        // blank forever just because it predates auto-assignment.
+        product.ColorHex = string.IsNullOrWhiteSpace(request.ColorHex)
+            ? ProductColorAssigner.AutoColorFor(product.SkuCode)
+            : request.ColorHex.Trim();
         await _db.SaveChangesAsync();
         await _audit.LogAsync("Product", product.Id, AuditAction.Updated, $"Product '{product.Name}' updated.", CurrentUserId, CurrentUserName);
         return Ok(ToProductDto(product));
@@ -671,6 +681,41 @@ public class AdminController : ControllerBase
     private static ProductDto ToProductDto(Product p) => new(
         p.Id, p.Name, p.SkuCode, p.WeightKg, p.LengthCm, p.WidthCm, p.HeightCm,
         p.Category.ToString(), p.IsStackable, p.MaxStackLayers, p.ColorHex);
+
+    // No color column and no way to leave one blank in the sheet - ProductExcelParser always
+    // computes ColorHex itself from the SKU code (see its own header comment for why). Duplicate
+    // SKU/name checking runs against every existing product for the caller's org, which the
+    // parser needs up front since it has no DB access of its own.
+    [HttpPost("products/upload")]
+    [RequestSizeLimit(10_000_000)]
+    public async Task<ActionResult<ProductUploadResultDto>> UploadProducts(IFormFile file)
+    {
+        if (file.Length == 0)
+        {
+            return BadRequest(new { message = "File is empty." });
+        }
+
+        var existingProducts = await _db.Products.ToListAsync();
+
+        List<Product> parsedProducts;
+        int duplicateCount;
+        List<ProductUploadRowErrorDto> errors;
+        await using (var stream = file.OpenReadStream())
+        {
+            (parsedProducts, duplicateCount, errors) = ProductExcelParser.Parse(stream, existingProducts);
+        }
+
+        if (parsedProducts.Count > 0)
+        {
+            _db.Products.AddRange(parsedProducts);
+            await _db.SaveChangesAsync();
+            await _audit.LogAsync("Product", 0, AuditAction.Created,
+                $"Imported {parsedProducts.Count} product(s) from '{file.FileName}' ({duplicateCount} duplicate(s), {errors.Count - duplicateCount} other row(s) skipped).",
+                CurrentUserId, CurrentUserName);
+        }
+
+        return Ok(new ProductUploadResultDto(parsedProducts.Count, duplicateCount, errors));
+    }
 
     // ============================ LOCATIONS ============================
 

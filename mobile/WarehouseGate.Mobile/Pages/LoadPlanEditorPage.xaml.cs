@@ -54,7 +54,7 @@ public partial class LoadPlanEditorPage : ContentPage
 
     // The 3D simulation is a heavy WebGL view and its only placement entry point
     // (SkuPickListCollectionView below is the phone-friendly alternative) - hidden by default.
-    private bool _simulationVisible;
+    private bool _simulationVisible = false;
 
     private LoadPlanGroup? _selectedGroup;
     private bool _ruleValidationExpanded = true;
@@ -98,7 +98,7 @@ public partial class LoadPlanEditorPage : ContentPage
     private void ApplyResponsiveLayout(bool wide)
     {
         LoadVizWebView.MinimumHeightRequest = wide ? 640 : 520;
-        WorkspaceGrid.Padding = wide ? new Thickness(28, 0, 28, 18) : new Thickness(14, 0, 14, 14);
+        WorkspaceGrid.Padding = wide ? new Thickness(28, 18, 28, 18) : new Thickness(14, 14, 14, 14);
         UpdateWorkspaceLayout();
     }
 
@@ -127,12 +127,16 @@ public partial class LoadPlanEditorPage : ContentPage
         Grid.SetColumn(CenterScrollView, twoColumns ? 1 : 0);
     }
 
-    private void OnToggleSimulationClicked(object? sender, EventArgs e)
+    private async void OnToggleSimulationClicked(object? sender, EventArgs e)
     {
-        _simulationVisible = !_simulationVisible;
-        ToggleSimulationIcon.Text = _simulationVisible ? IconGlyphs.EyeSlash : IconGlyphs.Eye;
-        SemanticProperties.SetDescription(ToggleSimulationButton, _simulationVisible ? "Hide simulation" : "Show simulation");
-        UpdateWorkspaceLayout();
+        if (string.IsNullOrWhiteSpace(_lastVizPayload))
+        {
+            return;
+        }
+
+        LoadSimulationSession.Payload = _lastVizPayload;
+        LoadSimulationSession.Title = _job?.DispatchOrderNumber ?? "Load simulation";
+        await Shell.Current.GoToAsync(nameof(LoadSimulationPage));
     }
 
     protected override void OnAppearing()
@@ -194,7 +198,8 @@ public partial class LoadPlanEditorPage : ContentPage
                 }
             }
 
-            PageHeaderView.PageTitle = $"{_job.DispatchOrderNumber} — {_job.CustomerName}";
+            PageHeaderView.PageTitle = _job.DispatchOrderNumber;
+            PageHeaderView.Title = $"Load plan · {_job.CustomerName}";
 
             await RefreshOptionsAsync();
         }
@@ -1158,23 +1163,13 @@ public partial class LoadPlanEditorPage : ContentPage
             : uniqueWarnings.Count == 1 ? "1 issue found" : $"{uniqueWarnings.Count} issues found";
         if (uniqueWarnings.Count == 0)
         {
-            WarningsContainer.Children.Add(new Label
-            {
-                Text = "No issues found.",
-                FontSize = 12,
-                TextColor = (Color)Application.Current!.Resources["StatusSuccess"]
-            });
+            WarningsContainer.Children.Add(CreateValidationMessage("No issues found.", false));
         }
         else
         {
             foreach (var message in uniqueWarnings)
             {
-                WarningsContainer.Children.Add(new Label
-                {
-                    Text = "⚠ " + message,
-                    FontSize = 12,
-                    TextColor = (Color)Application.Current!.Resources["StatusException"]
-                });
+                WarningsContainer.Children.Add(CreateValidationMessage(message, true));
             }
         }
 
@@ -1200,6 +1195,43 @@ public partial class LoadPlanEditorPage : ContentPage
         balanceBadge.BackgroundColor = validation.Simulation.BalanceStatus == "Balanced"
             ? (Color)Application.Current!.Resources["StatusSuccess"]
             : (Color)Application.Current!.Resources["StatusAssigned"];
+    }
+
+    private static Border CreateValidationMessage(string message, bool isWarning)
+    {
+        var color = (Color)Application.Current!.Resources[isWarning ? "StatusException" : "StatusSuccess"];
+
+        return new Border
+        {
+            Padding = new Thickness(10, 8),
+            StrokeThickness = 0,
+            BackgroundColor = (Color)Application.Current.Resources[isWarning ? "StatusExceptionTint" : "StatusSuccessTint"],
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+            Content = new HorizontalStackLayout
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new BoxView
+                    {
+                        WidthRequest = 5,
+                        HeightRequest = 5,
+                        CornerRadius = 2.5,
+                        Color = color,
+                        VerticalOptions = LayoutOptions.Start,
+                        Margin = new Thickness(0, 5, 0, 0)
+                    },
+                    new Label
+                    {
+                        Text = message,
+                        FontSize = 11,
+                        LineHeight = 1.25,
+                        TextColor = color,
+                        HorizontalOptions = LayoutOptions.Fill
+                    }
+                }
+            }
+        };
     }
 
     // Same resend-burst workaround as OutwardJobDetailPage/LoadPlannerPage -

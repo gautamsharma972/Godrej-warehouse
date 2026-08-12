@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
+             x:Class="WarehouseGate.Mobile.Pages.LoadSimulationPage"
+             Title="Load simulation"
+             Shell.BackButtonBehavior="{x:Null}"
+             Shell.TabBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
+             BackgroundColor="#F5F9FD">
+
+    <Grid>
+        <HybridWebView x:Name="SimulationWebView"
+                       HybridRoot="loadviz"
+                       DefaultFile="index.html"
+                       HorizontalOptions="Fill"
+                       VerticalOptions="Fill" />
+
+        <Border Margin="12" WidthRequest="42" HeightRequest="42"
+                HorizontalOptions="Start" VerticalOptions="Start"
+                Stroke="#CFE2DF" StrokeThickness="1" BackgroundColor="White"
+                StrokeShape="RoundRectangle 13" ZIndex="2">
+            <Border.Shadow>
+                <Shadow Brush="#1A2638" Offset="0,3" Radius="9" Opacity="0.14" />
+            </Border.Shadow>
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackTapped" />
+            </Border.GestureRecognizers>
+            <Label Text="{x:Static services:IconGlyphs.ArrowLeft}" Style="{StaticResource IconLabel}"
+                   FontSize="14" TextColor="{StaticResource Primary}"
+                   HorizontalOptions="Center" VerticalOptions="Center" />
+        </Border>
+    </Grid>
+</ContentPage>

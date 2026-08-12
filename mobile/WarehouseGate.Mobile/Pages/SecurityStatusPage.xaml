@@ -7,14 +7,14 @@
              x:Class="WarehouseGate.Mobile.Pages.SecurityStatusPage"
              Title="Vehicle Status"
              Shell.BackButtonBehavior="{x:Null}"
-             Shell.TabBarIsVisible="False">
+             Shell.TabBarIsVisible="True">
 
     <ContentPage.Resources>
         <DataTemplate x:Key="SecurityJobRowTemplate" x:DataType="models:InwardJob">
-            <Border Stroke="#DCEAE8" StrokeThickness="1" Padding="0" Margin="0,0,0,12"
-                    StrokeShape="RoundRectangle 18" BackgroundColor="White">
+            <Border Stroke="#DCE5F5" StrokeThickness="1" Padding="12" Margin="0,0,0,10"
+                    StrokeShape="RoundRectangle 14" BackgroundColor="White">
                 <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,6" Radius="20" Opacity="0.05" />
+                    <Shadow Brush="#23344F" Offset="0,3" Radius="10" Opacity="0.03" />
                 </Border.Shadow>
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnJobTapped" />
@@ -23,7 +23,7 @@
                     <Border Grid.Column="0" StrokeThickness="0" StrokeShape="RoundRectangle 16,0,16,0"
                             BackgroundColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}" />
                     <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 14" BackgroundColor="#E9FBF8" VerticalOptions="Center">
+                            StrokeShape="RoundRectangle 14" BackgroundColor="#EAF1FF" VerticalOptions="Center">
                         <Label Text="{x:Static services:IconGlyphs.Truck}" Style="{StaticResource IconLabel}"
                                FontSize="18" TextColor="{StaticResource Primary}"
                                HorizontalOptions="Center" VerticalOptions="Center" />
@@ -40,7 +40,7 @@
                                TextColor="White" FontSize="11" FontFamily="PoppinsSemiBold" />
                     </Border>
                     <Border Grid.Column="4" WidthRequest="34" HeightRequest="34" StrokeThickness="0"
-                            BackgroundColor="#F4FCF8" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                            BackgroundColor="#F4F7FF" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
                         <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
                                FontSize="12" VerticalOptions="Center" HorizontalOptions="Center" TextColor="#687387" />
                     </Border>
@@ -51,220 +51,186 @@
         <!-- History rows: status is now implied by which status tab is selected, so the subtitle
              carries the date+time instead (no separate date grouping anymore). -->
         <DataTemplate x:Key="SecurityHistoryJobRowTemplate" x:DataType="models:InwardJob">
-            <Border Stroke="#DCEAE8" StrokeThickness="1" Padding="0" Margin="0,0,0,12"
-                    StrokeShape="RoundRectangle 18" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,6" Radius="20" Opacity="0.05" />
-                </Border.Shadow>
+            <Border Stroke="#DCE5F5" StrokeThickness="1" Padding="13" Margin="0,0,0,8"
+                    StrokeShape="RoundRectangle 14" BackgroundColor="White">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnJobTapped" />
                 </Border.GestureRecognizers>
-                <Grid ColumnDefinitions="5,Auto,*,Auto,Auto" ColumnSpacing="14" MinimumHeightRequest="94" Padding="0,14,16,14">
-                    <Border Grid.Column="0" StrokeThickness="0" StrokeShape="RoundRectangle 16,0,16,0"
-                            BackgroundColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}" />
-                    <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 14" BackgroundColor="#E9FBF8" VerticalOptions="Center">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" MinimumHeightRequest="54">
+                    <Border Grid.Column="0" WidthRequest="36" HeightRequest="36" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 11" BackgroundColor="#EAF1FF" VerticalOptions="Center">
                         <Label Text="{x:Static services:IconGlyphs.ClockRotateLeft}" Style="{StaticResource IconLabel}"
-                               FontSize="18" TextColor="{StaticResource Primary}"
+                               FontSize="13" TextColor="{StaticResource Primary}"
                                HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
-                    <VerticalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
                         <Label Text="{Binding VehicleNumber}" TextColor="#172033"
-                               FontFamily="PoppinsSemiBold" FontSize="15" />
-                        <Label Text="{Binding SubtitleWithTime}" TextColor="#687387" FontSize="12" LineBreakMode="TailTruncation" />
+                               FontFamily="PoppinsSemiBold" FontSize="13" LineBreakMode="TailTruncation" />
+                        <Label Text="{Binding SubtitleWithTime}" TextColor="#788395" FontSize="10"
+                               LineBreakMode="TailTruncation" MaxLines="1" />
                     </VerticalStackLayout>
-                    <Border Grid.Column="3" Padding="11,6" StrokeThickness="0" HorizontalOptions="End" VerticalOptions="Center"
+                    <Border Grid.Column="2" Padding="9,4" StrokeThickness="0" HorizontalOptions="End" VerticalOptions="Center"
                             BackgroundColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                            StrokeShape="RoundRectangle 14">
+                            StrokeShape="RoundRectangle 10">
                         <Label Text="{Binding Status, Converter={StaticResource StatusToDisplayTextConverter}}"
-                               TextColor="White" FontSize="11" FontFamily="PoppinsSemiBold" />
+                               TextColor="White" FontSize="9" FontFamily="PoppinsSemiBold" />
                     </Border>
-                    <Border Grid.Column="4" WidthRequest="34" HeightRequest="34" StrokeThickness="0"
-                            BackgroundColor="#F4FCF8" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
-                        <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
-                               FontSize="12" VerticalOptions="Center" HorizontalOptions="Center" TextColor="#687387" />
-                    </Border>
+                    <Label Grid.Column="3" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                           FontSize="9" VerticalOptions="Center" HorizontalOptions="Center" TextColor="#8A94A5" />
                 </Grid>
             </Border>
         </DataTemplate>
 
         <DataTemplate x:Key="ReadyToExitRowTemplate" x:DataType="models:InwardJob">
-            <Border Stroke="#DCEAE8" StrokeThickness="1" Padding="0" Margin="0,0,0,12"
-                    StrokeShape="RoundRectangle 18" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,6" Radius="20" Opacity="0.05" />
-                </Border.Shadow>
+            <Border Stroke="#DCE5F5" StrokeThickness="1" Padding="14" Margin="0,0,0,8"
+                    StrokeShape="RoundRectangle 14" BackgroundColor="White">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnReadyToExitJobTapped" />
                 </Border.GestureRecognizers>
-                <Grid ColumnDefinitions="5,Auto,*,Auto,Auto" ColumnSpacing="14" MinimumHeightRequest="94" Padding="0,14,16,14">
-                    <Border Grid.Column="0" StrokeThickness="0" StrokeShape="RoundRectangle 16,0,16,0"
-                            BackgroundColor="{StaticResource StatusSuccess}" />
-                    <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 14" BackgroundColor="{StaticResource StatusSuccessTint}" VerticalOptions="Center">
-                        <Label Text="{x:Static services:IconGlyphs.RightFromBracket}" Style="{StaticResource IconLabel}"
-                               FontSize="18" TextColor="{StaticResource StatusSuccess}"
-                               HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
-                    <VerticalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" MinimumHeightRequest="56">
+                    <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
                         <Label Text="{Binding VehicleNumber}" TextColor="#172033"
-                               FontFamily="PoppinsSemiBold" FontSize="15" />
-                        <Label Text="{Binding Subtitle}" TextColor="#687387" FontSize="12" LineBreakMode="TailTruncation" />
+                               FontFamily="PoppinsSemiBold" FontSize="14" LineBreakMode="TailTruncation" />
+                        <Label Text="{Binding Subtitle}" TextColor="#788395" FontSize="11"
+                               LineBreakMode="TailTruncation" MaxLines="1" />
                     </VerticalStackLayout>
-                    <Border Grid.Column="3" Padding="11,6" StrokeThickness="0" HorizontalOptions="End" VerticalOptions="Center"
-                            BackgroundColor="{StaticResource StatusSuccess}" StrokeShape="RoundRectangle 14">
-                        <Label Text="{Binding Grn.GrnNumber}" TextColor="White" FontSize="11" FontFamily="PoppinsSemiBold" />
+                    <Border Grid.Column="1" Padding="10,6" StrokeThickness="0" HorizontalOptions="End" VerticalOptions="Center"
+                            BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 12">
+                        <Label Text="{Binding Grn.GrnNumber}" TextColor="{StaticResource StatusSuccess}"
+                               FontSize="10" FontFamily="PoppinsSemiBold" LineBreakMode="TailTruncation" MaxLines="1" />
                     </Border>
-                    <Border Grid.Column="4" WidthRequest="34" HeightRequest="34" StrokeThickness="0"
-                            BackgroundColor="#F4FCF8" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
-                        <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
-                               FontSize="12" VerticalOptions="Center" HorizontalOptions="Center" TextColor="#687387" />
-                    </Border>
+                    <Label Grid.Column="2" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                           FontSize="10" VerticalOptions="Center" HorizontalOptions="Center" TextColor="#8A94A5" />
                 </Grid>
             </Border>
         </DataTemplate>
 
         <DataTemplate x:Key="OutwardStatusRowTemplate" x:DataType="models:OutwardJob">
-            <Border Stroke="#DCEAE8" StrokeThickness="1" Padding="0" Margin="0,0,0,12"
-                    StrokeShape="RoundRectangle 18" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,6" Radius="20" Opacity="0.05" />
-                </Border.Shadow>
+            <Border Stroke="#DCE5F5" StrokeThickness="1" Padding="14,12" Margin="0,0,0,8"
+                    StrokeShape="RoundRectangle 14" BackgroundColor="White">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnOutwardStatusJobTapped" />
                 </Border.GestureRecognizers>
-                <Grid ColumnDefinitions="5,Auto,*,Auto,Auto" ColumnSpacing="14" MinimumHeightRequest="94" Padding="0,14,16,14">
-                    <Border Grid.Column="0" StrokeThickness="0" StrokeShape="RoundRectangle 16,0,16,0"
-                            BackgroundColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}" />
-                    <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 14" BackgroundColor="#E9FBF8" VerticalOptions="Center">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" MinimumHeightRequest="66">
+                    <Border Grid.Column="0" WidthRequest="34" HeightRequest="34" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 11" BackgroundColor="#EAF1FF" VerticalOptions="Center">
                         <Label Text="{x:Static services:IconGlyphs.BoxesStacked}" Style="{StaticResource IconLabel}"
-                               FontSize="18" TextColor="{StaticResource Primary}"
+                               FontSize="12" TextColor="{StaticResource Primary}"
                                HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
-                    <VerticalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
                         <Label Text="{Binding DispatchOrderNumber}" TextColor="#172033"
-                               FontFamily="PoppinsSemiBold" FontSize="15" />
-                        <Label Text="{Binding SubtitleWithTime}" TextColor="#687387" FontSize="12" LineBreakMode="TailTruncation" />
+                               FontFamily="PoppinsSemiBold" FontSize="13" LineBreakMode="TailTruncation" MaxLines="1" />
+                        <Label Text="{Binding SubtitleWithTime}" TextColor="#788395" FontSize="11"
+                               LineBreakMode="TailTruncation" MaxLines="1" />
+                        <Border Padding="8,3" Margin="0,2,0,0" StrokeThickness="0" HorizontalOptions="Start"
+                                BackgroundColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                StrokeShape="RoundRectangle 9">
+                            <Label Text="{Binding Status, Converter={StaticResource StatusToDisplayTextConverter}}"
+                                   TextColor="White" FontSize="9" FontFamily="PoppinsSemiBold" />
+                        </Border>
                     </VerticalStackLayout>
-                    <Border Grid.Column="3" Padding="11,6" StrokeThickness="0" HorizontalOptions="End" VerticalOptions="Center"
-                            BackgroundColor="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                            StrokeShape="RoundRectangle 14">
-                        <Label Text="{Binding Status, Converter={StaticResource StatusToDisplayTextConverter}}"
-                               TextColor="White" FontSize="11" FontFamily="PoppinsSemiBold" />
-                    </Border>
-                    <Border Grid.Column="4" WidthRequest="34" HeightRequest="34" StrokeThickness="0"
-                            BackgroundColor="#F4FCF8" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
-                        <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
-                               FontSize="12" VerticalOptions="Center" HorizontalOptions="Center" TextColor="#687387" />
-                    </Border>
+                    <Label Grid.Column="2" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                           FontSize="10" HorizontalOptions="Center" VerticalOptions="Center" TextColor="#8A94A5" />
                 </Grid>
             </Border>
         </DataTemplate>
 
         <DataTemplate x:Key="OutwardReadyToExitRowTemplate" x:DataType="models:OutwardJob">
-            <Border Stroke="#DCEAE8" StrokeThickness="1" Padding="0" Margin="0,0,0,12"
-                    StrokeShape="RoundRectangle 18" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="#23344F" Offset="0,6" Radius="20" Opacity="0.05" />
-                </Border.Shadow>
+            <Border Stroke="#DCE5F5" StrokeThickness="1" Padding="14,12" Margin="0,0,0,8"
+                    StrokeShape="RoundRectangle 14" BackgroundColor="White">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnOutwardReadyToExitJobTapped" />
                 </Border.GestureRecognizers>
-                <Grid ColumnDefinitions="5,Auto,*,Auto,Auto" ColumnSpacing="14" MinimumHeightRequest="94" Padding="0,14,16,14">
-                    <Border Grid.Column="0" StrokeThickness="0" StrokeShape="RoundRectangle 16,0,16,0"
-                            BackgroundColor="{StaticResource StatusSuccess}" />
-                    <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 14" BackgroundColor="{StaticResource StatusSuccessTint}" VerticalOptions="Center">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" MinimumHeightRequest="66">
+                    <Border Grid.Column="0" WidthRequest="34" HeightRequest="34" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 11" BackgroundColor="{StaticResource StatusSuccessTint}" VerticalOptions="Center">
                         <Label Text="{x:Static services:IconGlyphs.RightFromBracket}" Style="{StaticResource IconLabel}"
-                               FontSize="18" TextColor="{StaticResource StatusSuccess}"
+                               FontSize="12" TextColor="{StaticResource StatusSuccess}"
                                HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
-                    <VerticalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
                         <Label Text="{Binding VehicleNumber}" TextColor="#172033"
-                               FontFamily="PoppinsSemiBold" FontSize="15" />
-                        <Label Text="{Binding SubtitleWithTime}" TextColor="#687387" FontSize="12" LineBreakMode="TailTruncation" />
+                               FontFamily="PoppinsSemiBold" FontSize="13" LineBreakMode="TailTruncation" MaxLines="1" />
+                        <Label Text="{Binding SubtitleWithTime}" TextColor="#788395" FontSize="11"
+                               LineBreakMode="TailTruncation" MaxLines="1" />
+                        <Border Padding="8,3" Margin="0,2,0,0" StrokeThickness="0" HorizontalOptions="Start"
+                                BackgroundColor="{StaticResource StatusSuccessTint}" StrokeShape="RoundRectangle 9">
+                            <Label Text="{Binding DispatchNote.DispatchNoteNumber}" TextColor="{StaticResource StatusSuccess}"
+                                   FontSize="9" FontFamily="PoppinsSemiBold" />
+                        </Border>
                     </VerticalStackLayout>
-                    <Border Grid.Column="3" Padding="11,6" StrokeThickness="0" HorizontalOptions="End" VerticalOptions="Center"
-                            BackgroundColor="{StaticResource StatusSuccess}" StrokeShape="RoundRectangle 14">
-                        <Label Text="{Binding DispatchNote.DispatchNoteNumber}" TextColor="White" FontSize="11" FontFamily="PoppinsSemiBold" />
-                    </Border>
-                    <Border Grid.Column="4" WidthRequest="34" HeightRequest="34" StrokeThickness="0"
-                            BackgroundColor="#F4FCF8" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
-                        <Label Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
-                               FontSize="12" VerticalOptions="Center" HorizontalOptions="Center" TextColor="#687387" />
-                    </Border>
+                    <Label Grid.Column="2" Text="{x:Static services:IconGlyphs.ChevronRight}" Style="{StaticResource IconLabel}"
+                           FontSize="10" HorizontalOptions="Center" VerticalOptions="Center" TextColor="#8A94A5" />
                 </Grid>
             </Border>
         </DataTemplate>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="*,Auto">
-        <RefreshView Grid.Row="0" x:Name="RefreshViewControl" Refreshing="OnRefreshing">
+    <Grid RowDefinitions="Auto,*" BackgroundColor="{StaticResource SurfaceLight}">
+        <Grid Grid.Row="0" BackgroundColor="Transparent">
+            <controls:BackHeaderView PageTitle="Vehicle Status" Title="Track gate movements" ShowBackButton="True"
+                                     BackRoute="//SecurityTabs/SecurityDashboardPage" />
+        </Grid>
+        <RefreshView Grid.Row="1" x:Name="RefreshViewControl" Refreshing="OnRefreshing">
             <ScrollView>
-                <VerticalStackLayout Padding="32,28,32,32" Spacing="18">
+                <VerticalStackLayout Padding="10,10,10,22" Spacing="12">
 
-                    <controls:AppHeaderView AccountRoute="//SecurityTabs/SecurityAccountPage" />
-
-                    <!-- Title with compact status controls at the right end -->
-                    <Grid x:Name="StatusHeaderGrid" ColumnDefinitions="*,Auto" RowDefinitions="Auto"
-                          ColumnSpacing="20" RowSpacing="12" VerticalOptions="Center" Margin="0,10,0,0">
-                        <VerticalStackLayout Grid.Column="0" Spacing="6" VerticalOptions="Center">
-                            <Label Text="SECURITY OPERATIONS" TextColor="{StaticResource Primary}"
-                                   FontSize="11" CharacterSpacing="1.2" FontFamily="PoppinsRegular" />
-                            <Label Text="Vehicle Status" TextColor="#172033"
-                                   FontSize="30" FontFamily="PoppinsSemiBold" />
-                            <Label Text="Track active vehicles, exit readiness, and movement history from the gate."
-                                   TextColor="#687387" FontSize="13" />
-                        </VerticalStackLayout>
-
-                        <VerticalStackLayout x:Name="StatusHeaderControls" Grid.Column="1" Spacing="8" HorizontalOptions="End" VerticalOptions="Start">
-                            <Border Stroke="#DCEAE8" StrokeThickness="1" StrokeShape="RoundRectangle 18"
-                                    BackgroundColor="White" Padding="14,8" HorizontalOptions="End">
-                                <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
-
-                                <Label x:Name="StatusInwardRadioLabel" Text="Inward" FontSize="13"
-                                       FontFamily="PoppinsSemiBold" VerticalOptions="Center">
-                                    <Label.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnStatusInwardTabClicked" />
-                                    </Label.GestureRecognizers>
-                                </Label>
-
-                                <Border WidthRequest="48" HeightRequest="28" Padding="3" StrokeThickness="0"
-                                        BackgroundColor="{StaticResource Primary}" StrokeShape="RoundRectangle 14" VerticalOptions="Center">
+                    <Grid x:Name="StatusHeaderGrid" ColumnDefinitions="*" RowDefinitions="Auto"
+                          RowSpacing="10" VerticalOptions="Center">
+                        <VerticalStackLayout x:Name="StatusHeaderControls" Grid.Column="0" Spacing="8" HorizontalOptions="Fill">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <Border Grid.Column="0" HeightRequest="36" HorizontalOptions="Start"
+                                        BackgroundColor="#EEF5FC" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 12" Padding="3">
+                                <HorizontalStackLayout Spacing="3">
+                                <Border x:Name="InwardModePill" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 10" Padding="18,7">
                                     <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnVehicleModeSwitchTapped" />
+                                        <TapGestureRecognizer Tapped="OnStatusInwardTabClicked" />
                                     </Border.GestureRecognizers>
-                                    <Border x:Name="VehicleModeThumb" WidthRequest="22" HeightRequest="22" StrokeThickness="0"
-                                            BackgroundColor="White" StrokeShape="RoundRectangle 11" HorizontalOptions="Start" />
+                                    <Label x:Name="StatusInwardRadioLabel" Text="INWARD" FontSize="10"
+                                           FontFamily="PoppinsSemiBold" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <Border x:Name="OutwardModePill" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 10" Padding="18,7">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnStatusOutwardTabClicked" />
+                                    </Border.GestureRecognizers>
+                                    <Label x:Name="StatusOutwardRadioLabel" Text="OUTWARD" FontSize="10"
+                                           FontFamily="PoppinsSemiBold" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                </HorizontalStackLayout>
                                 </Border>
 
-                                <Label x:Name="StatusOutwardRadioLabel" Text="Outward" FontSize="13"
-                                       FontFamily="PoppinsSemiBold" VerticalOptions="Center">
-                                    <Label.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnStatusOutwardTabClicked" />
-                                    </Label.GestureRecognizers>
-                                </Label>
+                                <Button x:Name="FilterToggleButton" Grid.Column="2" Text="Filter" Clicked="OnFilterToggleClicked"
+                                        Style="{StaticResource IconTextButton}" HorizontalOptions="End"
+                                        HeightRequest="36" Padding="12,0" FontSize="11">
+                                    <Button.ImageSource>
+                                        <!-- Inline glyph avoids a runtime x:Static dependency during XAML hot reload. -->
+                                        <FontImageSource FontFamily="FaSolid" Glyph=""
+                                                         Color="{StaticResource Primary}" Size="11" />
+                                    </Button.ImageSource>
+                                </Button>
+                            </Grid>
 
+                            <Border x:Name="InwardSubTabToggle" Padding="3" StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12" BackgroundColor="#EEF5FC"
+                                    HorizontalOptions="Start">
+                                <HorizontalStackLayout Spacing="3">
+                                    <Button x:Name="ActiveTabButton" Text="Active" Clicked="OnActiveTabClicked"
+                                            CornerRadius="9" FontFamily="PoppinsSemiBold" FontSize="11" Padding="18,0" HeightRequest="36" />
+                                    <Button x:Name="ReadyToExitTabButton" Text="Ready to Exit" Clicked="OnReadyToExitTabClicked"
+                                            CornerRadius="9" FontFamily="PoppinsSemiBold" FontSize="11" Padding="18,0" HeightRequest="36" />
+                                    <Button x:Name="HistoryTabButton" Text="History" Clicked="OnHistoryTabClicked"
+                                            CornerRadius="9" FontFamily="PoppinsSemiBold" FontSize="11" Padding="18,0" HeightRequest="36" />
                                 </HorizontalStackLayout>
-                            </Border>
-
-                            <Border x:Name="InwardSubTabToggle" Padding="4" StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 16" BackgroundColor="#E6F3F1"
-                                    HorizontalOptions="End" Margin="0,-2,0,0">
-                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-                                    <Button x:Name="ActiveTabButton" Grid.Column="0" Text="Active" Clicked="OnActiveTabClicked"
-                                            CornerRadius="12" FontFamily="PoppinsSemiBold" FontSize="13" Padding="0,10" HeightRequest="44" />
-                                    <Button x:Name="ReadyToExitTabButton" Grid.Column="1" Text="Ready to Exit" Clicked="OnReadyToExitTabClicked"
-                                            CornerRadius="12" FontFamily="PoppinsSemiBold" FontSize="13" Padding="0,10" HeightRequest="44" />
-                                    <Button x:Name="HistoryTabButton" Grid.Column="2" Text="History" Clicked="OnHistoryTabClicked"
-                                            CornerRadius="12" FontFamily="PoppinsSemiBold" FontSize="13" Padding="0,10" HeightRequest="44" />
-                                </Grid>
                             </Border>
                         </VerticalStackLayout>
                     </Grid>
 
-                    <Border x:Name="InwardFilterBar" Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 18" Padding="18">
+                    <Border x:Name="InwardFilterBar" Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 18"
+                            Padding="18" IsVisible="False">
                         <VerticalStackLayout Spacing="14">
                             <Grid x:Name="SearchFieldsGrid" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="14" ColumnSpacing="12">
 
@@ -297,8 +263,13 @@
                                     </Grid>
                                 </VerticalStackLayout>
 
-                                <Button x:Name="SearchButtonControl" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                                        Text="Apply Filters" Clicked="OnSearchClicked" Style="{StaticResource SecondaryActionButton}" />
+                                <Grid x:Name="InwardFilterActions" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                      ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <Button x:Name="SearchButtonControl" Grid.Column="0" Text="Apply Filters"
+                                            Clicked="OnSearchClicked" Style="{StaticResource SecondaryActionButton}" />
+                                    <Button Grid.Column="1" Text="Reset" Clicked="OnResetInwardFiltersClicked"
+                                            Style="{StaticResource IconTextButton}" Padding="14,0" />
+                                </Grid>
 
                             </Grid>
                         </VerticalStackLayout>
@@ -378,44 +349,44 @@
 
                         <!-- Status tabs + content merged into one seamless card, same pattern as
                              Gate Check-in's Vehicle/Documents/Photos tabs. -->
-                        <Border Style="{StaticResource CardBorder}" Padding="0" StrokeShape="RoundRectangle 18">
+                        <Border Style="{StaticResource CardBorder}" Padding="0" StrokeShape="RoundRectangle 16">
                             <VerticalStackLayout Spacing="0">
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="18,18,18,0">
-                                    <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0"
-                                            StrokeShape="RoundRectangle 21" BackgroundColor="{StaticResource SurfaceLight}">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Padding="14,14,14,4">
+                                    <Border Grid.Column="0" WidthRequest="34" HeightRequest="34" StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 11" BackgroundColor="{StaticResource SurfaceLight}">
                                         <Label Text="{x:Static services:IconGlyphs.ListCheck}" Style="{StaticResource IconLabel}"
-                                               FontSize="16" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                               FontSize="12" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                        <Label Text="Movement timeline" Style="{StaticResource CardTitleLabel}" FontSize="16" />
-                                        <Label Text="Switch status lanes to audit completed and in-progress records." Style="{StaticResource MetaLabel}" />
+                                        <Label Text="Movement history" Style="{StaticResource CardTitleLabel}" FontSize="14" />
+                                        <Label Text="Filter records by movement status" Style="{StaticResource MetaLabel}" FontSize="10" />
                                     </VerticalStackLayout>
                                 </Grid>
 
-                                <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,2" RowSpacing="0" Margin="18,14,18,0">
-                                    <Grid Grid.Row="0" Grid.Column="0" HorizontalOptions="Center" Padding="0,12">
+                                <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,2" RowSpacing="0" Margin="12,8,12,0">
+                                    <Grid Grid.Row="0" Grid.Column="0" HorizontalOptions="Center" Padding="0,10">
                                         <Grid.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnHistoryAssignedTabClicked" />
                                         </Grid.GestureRecognizers>
-                                        <Label x:Name="HistoryAssignedTabLabel" Text="ASSIGNED" FontFamily="PoppinsSemiBold" FontSize="10" />
+                                        <Label x:Name="HistoryAssignedTabLabel" Text="ASSIGNED" FontFamily="PoppinsSemiBold" FontSize="9" />
                                     </Grid>
-                                    <Grid Grid.Row="0" Grid.Column="1" HorizontalOptions="Center" Padding="0,12">
+                                    <Grid Grid.Row="0" Grid.Column="1" HorizontalOptions="Center" Padding="0,10">
                                         <Grid.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnHistoryDockedTabClicked" />
                                         </Grid.GestureRecognizers>
-                                        <Label x:Name="HistoryDockedTabLabel" Text="DOCKED" FontFamily="PoppinsSemiBold" FontSize="10" />
+                                        <Label x:Name="HistoryDockedTabLabel" Text="DOCKED" FontFamily="PoppinsSemiBold" FontSize="9" />
                                     </Grid>
-                                    <Grid Grid.Row="0" Grid.Column="2" HorizontalOptions="Center" Padding="0,12">
+                                    <Grid Grid.Row="0" Grid.Column="2" HorizontalOptions="Center" Padding="0,10">
                                         <Grid.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnHistoryCompletedTabClicked" />
                                         </Grid.GestureRecognizers>
-                                        <Label x:Name="HistoryCompletedTabLabel" Text="COMPLETED" FontFamily="PoppinsSemiBold" FontSize="10" />
+                                        <Label x:Name="HistoryCompletedTabLabel" Text="COMPLETED" FontFamily="PoppinsSemiBold" FontSize="9" />
                                     </Grid>
-                                    <Grid Grid.Row="0" Grid.Column="3" HorizontalOptions="Center" Padding="0,12">
+                                    <Grid Grid.Row="0" Grid.Column="3" HorizontalOptions="Center" Padding="0,10">
                                         <Grid.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnHistoryOtherTabClicked" />
                                         </Grid.GestureRecognizers>
-                                        <Label x:Name="HistoryOtherTabLabel" Text="OTHER" FontFamily="PoppinsSemiBold" FontSize="10" />
+                                        <Label x:Name="HistoryOtherTabLabel" Text="OTHER" FontFamily="PoppinsSemiBold" FontSize="9" />
                                     </Grid>
 
                                     <BoxView Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4"
@@ -427,7 +398,7 @@
                                     <BoxView x:Name="HistoryOtherTabIndicator" Grid.Row="1" Grid.Column="3" BackgroundColor="Transparent" Color="Transparent" />
                                 </Grid>
 
-                                <VerticalStackLayout Padding="18">
+                                <VerticalStackLayout Padding="12">
                                     <ActivityIndicator x:Name="HistoryListSpinner" IsRunning="False" IsVisible="False" Margin="0,12" />
                                     <Border x:Name="NoHistoryLabel" StrokeThickness="0" BackgroundColor="{StaticResource SurfaceLight}"
                                             StrokeShape="RoundRectangle 16" Padding="18" IsVisible="False">
@@ -451,14 +422,16 @@
                     <!-- ============================ SEARCH ============================ -->
                     <VerticalStackLayout x:Name="OutwardSearchSection" Spacing="14">
 
-                        <Border Style="{StaticResource CardBorder}" StrokeShape="RoundRectangle 18" Padding="16">
+                        <Border x:Name="OutwardFilterBar" Style="{StaticResource CardBorder}"
+                                StrokeShape="RoundRectangle 18" Padding="16" IsVisible="False">
                             <Grid x:Name="OutwardSearchFieldsGrid" ColumnDefinitions="2*,1.15*,1.25*,Auto"
                                   RowDefinitions="Auto" RowSpacing="12" ColumnSpacing="12">
 
                                 <VerticalStackLayout x:Name="OutwardVehicleSearchSection" Grid.Row="0" Grid.Column="0" Spacing="6">
                                     <Label Text="VEHICLE SEARCH" Style="{StaticResource MetaLabel}" FontAttributes="Bold" />
                                     <SearchBar x:Name="OutwardVehicleSearchBar" Placeholder="Vehicle number"
-                                               HeightRequest="46" SearchButtonPressed="OnOutwardSearchClicked" />
+                                               HeightRequest="46" SearchButtonPressed="OnOutwardSearchClicked"
+                                               TextChanged="OnOutwardFilterTextChanged" />
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout x:Name="OutwardDoNumberSection" Grid.Row="0" Grid.Column="1" Spacing="6">
@@ -466,6 +439,7 @@
                                     <Border x:Name="OutwardDoNumberEntryBorder" Stroke="{StaticResource CardBorderLight}" StrokeThickness="1"
                                             StrokeShape="RoundRectangle 12" Padding="12,0" HeightRequest="46">
                                         <Entry x:Name="OutwardDoNumberSearchEntry" Placeholder="Optional" VerticalOptions="Center"
+                                               TextChanged="OnOutwardFilterTextChanged"
                                                Focused="OnOutwardDoNumberFocused" Unfocused="OnOutwardDoNumberUnfocused" />
                                     </Border>
                                 </VerticalStackLayout>
@@ -487,10 +461,14 @@
                                     </Grid>
                                 </VerticalStackLayout>
 
-                                <Button x:Name="OutwardSearchButtonControl" Grid.Row="0" Grid.Column="3"
-                                        Text="Search" Clicked="OnOutwardSearchClicked"
-                                        Style="{StaticResource SecondaryActionButton}"
-                                        WidthRequest="118" HeightRequest="46" VerticalOptions="End" />
+                                <Grid x:Name="OutwardFilterActions" Grid.Row="0" Grid.Column="3"
+                                      ColumnDefinitions="*,Auto" ColumnSpacing="8" VerticalOptions="End">
+                                    <Button x:Name="OutwardSearchButtonControl" Grid.Column="0" Text="Search"
+                                            Clicked="OnOutwardSearchClicked" Style="{StaticResource SecondaryActionButton}"
+                                            HeightRequest="46" />
+                                    <Button Grid.Column="1" Text="Reset" Clicked="OnResetOutwardFiltersClicked"
+                                            Style="{StaticResource IconTextButton}" HeightRequest="46" Padding="14,0" />
+                                </Grid>
 
                             </Grid>
                         </Border>
@@ -559,7 +537,7 @@
         </RefreshView>
 
         <!-- Transient live-update banner, overlaid on top of the scroll content -->
-        <Border Grid.Row="0" x:Name="LiveBanner" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="16,12"
+        <Border Grid.Row="1" x:Name="LiveBanner" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="16,12"
                 Padding="14,10" StrokeThickness="0" BackgroundColor="{StaticResource Primary}" StrokeShape="RoundRectangle 14">
             <Label x:Name="LiveBannerLabel" TextColor="{StaticResource PrimaryDarkText}" FontFamily="PoppinsSemiBold"
                    FontSize="13" HorizontalOptions="Center" />

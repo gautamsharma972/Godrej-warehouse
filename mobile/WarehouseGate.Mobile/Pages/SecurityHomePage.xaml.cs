@@ -184,28 +184,20 @@ public partial class SecurityHomePage : ContentPage
         var activeColor = (Color)Application.Current!.Resources["Primary"];
         var inactiveTextColor = (Color)Application.Current.Resources["TextSecondaryLight"];
 
-        VehicleTabLabel.TextColor = _selectedTab == 0 ? activeColor : inactiveTextColor;
-        SetIndicator(VehicleTabIndicator, _selectedTab == 0, activeColor);
+        SetTabPill(VehicleTabPill, VehicleTabLabel, _selectedTab == 0, activeColor, inactiveTextColor);
+        SetTabPill(DocumentsTabPill, DocumentsTabLabel, _selectedTab == 1, activeColor, inactiveTextColor);
+        SetTabPill(PhotosTabPill, PhotosTabLabel, _selectedTab == 2, activeColor, inactiveTextColor);
 
-        DocumentsTabLabel.TextColor = _selectedTab == 1 ? activeColor : inactiveTextColor;
-        SetIndicator(DocumentsTabIndicator, _selectedTab == 1, activeColor);
-
-        PhotosTabLabel.TextColor = _selectedTab == 2 ? activeColor : inactiveTextColor;
-        SetIndicator(PhotosTabIndicator, _selectedTab == 2, activeColor);
-
-        SubmitButton.Text = _selectedTab < 2 ? "Next" : "Gate-In Vehicle";
-        SubmitButton.BackgroundColor = _selectedTab < 2
-            ? activeColor
-            : (Color)Application.Current.Resources["StatusSuccess"];
+        SubmitButton.Text = _selectedTab < 2 ? "Next" : "Register-In Vehicle";
+        SubmitButton.BackgroundColor = activeColor;
 
         RefreshTabErrorBadges();
     }
 
-    private static void SetIndicator(BoxView indicator, bool active, Color activeColor)
+    private static void SetTabPill(Border pill, Label label, bool active, Color activeColor, Color inactiveTextColor)
     {
-        var color = active ? activeColor : Colors.Transparent;
-        indicator.Color = color;
-        indicator.BackgroundColor = color;
+        pill.BackgroundColor = active ? activeColor : Color.FromArgb("#EAF1FF");
+        label.TextColor = active ? Colors.White : inactiveTextColor;
     }
 
     // Mirrors each required field/section's error state onto its owning tab label, so a user can
@@ -303,19 +295,14 @@ public partial class SecurityHomePage : ContentPage
             .OrderBy(o => o.VehicleNumber)
             .ToList();
 
-        if (options.Count == 0)
-        {
-            await DisplayAlert("No vehicles found",
-                "No pre-registered shipments with a known vehicle number yet. You can still type a vehicle number directly.", "OK");
-            return;
-        }
-
         var tcs = new TaskCompletionSource<string?>();
         await Navigation.PushModalAsync(new ExpectedVehiclePickerPage(options, result => tcs.TrySetResult(result)));
         var selected = await tcs.Task;
         if (!string.IsNullOrWhiteSpace(selected))
         {
             VehicleNumberEntry.Text = selected;
+            SelectedVehicleLabel.Text = selected;
+            SelectedVehicleLabel.TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"];
             await ApplyVehicleDataAsync(selected);
         }
     }
@@ -382,7 +369,16 @@ public partial class SecurityHomePage : ContentPage
         }
     }
 
-    private void SetSelectedTransporter(string? transporter) => TransporterEntry.Text = transporter;
+    private void SetSelectedTransporter(string? transporter)
+    {
+        TransporterEntry.Text = transporter;
+        SelectedTransporterLabel.Text = string.IsNullOrWhiteSpace(transporter)
+            ? "Select from transporter records"
+            : transporter;
+        SelectedTransporterLabel.TextColor = string.IsNullOrWhiteSpace(transporter)
+            ? (Color)Application.Current!.Resources["TextSecondaryLight"]
+            : (Color)Application.Current!.Resources["TextPrimaryLight"];
+    }
 
     private async void OnTransporterFieldTapped(object? sender, EventArgs e)
     {
@@ -400,9 +396,6 @@ public partial class SecurityHomePage : ContentPage
     // vertical list, with a same-size "add" tile always trailing the last card. The whole strip
     // is rebuilt from _poTxnRows on every add/remove - simplest way to keep the add-tile pinned
     // at the end without manual index-juggling.
-    private const double PoTxnCardWidth = 230;
-    private const double PoTxnCardHeight = 176;
-
     private void AddPoTxnRow(string? poNumber, string? txnNumber)
     {
         var poEntry = new Entry { Placeholder = "e.g. PO-1001", Text = poNumber };
@@ -413,9 +406,9 @@ public partial class SecurityHomePage : ContentPage
         var border = new Border
         {
             Style = (Style)Application.Current!.Resources["CardBorder"],
-            Padding = new Thickness(14),
-            WidthRequest = PoTxnCardWidth,
-            HeightRequest = PoTxnCardHeight
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 14 },
+            Padding = new Thickness(14, 14, 14, 10),
+            HorizontalOptions = LayoutOptions.Fill
         };
 
         var row = new PoTxnRow { Container = border, PoEntry = poEntry, TxnEntry = txnEntry };
@@ -434,7 +427,7 @@ public partial class SecurityHomePage : ContentPage
 
         border.Content = new VerticalStackLayout
         {
-            Spacing = 10,
+            Spacing = 12,
             Children =
             {
                 BuildLabeledPoTxnField("PO NUMBER", poEntry),
@@ -447,48 +440,65 @@ public partial class SecurityHomePage : ContentPage
         RenderPoTxnRows();
     }
 
-    private static View BuildLabeledPoTxnField(string label, Entry entry) => new VerticalStackLayout
+    private static View BuildLabeledPoTxnField(string label, Entry entry)
     {
-        Spacing = 4,
-        Children =
+        entry.VerticalOptions = LayoutOptions.Center;
+        entry.FontSize = 14;
+
+        return new VerticalStackLayout
         {
-            new Label
+            Spacing = 6,
+            Children =
             {
-                Text = label, FontSize = 11, FontFamily = "PoppinsSemiBold",
-                TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"]
-            },
-            entry
-        }
-    };
+                new Label
+                {
+                    Text = label, FontSize = 11, FontFamily = "PoppinsSemiBold",
+                    TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"]
+                },
+                new Border
+                {
+                    Stroke = (Color)Application.Current.Resources["CardBorderLight"],
+                    StrokeThickness = 1,
+                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+                    Padding = new Thickness(12, 0),
+                    HeightRequest = 44,
+                    Content = entry
+                }
+            }
+        };
+    }
 
     private View BuildAddPoTxnTile()
     {
         var tile = new Border
         {
             Stroke = (Color)Application.Current!.Resources["Primary"],
-            StrokeThickness = 1.5,
-            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 },
-            BackgroundColor = Colors.Transparent,
-            WidthRequest = PoTxnCardWidth,
-            HeightRequest = PoTxnCardHeight,
-            Padding = 14,
-            Content = new VerticalStackLayout
+            StrokeThickness = 1,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+            BackgroundColor = Color.FromArgb("#E8F6F4"),
+            HeightRequest = 44,
+            HorizontalOptions = LayoutOptions.Fill,
+            Margin = new Thickness(0, 2, 0, 0),
+            Padding = new Thickness(16, 0),
+            Content = new HorizontalStackLayout
             {
-                Spacing = 8,
+                Spacing = 7,
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center,
                 Children =
                 {
                     new Label
                     {
-                        Text = "+", FontFamily = "PoppinsBold", FontSize = 28,
-                        TextColor = (Color)Application.Current!.Resources["Primary"], HorizontalOptions = LayoutOptions.Center
+                        Text = "+", FontFamily = "PoppinsBold", FontSize = 17,
+                        TextColor = (Color)Application.Current!.Resources["Primary"],
+                        HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center,
+                        TranslationY = -1
                     },
                     new Label
                     {
-                        Text = "Add PO / Transaction", FontFamily = "PoppinsSemiBold", FontSize = 12,
+                        Text = "Add PO / transaction", FontFamily = "PoppinsSemiBold", FontSize = 12,
                         TextColor = (Color)Application.Current!.Resources["Primary"], HorizontalOptions = LayoutOptions.Center,
-                        HorizontalTextAlignment = TextAlignment.Center
+                        HorizontalTextAlignment = TextAlignment.Center, VerticalOptions = LayoutOptions.Center
                     }
                 }
             }
@@ -629,16 +639,33 @@ public partial class SecurityHomePage : ContentPage
         var accentColor = (Color)Application.Current!.Resources["Primary"];
         var mutedColor = (Color)Application.Current!.Resources["TextSecondaryLight"];
 
-        var content = new VerticalStackLayout { Spacing = 4, HorizontalOptions = LayoutOptions.Center };
+        var content = new VerticalStackLayout
+        {
+            Spacing = 5,
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center
+        };
         content.Children.Add(hasPhoto
-            ? new Image { Source = ImageSource.FromFile(localPath), Aspect = Aspect.AspectFill, WidthRequest = 60, HeightRequest = 44 }
+            ? new Image
+            {
+                Source = ImageSource.FromFile(localPath),
+                Aspect = Aspect.AspectFill,
+                WidthRequest = 60,
+                HeightRequest = 44,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center
+            }
             : new Label
             {
                 Text = IconGlyphs.Camera,
                 FontFamily = "FaSolid",
                 FontSize = 18,
                 TextColor = mutedColor,
-                HorizontalOptions = LayoutOptions.Center
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+                HorizontalTextAlignment = TextAlignment.Center,
+                VerticalTextAlignment = TextAlignment.Center,
+                LineHeight = 1
             });
         content.Children.Add(new Label
         {
@@ -646,7 +673,9 @@ public partial class SecurityHomePage : ContentPage
             FontSize = 10,
             FontFamily = "PoppinsSemiBold",
             TextColor = hasPhoto ? accentColor : mutedColor,
-            HorizontalOptions = LayoutOptions.Center
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center,
+            HorizontalTextAlignment = TextAlignment.Center
         });
 
         var tile = new Border
@@ -656,6 +685,8 @@ public partial class SecurityHomePage : ContentPage
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
             Padding = 8,
             HeightRequest = 84,
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill,
             Content = content
         };
         SemanticProperties.SetDescription(tile, hasPhoto ? $"{display} photo captured, tap to retake" : $"Capture {display} photo");
@@ -816,7 +847,7 @@ public partial class SecurityHomePage : ContentPage
         finally
         {
             SubmitButton.IsEnabled = true;
-            SubmitButton.Text = _selectedTab < 2 ? "Next" : "Gate-In Vehicle";
+            SubmitButton.Text = _selectedTab < 2 ? "Next" : "Register-In Vehicle";
             Spinner.IsVisible = false;
             Spinner.IsRunning = false;
         }
@@ -837,6 +868,8 @@ public partial class SecurityHomePage : ContentPage
     private void ResetForm()
     {
         VehicleNumberEntry.Text = string.Empty;
+        SelectedVehicleLabel.Text = "Select from vehicle records";
+        SelectedVehicleLabel.TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"];
         VehicleNumberBorder.Stroke = Colors.Transparent;
         VehicleNumberErrorLabel.IsVisible = false;
 
@@ -871,7 +904,7 @@ public partial class SecurityHomePage : ContentPage
         {
             var border = new Border
             {
-                BackgroundColor = Color.FromArgb("#F7FBFA"),
+                BackgroundColor = Color.FromArgb("#F5F9FD"),
                 Stroke = (Color)Application.Current!.Resources["CardBorderLight"],
                 StrokeThickness = 1,
                 StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },

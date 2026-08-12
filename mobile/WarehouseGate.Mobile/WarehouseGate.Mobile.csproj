@@ -21,7 +21,7 @@
 		<Nullable>enable</Nullable>
 
 		<!-- Display name -->
-		<ApplicationTitle>WarehouseGate.Mobile</ApplicationTitle>
+		<ApplicationTitle>LogiFlow</ApplicationTitle>
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.warehousegate.mobile</ApplicationId>
@@ -37,11 +37,10 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">29.0</SupportedOSPlatformVersion>
 
-		<!-- Native Material 3 theming for stock Android controls (ripple/elevation feel). Most of
-		     this app's screens use custom Border-wrapped controls rather than bare stock ones, so
-		     the visible effect is scoped mainly to genuinely native elements (Button ripple,
-		     CheckBox, native pickers) - but it's the correct foundation for the ongoing redesign. -->
-		<UseMaterial3 Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</UseMaterial3>
+		<!-- The app supplies its own field surfaces and password visibility control. MAUI 10's
+		     Material 3 Entry handler always adds an outlined box, floating hint, and password eye,
+		     creating duplicate controls that cannot be disabled per Entry in this version. -->
+		<UseMaterial3 Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">false</UseMaterial3>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
@@ -55,21 +54,33 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android36.0|AnyCPU'">
 	  <DebugSymbols>True</DebugSymbols>
 	  <AndroidCreatePackagePerAbi>True</AndroidCreatePackagePerAbi>
+	  <!-- Keep managed assemblies inside the debug APK. Fast deployment stores them in
+	       the app-data override directory; when that payload becomes stale or incomplete,
+	       Android can sit on the native splash while Mono searches for every assembly. -->
+	  <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<MauiIcon Remove="Resources\AppIcon\appicon.svg" />
+		<MauiIcon Remove="Resources\AppIcon\appiconfg.svg" />
+		<MauiIcon Include="Resources\AppIcon\appicon.png" BaseSize="1254,1254" />
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+		<MauiSplashScreen Include="Resources\Images\logiflow_brand_lockup.png" Color="#F8FBFE" BaseSize="1200,600" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
 		
-		<!-- Custom Fonts -->
-		<MauiFont Include="Resources\Fonts\*" />
+		<!-- Custom fonts. Keep aliases in MSBuild metadata as well as MauiProgram so
+		     Android Shell icons and XAML FontImageSource controls resolve them during
+		     native resource packaging. A wildcard leaves Alias blank in mauifont.inputs. -->
+		<MauiFont Include="Resources\Fonts\Poppins-Regular.ttf" Alias="PoppinsRegular" />
+		<MauiFont Include="Resources\Fonts\Poppins-Medium.ttf" Alias="PoppinsMedium" />
+		<MauiFont Include="Resources\Fonts\Poppins-SemiBold.ttf" Alias="PoppinsSemiBold" />
+		<MauiFont Include="Resources\Fonts\Poppins-Bold.ttf" Alias="PoppinsBold" />
+		<MauiFont Include="Resources\Fonts\FontAwesome-Solid.ttf" Alias="FaSolid" />
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />

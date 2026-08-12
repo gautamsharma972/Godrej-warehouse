@@ -5,7 +5,7 @@
 @inject ISnackbar Snackbar
 @inject OfficeRealtimeClient Realtime
 
-<PageTitle>Follow-ups - WarehouseGate</PageTitle>
+<PageTitle>Follow-ups - Logiflow</PageTitle>
 
 <section class="admin-page">
     <div class="admin-page-header">
@@ -59,7 +59,7 @@
                                     {
                                         <span class="admin-badge success">Resolved</span>
                                         <div class="admin-muted" style="font-size:12px; margin-top:4px;">
-                                            @task.ResolvedByName · @task.ResolvedAtUtc?.ToLocalTime().ToString("dd MMM HH:mm")
+                                            @task.ResolvedByName Â· @task.ResolvedAtUtc?.ToLocalTime().ToString("dd MMM HH:mm")
                                             @if (!string.IsNullOrWhiteSpace(task.ResolutionNotes))
                                             {
                                                 <br />@task.ResolutionNotes

@@ -5,9 +5,9 @@
              x:Class="WarehouseGate.Mobile.Controls.SupervisorSideNav"
              BackgroundColor="Transparent">
 
-    <Grid ColumnDefinitions="*,18">
-        <Grid x:Name="SidebarRoot" Grid.Column="0" Grid.ColumnSpan="2" RowDefinitions="Auto,*,Auto"
-              Padding="20,24" BackgroundColor="#F4FCF8">
+    <Grid>
+        <Grid x:Name="SidebarRoot" RowDefinitions="Auto,*,Auto"
+              Padding="20,24" BackgroundColor="#F4F7FF">
             <VerticalStackLayout Grid.Row="0" Spacing="10" Padding="4,0,4,24">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                     <Border Grid.Column="0" WidthRequest="46" HeightRequest="46" StrokeThickness="0"
@@ -16,7 +16,7 @@
                                FontSize="15" HorizontalOptions="Center" VerticalOptions="Center" />
                     </Border>
                     <VerticalStackLayout x:Name="BrandCopy" Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                        <Label Text="WarehouseGate" FontFamily="PoppinsSemiBold"
+                        <Label Text="LogiFlow" FontFamily="PoppinsSemiBold"
                                FontSize="16" TextColor="#172033" />
                         <Label Text="Supervisor Console" FontSize="12" TextColor="#687387" />
                     </VerticalStackLayout>
@@ -103,16 +103,5 @@
             </Border>
         </Grid>
 
-        <Border x:Name="CollapseButton" Grid.ColumnSpan="2" WidthRequest="32" HeightRequest="44"
-                Stroke="#D8DEE9" StrokeThickness="1" StrokeShape="RoundRectangle 10"
-                BackgroundColor="White" HorizontalOptions="End" VerticalOptions="Center"
-                ZIndex="10" SemanticProperties.Description="Collapse sidebar">
-            <Border.GestureRecognizers>
-                <TapGestureRecognizer Tapped="OnToggleCollapseTapped" />
-            </Border.GestureRecognizers>
-            <Label x:Name="CollapseIcon" Text="{x:Static services:IconGlyphs.ChevronLeft}"
-                   Style="{StaticResource IconLabel}" FontSize="13" TextColor="#687387"
-                   HorizontalOptions="Center" VerticalOptions="Center" />
-        </Border>
     </Grid>
 </ContentView>

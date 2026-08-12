@@ -1,0 +1,89 @@
+﻿erDiagram
+    Organization {
+        int Id PK
+    }
+    Warehouse {
+        int Id PK
+    }
+    Vehicle {
+        int Id PK
+    }
+    Product {
+        int Id PK
+    }
+    DispatchOrder {
+        int Id PK
+        int OrganizationId FK
+        string DispatchOrderNumber UK
+    }
+    DispatchOrderLine {
+        int Id PK
+        int DispatchOrderId FK
+        int ProductId FK "nullable"
+    }
+    OutwardGateArrival {
+        int Id PK
+        int OrganizationId FK
+        int WarehouseId FK "nullable"
+        int VehicleId FK
+        int LinkedOutwardTransactionId FK "nullable"
+    }
+    OutwardGateArrivalPhoto {
+        int Id PK
+        int OutwardGateArrivalId FK
+    }
+    OutwardTransaction {
+        int Id PK
+        int OrganizationId FK
+        int DispatchOrderId FK
+        int WarehouseId FK "nullable"
+        int VehicleId FK "nullable"
+        string OutwardTxnNumber UK
+    }
+    OutwardLoadLine {
+        int Id PK
+        int OutwardTransactionId FK
+        int DispatchOrderLineId FK
+    }
+    OutwardLoadPlanOption {
+        int Id PK
+        int OutwardTransactionId FK
+    }
+    OutwardLoadPlanGroup {
+        int Id PK
+        int OutwardLoadPlanOptionId FK
+        int DispatchOrderLineId FK
+    }
+    OutwardPhotoEvidence {
+        int Id PK
+        int OutwardTransactionId FK
+        int OutwardLoadPlanGroupId FK "nullable"
+        int DispatchOrderLineId FK "nullable"
+    }
+    OutwardDispatchNote {
+        int Id PK
+        int OutwardTransactionId FK, UK
+    }
+
+    Organization ||--o{ DispatchOrder : owns
+    Organization ||--o{ OutwardTransaction : owns
+    Organization ||--o{ OutwardGateArrival : owns
+    DispatchOrder ||--o{ DispatchOrderLine : contains
+    Product o|--o{ DispatchOrderLine : describes
+    Vehicle ||--o{ OutwardGateArrival : arrives_as
+    Warehouse o|--o{ OutwardGateArrival : occurs_at
+    OutwardTransaction o|--o{ OutwardGateArrival : linked_from
+    OutwardGateArrival ||--o{ OutwardGateArrivalPhoto : has
+    DispatchOrder ||--o{ OutwardTransaction : creates
+    Warehouse o|--o{ OutwardTransaction : dispatches_from
+    Vehicle o|--o{ OutwardTransaction : uses
+    OutwardTransaction ||--o{ OutwardLoadLine : records
+    DispatchOrderLine ||--o{ OutwardLoadLine : fulfills
+    OutwardTransaction ||--o{ OutwardLoadPlanOption : proposes
+    OutwardLoadPlanOption ||--o{ OutwardLoadPlanGroup : contains
+    DispatchOrderLine ||--o{ OutwardLoadPlanGroup : places
+    OutwardTransaction ||--o{ OutwardPhotoEvidence : has
+    OutwardLoadPlanGroup o|--o{ OutwardPhotoEvidence : confirms_group
+    DispatchOrderLine o|--o{ OutwardPhotoEvidence : confirms_SKU
+    OutwardTransaction ||--o| OutwardDispatchNote : produces
+

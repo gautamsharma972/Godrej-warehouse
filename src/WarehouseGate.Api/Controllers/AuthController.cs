@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using WarehouseGate.Api.Dtos;
 using WarehouseGate.Api.Services;
 using WarehouseGate.Infrastructure;
@@ -23,6 +24,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
     {
         var normalizedUserName = request.UserName.Trim().ToUpperInvariant();

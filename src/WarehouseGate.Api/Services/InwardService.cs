@@ -602,9 +602,18 @@ public class InwardService
             query = query.Where(t => t.GateInTime.Date == date.Value.Date);
             isFiltered = true;
         }
+        else if (!isFiltered)
+        {
+            // The Security app's History tab lands here with nothing searched/picked yet - default
+            // to the last 7 days instead of an arbitrary "most recent 200, any age" cap, so a
+            // returning guard sees a meaningful recent window on open rather than a mix of very old
+            // and very new records. An explicit vehicle/PO/date search stays fully unbounded, same
+            // as before - only this true "just opened it" case gets time-boxed.
+            var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+            query = query.Where(t => t.GateInTime >= sevenDaysAgo);
+        }
 
-        var ordered = query.OrderByDescending(t => t.GateInTime);
-        var transactions = await (isFiltered ? ordered : ordered.Take(MaxUnfilteredHistoryResults)).ToListAsync();
+        var transactions = await query.OrderByDescending(t => t.GateInTime).ToListAsync();
         return transactions.Select(MapToDto).ToList();
     }
 
@@ -826,7 +835,9 @@ public class InwardService
             }
         }
 
-        var filePath = await _photoStorage.SaveAsync($"inward-{id}", fileName, content);
+        var storageKey = await PhotoStorageKeyBuilder.BuildAsync(
+            _db, id, transaction.InwardTxnNumber, transaction.OrganizationId, transaction.WarehouseId);
+        var filePath = await _photoStorage.SaveAsync(storageKey, fileName, content);
 
         _db.PhotoEvidences.Add(new PhotoEvidence
         {
@@ -845,7 +856,9 @@ public class InwardService
     {
         var transaction = await GetOwnedByGateSecurityAsync(id, securityUserId);
 
-        var filePath = await _photoStorage.SaveAsync($"inward-{id}", fileName, content);
+        var storageKey = await PhotoStorageKeyBuilder.BuildAsync(
+            _db, id, transaction.InwardTxnNumber, transaction.OrganizationId, transaction.WarehouseId);
+        var filePath = await _photoStorage.SaveAsync(storageKey, fileName, content);
 
         _db.PhotoEvidences.Add(new PhotoEvidence
         {
@@ -863,7 +876,9 @@ public class InwardService
     {
         var transaction = await GetOwnedByGateSecurityAsync(id, securityUserId);
 
-        var filePath = await _photoStorage.SaveAsync($"inward-{id}", fileName, content);
+        var storageKey = await PhotoStorageKeyBuilder.BuildAsync(
+            _db, id, transaction.InwardTxnNumber, transaction.OrganizationId, transaction.WarehouseId);
+        var filePath = await _photoStorage.SaveAsync(storageKey, fileName, content);
 
         _db.InwardDocuments.Add(new InwardDocument
         {
@@ -907,7 +922,9 @@ public class InwardService
             throw new InvalidOperationException("This vehicle has already exited.");
         }
 
-        var filePath = await _photoStorage.SaveAsync($"inward-{id}", fileName, content);
+        var storageKey = await PhotoStorageKeyBuilder.BuildAsync(
+            _db, id, transaction.InwardTxnNumber, transaction.OrganizationId, transaction.WarehouseId);
+        var filePath = await _photoStorage.SaveAsync(storageKey, fileName, content);
         _db.PhotoEvidences.Add(new PhotoEvidence
         {
             InwardTransactionId = id,

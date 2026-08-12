@@ -43,15 +43,11 @@ public static class MauiProgram
 				// CenterVertical gravity keeps the full glyph within the Border's visible bounds
 				// regardless of what the platform's own default resolves to.
 				Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("TextColor", (handler, _) =>
-				{
-					handler.PlatformView.SetTextColor(Android.Graphics.Color.ParseColor("#20232B"));
-					handler.PlatformView.SetHintTextColor(Android.Graphics.Color.ParseColor("#6B7280"));
-					handler.PlatformView.Gravity = Android.Views.GravityFlags.CenterVertical;
-					// Android draws its own underline under Entry; our card layouts already draw a
-					// divider BoxView, so the native one is just a duplicate line.
-					handler.PlatformView.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
-					handler.PlatformView.Background = null;
-				});
+					ConfigureAndroidEntry(handler.PlatformView));
+				Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("Background", (handler, _) =>
+					ConfigureAndroidEntry(handler.PlatformView));
+				Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("IsPassword", (handler, _) =>
+					ConfigureAndroidEntry(handler.PlatformView));
 
 				// Every Entry already has its own custom clear/reveal icon and the login form has
 				// its own "Remember username" checkbox - Android/the keyboard's own autofill
@@ -66,6 +62,17 @@ public static class MauiProgram
 						handler.PlatformView.ImportantForAutofill = Android.Views.ImportantForAutofill.No;
 					}
 				});
+#elif WINDOWS
+				// WinUI wraps Entry in a native TextBox (or a PasswordBox once IsPassword is set) that
+				// draws its own square-cornered border and, for PasswordBox specifically, a built-in
+				// "reveal password" eye button - both render on top of/next to our own rounded custom
+				// Border + eye Label (see LoginPage.xaml), giving every field a doubled border and the
+				// password field two eye icons side by side. Stripping the native border and hiding the
+				// native reveal button on every Entry keeps just our own styling, app-wide.
+				Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("Background", (handler, _) =>
+					ConfigureWindowsEntry(handler.PlatformView));
+				Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("IsPassword", (handler, _) =>
+					ConfigureWindowsEntry(handler.PlatformView));
 #endif
 			});
 
@@ -76,4 +83,29 @@ public static class MauiProgram
 
 		return builder.Build();
 	}
+
+#if ANDROID
+	private static void ConfigureAndroidEntry(Android.Widget.EditText entry)
+	{
+		var transparent = Android.Graphics.Color.Transparent;
+		entry.SetTextColor(Android.Graphics.Color.ParseColor("#20232B"));
+		entry.SetHintTextColor(Android.Graphics.Color.ParseColor("#6B7280"));
+		entry.Gravity = Android.Views.GravityFlags.CenterVertical;
+		entry.SetPadding(0, 0, 0, 0);
+		entry.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(transparent);
+		entry.Background = new Android.Graphics.Drawables.ColorDrawable(transparent);
+		entry.CompoundDrawableTintList = Android.Content.Res.ColorStateList.ValueOf(transparent);
+		entry.SetCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+	}
+#elif WINDOWS
+	private static void ConfigureWindowsEntry(Microsoft.UI.Xaml.Controls.Control entry)
+	{
+		entry.BorderThickness = new Microsoft.UI.Xaml.Thickness(0);
+
+		if (entry is Microsoft.UI.Xaml.Controls.PasswordBox passwordBox)
+		{
+			passwordBox.PasswordRevealMode = Microsoft.UI.Xaml.Controls.PasswordRevealMode.Hidden;
+		}
+	}
+#endif
 }

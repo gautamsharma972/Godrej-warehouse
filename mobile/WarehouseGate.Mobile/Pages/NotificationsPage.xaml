@@ -8,38 +8,36 @@
              Shell.BackButtonBehavior="{x:Null}"
              Shell.TabBarIsVisible="False">
 
-    <Grid RowDefinitions="*,Auto">
-        <RefreshView Grid.Row="0" x:Name="RefreshViewControl" Refreshing="OnRefreshing">
+    <Grid RowDefinitions="Auto,*" BackgroundColor="{StaticResource SurfaceLight}">
+        <Grid Grid.Row="0" BackgroundColor="Transparent">
+            <controls:BackHeaderView x:Name="NotificationHeader" PageTitle="Notifications"
+                                     Title="Operational alerts and updates" />
+        </Grid>
+        <RefreshView Grid.Row="1" x:Name="RefreshViewControl" Refreshing="OnRefreshing">
             <ScrollView>
-                <VerticalStackLayout Padding="32,28,32,32" Spacing="18">
+                <VerticalStackLayout Padding="12,10,12,22" Spacing="12">
 
-                    <controls:AppHeaderView x:Name="HeaderView" />
-
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18" Margin="0,10,0,2">
-                        <VerticalStackLayout Grid.Column="0" Spacing="6" VerticalOptions="Center">
-                            <Label Text="OPERATIONS SIGNALS" TextColor="{StaticResource Primary}"
-                                   FontSize="11" CharacterSpacing="1.2" FontFamily="PoppinsRegular" />
-                            <Label Text="Notifications" TextColor="#172033"
-                                   FontSize="30" FontFamily="PoppinsSemiBold" />
-                            <Label Text="Live alerts from gate activity, dock work, and job updates."
-                                   TextColor="#687387" FontSize="13" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="2,0">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Recent alerts" TextColor="#172033"
+                                   FontSize="16" FontFamily="PoppinsSemiBold" />
+                            <Label Text="Tap an alert to open the related work."
+                                   TextColor="#788395" FontSize="11" />
                         </VerticalStackLayout>
-                        <Button x:Name="ClearButton" Grid.Column="1" Text="Clear" Clicked="OnClearClicked" IsVisible="False"
-                                Style="{StaticResource ChipButton}" BackgroundColor="White"
-                                TextColor="{StaticResource Primary}" FontSize="13"
-                                Padding="14,0" HeightRequest="42" MinimumHeightRequest="42"
-                                WidthRequest="78" MinimumWidthRequest="72"
-                                HorizontalOptions="End" VerticalOptions="Start" />
+                        <Button x:Name="ClearButton" Grid.Column="1" Text="Clear all" Clicked="OnClearClicked" IsVisible="False"
+                                Style="{StaticResource IconTextButton}" TextColor="{StaticResource Primary}"
+                                FontSize="11" Padding="12,0" HeightRequest="36"
+                                HorizontalOptions="End" VerticalOptions="Center" />
                     </Grid>
 
-                    <VerticalStackLayout x:Name="NotificationContainer" Spacing="10" />
+                    <VerticalStackLayout x:Name="NotificationContainer" Spacing="8" />
 
                 </VerticalStackLayout>
             </ScrollView>
         </RefreshView>
 
         <!-- Transient live-update banner, overlaid on top of the scroll content -->
-        <Border Grid.Row="0" x:Name="LiveBanner" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="16,12"
+        <Border Grid.Row="1" x:Name="LiveBanner" IsVisible="False" Opacity="0" VerticalOptions="Start" Margin="16,12"
                 Padding="14,10" StrokeThickness="0" BackgroundColor="{StaticResource Primary}" StrokeShape="RoundRectangle 14">
             <Label x:Name="LiveBannerLabel" TextColor="{StaticResource PrimaryDarkText}" FontFamily="PoppinsSemiBold"
                    FontSize="13" HorizontalOptions="Center" />

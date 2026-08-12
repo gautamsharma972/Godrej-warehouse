@@ -21,12 +21,15 @@ public static class VehicleLogisticsExcelParser
         "departure date", "eta datetime"
     };
 
-    // allWarehouses is the full master list (not region-scoped) - either side of a real dispatch
-    // can legitimately sit outside the uploader's own region (e.g. West region warehouse shipping
-    // to a North region CFA). Row-level access is instead enforced by requiring at least one side
-    // (From or To) to fall in callerRegionId.
+    // allWarehouses is the full master list (not scope-restricted) - either side of a real dispatch
+    // can legitimately sit outside the uploader's own scope (e.g. a LogisticsManager's West region
+    // warehouse shipping to a North region CFA, or an Office user's warehouse shipping to a CFA
+    // outside their own warehouse). Row-level access is instead enforced by requiring at least one
+    // side (From or To) to fall in callerWarehouseScope - the same List<int>? convention used
+    // throughout the app (null = unscoped/SuperAdmin, a populated list = LogisticsManager's region
+    // or Office's own warehouse(s)) via WarehouseScopeResolver.
     public static (List<VehicleLogisticsRecord> Created, List<VehicleLogisticsUploadRowErrorDto> Errors) Parse(
-        Stream stream, string createdByUserId, IReadOnlyCollection<Warehouse> allWarehouses, int? callerRegionId)
+        Stream stream, string createdByUserId, IReadOnlyCollection<Warehouse> allWarehouses, List<int>? callerWarehouseScope)
     {
         var created = new List<VehicleLogisticsRecord>();
         var errors = new List<VehicleLogisticsUploadRowErrorDto>();
@@ -126,9 +129,9 @@ public static class VehicleLogisticsExcelParser
                 continue;
             }
 
-            if (callerRegionId is not null && fromWarehouse.RegionId != callerRegionId && toWarehouse.RegionId != callerRegionId)
+            if (callerWarehouseScope is not null && !callerWarehouseScope.Contains(fromWarehouse.Id) && !callerWarehouseScope.Contains(toWarehouse.Id))
             {
-                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "Neither the From nor the To warehouse is in your region."));
+                errors.Add(new VehicleLogisticsUploadRowErrorDto(rowNumber, "Neither the From nor the To warehouse is in your assigned warehouse scope."));
                 continue;
             }
 

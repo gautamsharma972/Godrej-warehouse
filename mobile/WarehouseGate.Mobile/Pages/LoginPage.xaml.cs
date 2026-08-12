@@ -40,26 +40,77 @@ public partial class LoginPage : ContentPage
     // sizes further for small phones so the card and its footer fit without scrolling.
     private void ApplyResponsiveLayout(bool veryCompact)
     {
-        SecureBadge.IsVisible = !veryCompact;
         FooterDivider.IsVisible = !veryCompact;
         CardFooter.IsVisible = !veryCompact;
 
-        RightPanel.Padding = veryCompact ? new Thickness(14, 8, 14, 12) : new Thickness(24, 20, 24, 24);
-        SignInCard.Padding = veryCompact ? new Thickness(18, 15) : new Thickness(28, 26);
-        SignInCard.MaximumWidthRequest = 460;
-        CardStack.Spacing = veryCompact ? 10 : 16;
-        FormStack.Spacing = veryCompact ? 10 : 14;
-        WelcomeLabel.FontSize = veryCompact ? 25 : 30;
-        EyebrowLabel.FontSize = veryCompact ? 10 : 12;
-        IntroLabel.FontSize = veryCompact ? 11 : 13;
-        OrgCodeFieldBorder.HeightRequest = veryCompact ? 46 : 52;
-        UserNameFieldBorder.HeightRequest = veryCompact ? 46 : 52;
-        PasswordFieldBorder.HeightRequest = veryCompact ? 46 : 52;
-        LoginButton.HeightRequest = veryCompact ? 48 : 54;
+        RightPanel.Padding = veryCompact ? new Thickness(14, 16, 14, 14) : new Thickness(16, 18, 16, 16);
+        SignInCard.Padding = 0;
+        SignInCard.MaximumWidthRequest = 560;
+        CardStack.Spacing = veryCompact ? 12 : 16;
+        FormStack.Spacing = veryCompact ? 10 : 12;
+        WelcomeLabel.FontSize = veryCompact ? 18 : 19;
+        EyebrowLabel.FontSize = veryCompact ? 8 : 9;
+        IntroLabel.FontSize = veryCompact ? 11 : 12;
+        LoginButton.HeightRequest = veryCompact ? 48 : 50;
     }
 
     private void OnUserNameChanged(object? sender, TextChangedEventArgs e) =>
         UserNameCheckLabel.IsVisible = !string.IsNullOrWhiteSpace(e.NewTextValue);
+
+    private void OnEntryHandlerChanged(object? sender, EventArgs e)
+    {
+#if ANDROID
+        if (sender is Entry entry)
+        {
+            ApplyAndroidEntryStyle(entry);
+            entry.Dispatcher.Dispatch(() => ApplyAndroidEntryStyle(entry));
+        }
+#endif
+    }
+
+    private void OnEntryLoaded(object? sender, EventArgs e)
+    {
+#if ANDROID
+        if (sender is Entry entry)
+        {
+            ApplyAndroidEntryStyle(entry);
+        }
+#endif
+    }
+
+#if ANDROID
+    private static void ApplyAndroidEntryStyle(Entry entry)
+    {
+        if (entry.Handler?.PlatformView is not Android.Widget.EditText nativeEntry)
+        {
+            return;
+        }
+
+        var transparent = Android.Graphics.Color.Transparent;
+        nativeEntry.SetTextColor(Android.Graphics.Color.ParseColor("#172033"));
+        nativeEntry.SetHintTextColor(Android.Graphics.Color.ParseColor("#879591"));
+        nativeEntry.Gravity = Android.Views.GravityFlags.CenterVertical;
+        nativeEntry.SetPadding(0, 0, 0, 0);
+        nativeEntry.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(transparent);
+        nativeEntry.Background = new Android.Graphics.Drawables.ColorDrawable(transparent);
+        nativeEntry.CompoundDrawableTintList = Android.Content.Res.ColorStateList.ValueOf(transparent);
+        nativeEntry.SetCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+
+        var parent = nativeEntry.Parent;
+        while (parent is Android.Views.View parentView)
+        {
+            if (parentView is Google.Android.Material.TextField.TextInputLayout textInputLayout)
+            {
+                textInputLayout.BoxBackgroundMode = 0;
+                textInputLayout.EndIconMode = 0;
+                textInputLayout.HintEnabled = false;
+                break;
+            }
+
+            parent = parentView.Parent;
+        }
+    }
+#endif
 
     // MAUI's Border doesn't get a native "focused outline" the way a real Android/iOS text field
     // does when a child Entry receives focus - without this, the two fields look identical whether
@@ -81,7 +132,10 @@ public partial class LoginPage : ContentPage
     private void OnTogglePasswordVisibility(object? sender, TappedEventArgs e)
     {
         PasswordEntry.IsPassword = !PasswordEntry.IsPassword;
-        PasswordEyeLabel.Text = PasswordEntry.IsPassword ? IconGlyphs.Eye : IconGlyphs.EyeSlash;
+        PasswordEyeLabel.Source = PasswordEntry.IsPassword ? "login_eye.svg" : "login_eye_off.svg";
+#if ANDROID
+        PasswordEntry.Dispatcher.Dispatch(() => ApplyAndroidEntryStyle(PasswordEntry));
+#endif
     }
 
     private void OnRememberMeLabelTapped(object? sender, TappedEventArgs e) =>
@@ -114,6 +168,8 @@ public partial class LoginPage : ContentPage
             Session.DisplayName = result.DisplayName;
             Session.WarehouseName = result.WarehouseName;
             Session.RegionName = result.RegionName;
+            Session.ExpiresAtUtc = result.ExpiresAtUtc;
+            Session.Persist();
 
             if (RememberMeCheckBox.IsChecked)
             {
@@ -156,7 +212,7 @@ public partial class LoginPage : ContentPage
         finally
         {
             LoginButton.IsEnabled = true;
-            LoginButton.Text = "Log in";
+            LoginButton.Text = "Sign in";
             Spinner.IsVisible = false;
             Spinner.IsRunning = false;
         }

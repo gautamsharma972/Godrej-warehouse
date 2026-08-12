@@ -130,7 +130,9 @@ public partial class LoadConfirmationPage : ContentPage
         try
         {
             _job = await ApiClient.GetOutwardJobAsync(_jobId);
-            HeaderLabel.Text = $"{_job.DispatchOrderNumber} — {_job.CustomerName}";
+            PageHeaderView.PageTitle = _job.DispatchOrderNumber;
+            PageHeaderView.Title = $"Confirm loading · {_job.CustomerName}";
+            HeaderLabel.Text = "Loading progress";
 
             var steps = await ApiClient.GetLoadPlanConfirmationStepsAsync(_jobId);
             RenderSteps(steps);
@@ -156,9 +158,13 @@ public partial class LoadConfirmationPage : ContentPage
         var progressPercent = steps.Count == 0 ? 0 : (int)Math.Round((double)resolvedCount / steps.Count * 100);
         ProgressLabel.Text = steps.Count == 0 ? string.Empty : $"{resolvedCount} of {steps.Count} confirmed";
         ProgressBar.Progress = steps.Count == 0 ? 0 : (double)resolvedCount / steps.Count;
+        TopProgressLabel.Text = $"{progressPercent}%";
+        SemanticProperties.SetDescription(TopProgressRing,
+            steps.Count == 0 ? "No loading steps" : $"{resolvedCount} of {steps.Count} loading steps confirmed");
 
         var pendingCount = steps.Count - resolvedCount;
         StartLoadingAllButton.IsVisible = _job?.Status != "Completed" && pendingCount > 0;
+        ProgressActionSection.IsVisible = StartLoadingAllButton.IsVisible;
         StartLoadingAllButton.Text = $"Start Loading  {progressPercent}%";
 
         if (steps.Count > 0)
@@ -173,7 +179,7 @@ public partial class LoadConfirmationPage : ContentPage
     {
         var cardsRow = new HorizontalStackLayout
         {
-            Spacing = 12,
+            Spacing = 8,
             Padding = new Thickness(0, 0, 4, 4)
         };
 
@@ -328,6 +334,7 @@ public partial class LoadConfirmationPage : ContentPage
             stepsByLine.TryGetValue(item.Line.Id, out var lineSteps);
             var lineIsResolved = lineSteps is { Count: > 0 } && lineSteps.All(IsResolvedStep);
             var lineIsLocked = !readOnly && lineIsResolved;
+            var lineHasWarning = lineSteps?.Any(s => s.ConfirmationStatus is "ShortLoad" or "Mismatch" or "Skipped") == true;
 
             // Cartons are always whole units - format/parse as integers everywhere (entry text,
             // +/- stepper, Picklist Qty display) even though the underlying values are decimal on
@@ -404,25 +411,30 @@ public partial class LoadConfirmationPage : ContentPage
                     new(GridLength.Auto),
                     new(GridLength.Auto)
                 },
-                ColumnSpacing = 12
+                ColumnSpacing = 10
             };
-            header.Add(new Border
+            if (lineIsResolved)
             {
-                WidthRequest = 48,
-                HeightRequest = 48,
-                StrokeThickness = 0,
-                BackgroundColor = (Color)Application.Current.Resources["CardTint"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 },
-                Content = new Label
+                var outcomeColor = (Color)Application.Current.Resources[lineHasWarning ? "StatusException" : "StatusSuccess"];
+                header.Add(new Border
                 {
-                    Text = IconGlyphs.BoxesStacked,
-                    Style = (Style)Application.Current.Resources["IconLabel"],
-                    FontSize = 16,
-                    TextColor = (Color)Application.Current.Resources["Primary"],
-                    HorizontalOptions = LayoutOptions.Center,
-                    VerticalOptions = LayoutOptions.Center
-                }
-            }, 0);
+                    WidthRequest = 30,
+                    HeightRequest = 30,
+                    StrokeThickness = 0,
+                    BackgroundColor = (Color)Application.Current.Resources[lineHasWarning ? "StatusExceptionTint" : "StatusSuccessTint"],
+                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+                    VerticalOptions = LayoutOptions.Center,
+                    Content = new Label
+                    {
+                        Text = IconGlyphs.CircleCheck,
+                        Style = (Style)Application.Current.Resources["IconLabel"],
+                        FontSize = 11,
+                        TextColor = outcomeColor,
+                        HorizontalOptions = LayoutOptions.Center,
+                        VerticalOptions = LayoutOptions.Center
+                    }
+                }, 0);
+            }
             header.Add(new VerticalStackLayout { Spacing = 2, VerticalOptions = LayoutOptions.Center, Children = { title, subtitle } }, 1);
             if (editButton is not null)
             {
@@ -430,95 +442,59 @@ public partial class LoadConfirmationPage : ContentPage
             }
             header.Add(chevron, 3);
 
-            var qtyValueStack = new VerticalStackLayout
+            var plannedQuantity = new VerticalStackLayout
             {
                 Spacing = 0,
+                VerticalOptions = LayoutOptions.Center,
                 Children =
                 {
                     new Label
                     {
-                        Text = "Loaded Qty",
+                        Text = "Quantity",
                         FontFamily = "PoppinsSemiBold",
                         FontSize = 10,
-                        TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
-                        HorizontalOptions = LayoutOptions.Center
+                        TextColor = (Color)Application.Current.Resources["TextSecondaryLight"]
                     },
-                    qtyEntry
+                    new Label
+                    {
+                        Text = $"Planned {item.Line.OrderedQty:0}",
+                        FontFamily = "PoppinsRegular",
+                        FontSize = 11,
+                        TextColor = (Color)Application.Current.Resources["TextPrimaryLight"]
+                    }
                 }
             };
+
+            qtyEntry.WidthRequest = 58;
+            qtyEntry.HorizontalTextAlignment = TextAlignment.Center;
 
             var quantityGrid = new Grid
             {
                 ColumnDefinitions = new ColumnDefinitionCollection
                 {
-                    new(GridLength.Auto),
                     new(GridLength.Star),
+                    new(GridLength.Auto),
+                    new(new GridLength(58, GridUnitType.Absolute)),
                     new(GridLength.Auto)
                 },
-                ColumnSpacing = 10
+                ColumnSpacing = 8
             };
-            quantityGrid.Add(qtyMinus, 0);
-            quantityGrid.Add(qtyValueStack, 1);
-            quantityGrid.Add(qtyPlus, 2);
+            quantityGrid.Add(plannedQuantity, 0);
+            quantityGrid.Add(qtyMinus, 1);
+            quantityGrid.Add(qtyEntry, 2);
+            quantityGrid.Add(qtyPlus, 3);
 
             var quantityDock = new Border
             {
                 Stroke = (Color)Application.Current.Resources["CardBorderLight"],
                 StrokeThickness = 1,
                 BackgroundColor = (Color)Application.Current.Resources["SurfaceLight"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 },
-                Padding = new Thickness(10, 8),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                Padding = new Thickness(10, 7),
                 Content = quantityGrid
             };
 
-            // Picklist Qty (read-only, what Office actually released for this SKU) sits right
-            // beside the editable Loaded Qty, so a supervisor can see both at a glance while
-            // adjusting - without them, a short load is only visible after tapping Short below.
-            var picklistQtyDock = new Border
-            {
-                Stroke = (Color)Application.Current.Resources["CardBorderLight"],
-                StrokeThickness = 1,
-                BackgroundColor = (Color)Application.Current.Resources["CardTint"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 },
-                Padding = new Thickness(10, 8),
-                Content = new VerticalStackLayout
-                {
-                    Spacing = 0,
-                    HorizontalOptions = LayoutOptions.Center,
-                    VerticalOptions = LayoutOptions.Center,
-                    Children =
-                    {
-                        new Label
-                        {
-                            Text = "Picklist Qty",
-                            FontFamily = "PoppinsSemiBold",
-                            FontSize = 10,
-                            TextColor = (Color)Application.Current.Resources["TextSecondaryLight"],
-                            HorizontalOptions = LayoutOptions.Center
-                        },
-                        new Label
-                        {
-                            Text = item.Line.OrderedQty.ToString("0", CultureInfo.InvariantCulture),
-                            FontFamily = "PoppinsBold",
-                            FontSize = 16,
-                            TextColor = (Color)Application.Current.Resources["TextPrimaryLight"],
-                            HorizontalOptions = LayoutOptions.Center
-                        }
-                    }
-                }
-            };
-
-            var quantitiesRow = new Grid
-            {
-                ColumnDefinitions = new ColumnDefinitionCollection
-                {
-                    new(GridLength.Star),
-                    new(new GridLength(1.4, GridUnitType.Star))
-                },
-                ColumnSpacing = 10
-            };
-            quantitiesRow.Add(picklistQtyDock, 0);
-            quantitiesRow.Add(quantityDock, 1);
+            var quantitiesRow = quantityDock;
 
             var fields = new Grid
             {
@@ -546,6 +522,16 @@ public partial class LoadConfirmationPage : ContentPage
                 groupHost.Children.Add(BuildGroupsSection(lineSteps));
             }
 
+            // Everything except the header starts collapsed - tapping the header (or its chevron)
+            // is what reveals the qty stepper, reason chips, zone breakdown, and photo capture,
+            // instead of the old "swipe sideways between fixed-width cards" layout.
+            var detailContent = new VerticalStackLayout
+            {
+                Spacing = 10,
+                IsVisible = false,
+                Children = { quantitiesRow, lineActionsHost, groupHost, BuildLinePhotoSection(job, item.Line.Id, readOnly), fields }
+            };
+
             if (editButton is not null)
             {
                 editButton.Clicked += (_, _) =>
@@ -559,19 +545,11 @@ public partial class LoadConfirmationPage : ContentPage
                     {
                         lineActionsHost.Children.Add(BuildLineActionsSection(item.Line, lineSteps, qtyEntry, notesEntry));
                     }
+                    detailContent.IsVisible = true;
+                    chevron.Text = IconGlyphs.ChevronUp;
                     editButton.IsVisible = false;
                 };
             }
-
-            // Everything except the header starts collapsed - tapping the header (or its chevron)
-            // is what reveals the qty stepper, reason chips, zone breakdown, and photo capture,
-            // instead of the old "swipe sideways between fixed-width cards" layout.
-            var detailContent = new VerticalStackLayout
-            {
-                Spacing = 14,
-                IsVisible = false,
-                Children = { quantitiesRow, lineActionsHost, groupHost, BuildLinePhotoSection(job, item.Line.Id, readOnly), fields }
-            };
 
             var headerTap = new TapGestureRecognizer();
             headerTap.Tapped += (_, _) =>
@@ -581,23 +559,17 @@ public partial class LoadConfirmationPage : ContentPage
             };
             header.GestureRecognizers.Add(headerTap);
 
-            var cardContent = new VerticalStackLayout { Spacing = 14, Children = { header, detailContent } };
+            var cardContent = new VerticalStackLayout { Spacing = 10, Children = { header, detailContent } };
 
             LoadLinesContainer.Children.Add(new Border
             {
                 Stroke = (Color)Application.Current.Resources["CardBorderLight"],
                 StrokeThickness = 1,
                 BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 22 },
-                Padding = new Thickness(14),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 14 },
+                Padding = new Thickness(12, 11),
                 Content = cardContent,
-                Shadow = new Shadow
-                {
-                    Brush = new SolidColorBrush(Color.FromArgb("#DCEAE8")),
-                    Offset = new Point(0, 8),
-                    Radius = 18,
-                    Opacity = 0.28f
-                }
+                Shadow = null
             });
 
             _loadLineRows.Add(new LoadLineRow
@@ -634,8 +606,8 @@ public partial class LoadConfirmationPage : ContentPage
         // product-level Notes field below (still freely editable afterwards).
         var reasonCaption = new Label
         {
-            Text = "Reason (for Short)",
-            FontSize = 11,
+            Text = "Short-load reason",
+            FontSize = 10,
             FontFamily = "PoppinsSemiBold",
             TextColor = (Color)Application.Current!.Resources["TextSecondaryLight"]
         };
@@ -652,22 +624,31 @@ public partial class LoadConfirmationPage : ContentPage
             {
                 var selected = reason == selectedReason;
                 chipBorder.Stroke = selected ? reasonActiveColor : mutedBorder;
-                chipBorder.StrokeThickness = selected ? 2 : 1.5;
+                chipBorder.StrokeThickness = 1;
+                chipBorder.BackgroundColor = selected
+                    ? (Color)Application.Current.Resources["CardTint"]
+                    : Colors.Transparent;
                 chipLabel.TextColor = selected ? reasonActiveColor : mutedText;
                 chipLabel.FontFamily = selected ? "PoppinsBold" : "PoppinsSemiBold";
             }
         }
 
-        var reasonsRow = new HorizontalStackLayout { Spacing = 8 };
+        var reasonsRow = new FlexLayout
+        {
+            Wrap = Microsoft.Maui.Layouts.FlexWrap.Wrap,
+            Direction = Microsoft.Maui.Layouts.FlexDirection.Row,
+            AlignItems = Microsoft.Maui.Layouts.FlexAlignItems.Start
+        };
         foreach (var reason in ShortReasons)
         {
-            var chipLabel = new Label { Text = reason, FontSize = 11, FontFamily = "PoppinsSemiBold" };
+            var chipLabel = new Label { Text = reason, FontSize = 10, FontFamily = "PoppinsSemiBold" };
             var chipBorder = new Border
             {
-                StrokeThickness = 1.5,
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
-                BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-                Padding = new Thickness(10, 6),
+                StrokeThickness = 1,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 9 },
+                BackgroundColor = Colors.Transparent,
+                Padding = new Thickness(8, 5),
+                Margin = new Thickness(0, 0, 6, 6),
                 Content = chipLabel
             };
             chipBorder.GestureRecognizers.Add(new TapGestureRecognizer
@@ -683,15 +664,25 @@ public partial class LoadConfirmationPage : ContentPage
             reasonsRow.Children.Add(chipBorder);
         }
         RestyleReasonChips();
-        var reasonsScroller = new ScrollView
+        var reasonSection = new VerticalStackLayout
         {
-            Orientation = ScrollOrientation.Horizontal,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Never,
-            Content = reasonsRow
+            Spacing = 6,
+            Children = { reasonCaption, reasonsRow }
         };
 
-        var loadedButton = BuildActionButton("Loaded", IconGlyphs.CircleCheck, true);
+        var loadedButton = BuildActionButton("Loaded", IconGlyphs.CircleCheck);
         var shortButton = BuildActionButton("Short", IconGlyphs.Minus);
+        loadedButton.BackgroundColor = (Color)Application.Current.Resources["StatusSuccessTint"];
+        loadedButton.BorderColor = Colors.Transparent;
+        loadedButton.TextColor = (Color)Application.Current.Resources["StatusSuccess"];
+        loadedButton.ImageSource = new FontImageSource
+        {
+            FontFamily = "FaSolid", Glyph = IconGlyphs.CircleCheck, Size = 11,
+            Color = (Color)Application.Current.Resources["StatusSuccess"]
+        };
+        shortButton.BackgroundColor = (Color)Application.Current.Resources["StatusExceptionTint"];
+        shortButton.BorderColor = Colors.Transparent;
+        shortButton.TextColor = (Color)Application.Current.Resources["StatusException"];
 
         var shortWarningLabel = new Label
         {
@@ -710,22 +701,22 @@ public partial class LoadConfirmationPage : ContentPage
             var qty = TryParseCartonsInt(loadedQtyEntry.Text);
             var tooHigh = qty is not null && qty >= totalPlanned;
             shortButton.IsEnabled = qty is not null && !tooHigh;
-            shortWarningLabel.IsVisible = tooHigh;
+            shortWarningLabel.IsVisible = false;
+            reasonSection.IsVisible = qty is not null && qty < totalPlanned;
         }
         loadedQtyEntry.TextChanged += (_, _) => UpdateShortValidity();
         UpdateShortValidity();
 
-        var actionsRow = new FlexLayout
+        var actionsRow = new Grid
         {
-            Wrap = Microsoft.Maui.Layouts.FlexWrap.Wrap,
-            JustifyContent = Microsoft.Maui.Layouts.FlexJustify.Start,
-            AlignItems = Microsoft.Maui.Layouts.FlexAlignItems.Center,
-            Children = { loadedButton, shortButton }
+            ColumnDefinitions = new ColumnDefinitionCollection
+            {
+                new(GridLength.Star), new(GridLength.Star)
+            },
+            ColumnSpacing = 8
         };
-        foreach (var child in actionsRow.Children)
-        {
-            ((View)child).Margin = new Thickness(0, 0, 10, 8);
-        }
+        actionsRow.Add(loadedButton, 0);
+        actionsRow.Add(shortButton, 1);
 
         loadedButton.Clicked += async (_, _) => await ConfirmLineLoadedAsync(lineSteps, totalPlanned, TryParseCartonsInt(loadedQtyEntry.Text));
 
@@ -743,8 +734,8 @@ public partial class LoadConfirmationPage : ContentPage
 
         return new VerticalStackLayout
         {
-            Spacing = 10,
-            Children = { reasonCaption, reasonsScroller, actionsRow, shortWarningLabel }
+            Spacing = 8,
+            Children = { reasonSection, actionsRow, shortWarningLabel }
         };
     }
 
@@ -909,11 +900,10 @@ public partial class LoadConfirmationPage : ContentPage
 
         return new Border
         {
-            Stroke = (Color)Application.Current.Resources["CardBorderLight"],
-            StrokeThickness = 1,
-            BackgroundColor = (Color)Application.Current.Resources["SurfaceLight"],
-            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 14 },
-            Padding = new Thickness(12, 10),
+            StrokeThickness = 0,
+            BackgroundColor = statusTint,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 11 },
+            Padding = new Thickness(10, 8),
             Content = body
         };
     }
@@ -1044,18 +1034,18 @@ public partial class LoadConfirmationPage : ContentPage
 
         var seqBadge = new Border
         {
-            WidthRequest = 46,
-            HeightRequest = 46,
+            WidthRequest = 30,
+            HeightRequest = 30,
             StrokeThickness = 0,
             BackgroundColor = statusTint,
-            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 20 },
-            VerticalOptions = LayoutOptions.Start,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+            VerticalOptions = LayoutOptions.Center,
             Content = new Label
             {
                 Text = step.StepNumber.ToString(),
                 TextColor = statusColor,
                 FontFamily = "PoppinsBold",
-                FontSize = 14,
+                FontSize = 11,
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center
             }
@@ -1075,34 +1065,29 @@ public partial class LoadConfirmationPage : ContentPage
             metaParts.Add(step.ActualNotes);
         }
 
-        var titleStack = new VerticalStackLayout
+        var titleLabel = new Label
         {
-            Spacing = 4,
-            VerticalOptions = LayoutOptions.Center,
-            Children =
-            {
-                new Label
-                {
-                    Text = $"{step.ProductName} - {step.PlannedQuantity} cartons",
-                    FontFamily = "PoppinsSemiBold",
-                    FontSize = 14,
-                    TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"],
-                    LineBreakMode = LineBreakMode.TailTruncation,
-                    MaxLines = 2
-                },
-                new Label
-                {
-                    Text = string.Join(" · ", metaParts),
-                    Style = (Style)Application.Current.Resources["MetaLabel"],
-                    LineBreakMode = LineBreakMode.TailTruncation,
-                    MaxLines = 1
-                }
-            }
+            Text = step.ProductName,
+            FontFamily = "PoppinsSemiBold",
+            FontSize = 12,
+            TextColor = (Color)Application.Current!.Resources["TextPrimaryLight"],
+            LineBreakMode = LineBreakMode.WordWrap,
+            MaxLines = 2,
+            VerticalOptions = LayoutOptions.Center
+        };
+        var metaLabel = new Label
+        {
+            Text = $"{step.PlannedQuantity} cartons · {string.Join(" · ", metaParts)}",
+            Style = (Style)Application.Current.Resources["MetaLabel"],
+            FontSize = 10,
+            LineBreakMode = LineBreakMode.WordWrap,
+            MaxLines = 2,
+            VerticalOptions = LayoutOptions.Center
         };
 
         var statusBadge = new Border
         {
-            Padding = new Thickness(10, 5),
+            Padding = new Thickness(8, 4),
             StrokeThickness = 0,
             BackgroundColor = statusTint,
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
@@ -1117,7 +1102,7 @@ public partial class LoadConfirmationPage : ContentPage
                     {
                         Text = StatusIcon(step.ConfirmationStatus),
                         Style = (Style)Application.Current.Resources["IconLabel"],
-                        FontSize = 9,
+                        FontSize = 8,
                         TextColor = statusColor,
                         VerticalOptions = LayoutOptions.Center
                     },
@@ -1125,7 +1110,7 @@ public partial class LoadConfirmationPage : ContentPage
                     {
                         Text = StatusDisplayText(step.ConfirmationStatus),
                         FontFamily = "PoppinsBold",
-                        FontSize = 11,
+                        FontSize = 9,
                         TextColor = statusColor,
                         VerticalOptions = LayoutOptions.Center
                     }
@@ -1138,42 +1123,40 @@ public partial class LoadConfirmationPage : ContentPage
             ColumnDefinitions = new ColumnDefinitionCollection
             {
                 new(GridLength.Auto),
-                new(GridLength.Star)
+                new(GridLength.Star),
+                new(GridLength.Auto)
             },
             RowDefinitions = new RowDefinitionCollection
             {
                 new(GridLength.Auto),
                 new(GridLength.Auto)
             },
-            ColumnSpacing = 12,
-            RowSpacing = 14
+            ColumnSpacing = 9,
+            RowSpacing = 5
         };
         headerGrid.Add(seqBadge, 0);
-        headerGrid.Add(titleStack, 1);
-        headerGrid.Add(statusBadge, 1, 1);
+        Grid.SetRowSpan(seqBadge, 2);
+        headerGrid.Add(titleLabel, 1, 0);
+        headerGrid.Add(metaLabel, 1, 1);
+        Grid.SetColumnSpan(metaLabel, 2);
+        headerGrid.Add(statusBadge, 2, 0);
 
         // Purely a status tile now - the one-tap "confirm all" lives on the header card above,
         // and per-group overrides (actual qty, Mismatch/Short/Skip, Photo, notes) live in the
         // matching group row under "Load lines" below.
-        var card = new VerticalStackLayout { Spacing = 14, Children = { headerGrid } };
+        var card = new VerticalStackLayout { Spacing = 0, Children = { headerGrid } };
 
         return new Border
         {
             Stroke = (Color)Application.Current.Resources["CardBorderLight"],
             StrokeThickness = 1,
             BackgroundColor = (Color)Application.Current.Resources["CardLight"],
-            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 20 },
-            Padding = new Thickness(16, 14),
-            WidthRequest = 316,
-            MinimumHeightRequest = 126,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 14 },
+            Padding = new Thickness(11, 10),
+            WidthRequest = 320,
+            MinimumHeightRequest = 94,
             Content = card,
-            Shadow = new Shadow
-            {
-                Brush = new SolidColorBrush(Color.FromArgb("#DCEAE8")),
-                Offset = new Point(0, 8),
-                Radius = 18,
-                Opacity = 0.35f
-            }
+            Shadow = null
         };
     }
 
@@ -1427,6 +1410,9 @@ public partial class LoadConfirmationPage : ContentPage
             IsEnabled = !readOnly && lineCount < MaxSkuPhotosPerLine && jobCount < MaxSkuPhotosPerJob,
             Style = (Style)Application.Current!.Resources["ChipButton"],
             FontSize = 11,
+            HeightRequest = 38,
+            MinimumHeightRequest = 38,
+            Padding = new Thickness(10, 4),
             ImageSource = new FontImageSource { FontFamily = "FaSolid", Glyph = IconGlyphs.Camera, Color = (Color)Application.Current.Resources["Primary"], Size = 11 }
         };
         addButton.Clicked += async (_, _) => await CaptureLinePhotoAsync(dispatchOrderLineId);

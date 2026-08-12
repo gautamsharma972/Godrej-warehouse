@@ -3,22 +3,24 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:services="clr-namespace:WarehouseGate.Mobile.Services"
              x:Class="WarehouseGate.Mobile.Controls.BackHeaderView"
-             x:Name="Root">
+             x:Name="Root" BackgroundColor="Transparent">
 
-    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4,0,0">
-        <Border Grid.Column="0" WidthRequest="36" HeightRequest="36" StrokeShape="RoundRectangle 18"
-                Stroke="Transparent" BackgroundColor="{StaticResource CardTint}">
+    <Grid ColumnDefinitions="Auto,*,Auto" Padding="14,8,14,6" ColumnSpacing="10">
+        <Border x:Name="BackButton" Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeShape="RoundRectangle 12"
+                IsVisible="{Binding ShowBackButton, Source={x:Reference Root}}"
+                Stroke="#D7E4F2" StrokeThickness="1" BackgroundColor="#F5F9FD">
             <Border.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnBackTapped" />
             </Border.GestureRecognizers>
             <Label Text="{x:Static services:IconGlyphs.ArrowLeft}" Style="{StaticResource IconLabel}"
                    FontSize="14" TextColor="{StaticResource Primary}" HorizontalOptions="Center" VerticalOptions="Center" />
         </Border>
-        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Margin="8,0,0,0" Spacing="0">
+        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1">
             <Label x:Name="PageTitleLabel" Text="{Binding PageTitle, Source={x:Reference Root}}" IsVisible="False"
                    FontFamily="PoppinsBold" FontSize="17" TextColor="{StaticResource TextPrimaryLight}"
                    LineBreakMode="TailTruncation" MaxLines="1" />
-            <Label Text="{Binding Title, Source={x:Reference Root}}" Style="{StaticResource MetaLabel}"
+            <Label Text="{Binding Title, Source={x:Reference Root}}" FontFamily="PoppinsRegular"
+                   FontSize="12" TextColor="#7A8986"
                    LineBreakMode="TailTruncation" MaxLines="1" />
         </VerticalStackLayout>
         <ContentView Grid.Column="2" x:Name="TrailingContentHost" VerticalOptions="Center" />

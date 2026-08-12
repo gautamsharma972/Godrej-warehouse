@@ -16,6 +16,9 @@ public partial class BackHeaderView : ContentView
     public static readonly BindableProperty BackRouteProperty =
         BindableProperty.Create(nameof(BackRoute), typeof(string), typeof(BackHeaderView), "..");
 
+    public static readonly BindableProperty ShowBackButtonProperty =
+        BindableProperty.Create(nameof(ShowBackButton), typeof(bool), typeof(BackHeaderView), true);
+
     public static readonly BindableProperty TrailingContentProperty =
         BindableProperty.Create(nameof(TrailingContent), typeof(View), typeof(BackHeaderView), null,
             propertyChanged: OnTrailingContentChanged);
@@ -36,6 +39,12 @@ public partial class BackHeaderView : ContentView
     {
         get => (string)GetValue(BackRouteProperty);
         set => SetValue(BackRouteProperty, value);
+    }
+
+    public bool ShowBackButton
+    {
+        get => (bool)GetValue(ShowBackButtonProperty);
+        set => SetValue(ShowBackButtonProperty, value);
     }
 
     public View? TrailingContent

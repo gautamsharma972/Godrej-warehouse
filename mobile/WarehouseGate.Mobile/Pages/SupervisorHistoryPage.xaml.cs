@@ -64,27 +64,28 @@ public partial class SupervisorHistoryPage : ContentPage
         {
             SearchFieldsGrid.ColumnDefinitions = new ColumnDefinitionCollection
             {
-                new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)
+                new ColumnDefinition(GridLength.Star)
             };
             SearchFieldsGrid.RowDefinitions = new RowDefinitionCollection
             {
-                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)
             };
 
             Grid.SetRow(VehicleSearchSection, 0);
             Grid.SetColumn(VehicleSearchSection, 0);
-            Grid.SetColumnSpan(VehicleSearchSection, 2);
+            Grid.SetColumnSpan(VehicleSearchSection, 1);
 
             Grid.SetRow(OrderNumberSection, 1);
             Grid.SetColumn(OrderNumberSection, 0);
             Grid.SetColumnSpan(OrderNumberSection, 1);
 
-            Grid.SetRow(DateSection, 1);
-            Grid.SetColumn(DateSection, 1);
+            Grid.SetRow(DateSection, 2);
+            Grid.SetColumn(DateSection, 0);
 
-            Grid.SetRow(SearchButtonControl, 2);
+            Grid.SetRow(SearchButtonControl, 3);
             Grid.SetColumn(SearchButtonControl, 0);
-            Grid.SetColumnSpan(SearchButtonControl, 2);
+            Grid.SetColumnSpan(SearchButtonControl, 1);
             SearchButtonControl.VerticalOptions = LayoutOptions.Fill;
             SearchButtonControl.WidthRequest = -1;
         }
@@ -161,6 +162,30 @@ public partial class SupervisorHistoryPage : ContentPage
 
     private async void OnSearchClicked(object? sender, EventArgs e) => await SearchAsync();
 
+    private async void OnOpenFiltersClicked(object? sender, EventArgs e)
+    {
+        var activeDate = _dateFilterActive ? HistoryDatePicker.Date : (DateTime?)null;
+        await Navigation.PushModalAsync(new SupervisorHistoryFilterPage(
+            _showingOutward,
+            VehicleSearchBar.Text,
+            OrderNumberSearchEntry.Text,
+            activeDate,
+            result =>
+            {
+                if (result is null)
+                {
+                    return;
+                }
+
+                VehicleSearchBar.Text = result.VehicleNumber;
+                OrderNumberSearchEntry.Text = result.OrderNumber;
+                HistoryDatePicker.Date = result.Date ?? DateTime.Today;
+                _dateFilterActive = result.Date.HasValue;
+                ClearDateButton.IsVisible = _dateFilterActive;
+                _ = SearchAsync();
+            }));
+    }
+
     private void OnInwardTabClicked(object? sender, EventArgs e)
     {
         _showingOutward = false;
@@ -187,9 +212,6 @@ public partial class SupervisorHistoryPage : ContentPage
         InwardResultsCollectionView.IsVisible = !_showingOutward;
         OutwardResultsCollectionView.IsVisible = _showingOutward;
         OrderNumberLabel.Text = _showingOutward ? "DO NUMBER" : "PO NUMBER";
-        HistorySubtitleLabel.Text = _showingOutward
-            ? "Search completed outward dock activity."
-            : "Search completed inward dock activity.";
         ModeHintLabel.Text = _showingOutward
             ? "Use vehicle, DO number, or date to narrow completed outward jobs."
             : "Use vehicle, PO number, or date to narrow completed inward jobs.";
@@ -201,8 +223,8 @@ public partial class SupervisorHistoryPage : ContentPage
 
         InwardSwitchLabel.TextColor = _showingOutward ? unselectedText : selectedText;
         OutwardSwitchLabel.TextColor = _showingOutward ? selectedText : unselectedText;
-        InwardHistoryTabPill.BackgroundColor = _showingOutward ? Colors.Transparent : Color.FromArgb("#E9FBF8");
-        OutwardHistoryTabPill.BackgroundColor = _showingOutward ? Color.FromArgb("#E9FBF8") : Colors.Transparent;
+        InwardHistoryTabPill.BackgroundColor = _showingOutward ? Colors.Transparent : Color.FromArgb("#EAF1FF");
+        OutwardHistoryTabPill.BackgroundColor = _showingOutward ? Color.FromArgb("#EAF1FF") : Colors.Transparent;
         UpdateModeSwitchText();
     }
 
